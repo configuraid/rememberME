@@ -24,7 +24,6 @@ class PageBuilderScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // Content-Block Auswahl
           Container(
             height: 120,
             color: AppColors.background,
