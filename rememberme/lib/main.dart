@@ -5,9 +5,11 @@ import 'app.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/memorial_repository.dart';
 import 'data/repositories/license_repository.dart';
+import 'data/repositories/profile_repository.dart';
 import 'business_logic/auth/auth_bloc.dart';
 import 'business_logic/memorial/memorial_bloc.dart';
 import 'business_logic/license/license_bloc.dart';
+import 'business_logic/profile/profile_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +25,7 @@ void main() async {
   final authRepository = AuthRepository();
   final memorialRepository = MemorialRepository();
   final licenseRepository = LicenseRepository();
+  final profileRepository = ProfileRepository();
 
   runApp(
     MultiRepositoryProvider(
@@ -30,6 +33,7 @@ void main() async {
         RepositoryProvider.value(value: authRepository),
         RepositoryProvider.value(value: memorialRepository),
         RepositoryProvider.value(value: licenseRepository),
+        RepositoryProvider.value(value: profileRepository),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -46,6 +50,11 @@ void main() async {
           BlocProvider(
             create: (context) => LicenseBloc(
               licenseRepository: context.read<LicenseRepository>(),
+            ),
+          ),
+          BlocProvider(
+            create: (context) => ProfileBloc(
+              profileRepository: context.read<ProfileRepository>(),
             ),
           ),
         ],

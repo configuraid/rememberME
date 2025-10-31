@@ -70,7 +70,8 @@ class MemorialListScreen extends StatelessWidget {
                   title: Text(memorial.name),
                   subtitle: Text(memorial.lifespan),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => Navigator.of(context).pushNamed(
+                  onTap: () =>
+                      Navigator.of(context, rootNavigator: true).pushNamed(
                     AppRoutes.memorialDetail,
                     arguments: memorial,
                   ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rememberme/presentation/screens/memorial/memorial_list_screen.dart';
+import 'package:rememberme/presentation/screens/profile/profile_screen.dart';
 import '../../../business_logic/auth/auth_bloc.dart';
 import '../../../business_logic/auth/auth_state.dart';
 import '../../../business_logic/memorial/memorial_bloc.dart';
@@ -97,7 +99,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       floatingActionButton: _selectedIndex == 1
           ? FloatingActionButton.extended(
-              onPressed: () => Navigator.of(context).pushNamed(
+              onPressed: () =>
+                  Navigator.of(context, rootNavigator: true).pushNamed(
                 AppRoutes.memorialList,
                 arguments: {'create': true},
               ),
@@ -208,7 +211,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                               trailing:
                                   const Icon(Icons.arrow_forward_ios, size: 16),
-                              onTap: () => Navigator.of(context).pushNamed(
+                              onTap: () =>
+                                  Navigator.of(context, rootNavigator: true)
+                                      .pushNamed(
                                 AppRoutes.memorialDetail,
                                 arguments: memorial,
                               ),
@@ -228,25 +233,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildMemorialsTab() {
-    return Navigator(
-      onGenerateRoute: (settings) {
-        return MaterialPageRoute(
-          builder: (context) =>
-              const Placeholder(), // Memorial List Screen kommt gleich
-        );
-      },
-    );
+    return const MemorialListScreen();
   }
 
   Widget _buildProfileTab() {
-    return Navigator(
-      onGenerateRoute: (settings) {
-        return MaterialPageRoute(
-          builder: (context) =>
-              const Placeholder(), // Profile Screen kommt gleich
-        );
-      },
-    );
+    return const ProfileScreen();
   }
 
   Widget _buildStatCard(BuildContext context, String title, String value,
@@ -285,7 +276,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             'Neue Seite',
             Icons.add_circle_outline,
             AppColors.accent,
-            () => Navigator.of(context).pushNamed(AppRoutes.memorialList),
+            () => Navigator.of(context, rootNavigator: true)
+                .pushNamed(AppRoutes.memorialList),
           ),
         ),
         const SizedBox(width: 12),
@@ -295,7 +287,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             'Lizenz',
             Icons.workspace_premium,
             AppColors.primary,
-            () => Navigator.of(context).pushNamed(AppRoutes.license),
+            () => Navigator.of(context, rootNavigator: true)
+                .pushNamed(AppRoutes.license),
           ),
         ),
       ],

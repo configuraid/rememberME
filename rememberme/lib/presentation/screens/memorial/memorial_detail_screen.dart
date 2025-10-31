@@ -21,7 +21,8 @@ class MemorialDetailScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
-            onPressed: () => Navigator.of(context).pushNamed(
+            onPressed: () =>
+                Navigator.of(context, rootNavigator: true).pushNamed(
               AppRoutes.pageBuilder,
               arguments: memorial,
             ),
@@ -104,7 +105,7 @@ class MemorialDetailScreen extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).pushNamed(
+        onPressed: () => Navigator.of(context, rootNavigator: true).pushNamed(
           AppRoutes.pageBuilder,
           arguments: memorial,
         ),
