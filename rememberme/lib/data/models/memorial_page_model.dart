@@ -1,9 +1,17 @@
 import 'package:equatable/equatable.dart';
 import 'content_block_model.dart';
 
-enum MemorialStatus { draft, published, archived }
+enum MemorialStatus {
+  draft,
+  published,
+  archived,
+}
 
-enum PrivacyLevel { public, private, familyOnly }
+enum PrivacyLevel {
+  public,
+  familyOnly,
+  private,
+}
 
 class MemorialPageModel extends Equatable {
   final String id;
@@ -13,19 +21,19 @@ class MemorialPageModel extends Equatable {
   final DateTime? birthDate;
   final DateTime? deathDate;
   final String? profileImageUrl;
+  final String templateId;
+  final bool isPublished;
   final MemorialStatus status;
   final PrivacyLevel privacyLevel;
-  final String? password; // For password-protected pages
   final List<ContentBlockModel> contentBlocks;
-  final String templateId;
-  final Map<String, dynamic> themeSettings;
-  final DateTime createdAt;
-  final DateTime? updatedAt;
-  final DateTime? publishedAt;
-  final String? customDomain;
-  final String? vercelUrl;
   final int viewCount;
   final List<String> collaboratorIds;
+  final List<String>? groupMemberIds;
+  final Map<String, dynamic>? settings;
+  final String? vercelUrl;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? publishedAt;
 
   const MemorialPageModel({
     required this.id,
@@ -35,70 +43,124 @@ class MemorialPageModel extends Equatable {
     this.birthDate,
     this.deathDate,
     this.profileImageUrl,
-    this.status = MemorialStatus.draft,
-    this.privacyLevel = PrivacyLevel.public,
-    this.password,
-    this.contentBlocks = const [],
     required this.templateId,
-    this.themeSettings = const {},
-    required this.createdAt,
-    this.updatedAt,
-    this.publishedAt,
-    this.customDomain,
-    this.vercelUrl,
+    this.isPublished = false,
+    this.status = MemorialStatus.draft,
+    this.privacyLevel = PrivacyLevel.private,
+    this.contentBlocks = const [],
     this.viewCount = 0,
     this.collaboratorIds = const [],
+    this.groupMemberIds,
+    this.settings,
+    this.vercelUrl,
+    required this.createdAt,
+    required this.updatedAt,
+    this.publishedAt,
   });
 
-  // Getter für die Lebensspanne
+  // Computed Properties
   String get lifespan {
-    if (birthDate == null) return '';
-    final birth = '${birthDate!.day}.${birthDate!.month}.${birthDate!.year}';
-    if (deathDate == null) return birth;
-    final death = '${deathDate!.day}.${deathDate!.month}.${deathDate!.year}';
+    if (birthDate == null && deathDate == null) {
+      return 'Keine Daten';
+    }
+
+    final birth = birthDate != null ? _formatDate(birthDate!) : '?';
+    final death = deathDate != null ? _formatDate(deathDate!) : '?';
+
     return '$birth - $death';
   }
 
-  // Getter für das Alter
-  int? get ageAtDeath {
-    if (birthDate == null || deathDate == null) return null;
-    return deathDate!.year - birthDate!.year;
-  }
-
-  // Prüfen ob veröffentlicht
-  bool get isPublished => status == MemorialStatus.published;
-
-  // Prüfen ob privat
-  bool get isPrivate => privacyLevel == PrivacyLevel.private;
-
-  // Prüfen ob passwortgeschützt
-  bool get isPasswordProtected => password != null && password!.isNotEmpty;
-
-  // Sortierte Content-Blöcke nach Order
   List<ContentBlockModel> get sortedContentBlocks {
-    final blocks = List<ContentBlockModel>.from(contentBlocks);
-    blocks.sort((a, b) => a.order.compareTo(b.order));
-    return blocks;
+    final sorted = List<ContentBlockModel>.from(contentBlocks);
+    sorted.sort((a, b) => a.order.compareTo(b.order));
+    return sorted;
   }
 
-  // Factory für neue Gedenkseite
-  factory MemorialPageModel.create({
-    required String id,
-    required String ownerId,
-    required String name,
-    required String templateId,
-  }) {
-    return MemorialPageModel(
-      id: id,
-      ownerId: ownerId,
-      name: name,
-      templateId: templateId,
-      createdAt: DateTime.now(),
-      contentBlocks: const [],
-    );
+  int get publishedBlocksCount {
+    return contentBlocks.length;
   }
 
-  // CopyWith Methode
+  bool get hasContent {
+    return contentBlocks.isNotEmpty;
+  }
+
+  String get statusText {
+    switch (status) {
+      case MemorialStatus.published:
+        return 'Veröffentlicht';
+      case MemorialStatus.draft:
+        return 'Entwurf';
+      case MemorialStatus.archived:
+        return 'Archiviert';
+    }
+  }
+
+  String get privacyLevelText {
+    switch (privacyLevel) {
+      case PrivacyLevel.public:
+        return 'Öffentlich';
+      case PrivacyLevel.familyOnly:
+        return 'Nur Familie';
+      case PrivacyLevel.private:
+        return 'Privat';
+    }
+  }
+
+  // Group Management
+  bool get hasGroupMembers {
+    return groupMemberIds != null && groupMemberIds!.isNotEmpty;
+  }
+
+  int get groupMemberCount {
+    return groupMemberIds?.length ?? 0;
+  }
+
+  bool get hasCollaborators {
+    return collaboratorIds.isNotEmpty;
+  }
+
+  int get collaboratorCount {
+    return collaboratorIds.length;
+  }
+
+  bool isGroupMember(String userId) {
+    return groupMemberIds?.contains(userId) ?? false;
+  }
+
+  bool isCollaborator(String userId) {
+    return collaboratorIds.contains(userId);
+  }
+
+  bool canEdit(String userId) {
+    return ownerId == userId || isCollaborator(userId);
+  }
+
+  // Content Block Helpers
+  ContentBlockModel? getBlockById(String blockId) {
+    try {
+      return contentBlocks.firstWhere((block) => block.id == blockId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<ContentBlockModel> getBlocksByType(ContentBlockType type) {
+    return contentBlocks.where((block) => block.type == type).toList();
+  }
+
+  bool hasBlockType(ContentBlockType type) {
+    return contentBlocks.any((block) => block.type == type);
+  }
+
+  // Settings Helpers
+  bool getSetting(String key, {bool defaultValue = false}) {
+    return settings?[key] as bool? ?? defaultValue;
+  }
+
+  String? getSettingString(String key) {
+    return settings?[key] as String?;
+  }
+
   MemorialPageModel copyWith({
     String? id,
     String? ownerId,
@@ -107,19 +169,19 @@ class MemorialPageModel extends Equatable {
     DateTime? birthDate,
     DateTime? deathDate,
     String? profileImageUrl,
+    String? templateId,
+    bool? isPublished,
     MemorialStatus? status,
     PrivacyLevel? privacyLevel,
-    String? password,
     List<ContentBlockModel>? contentBlocks,
-    String? templateId,
-    Map<String, dynamic>? themeSettings,
+    int? viewCount,
+    List<String>? collaboratorIds,
+    List<String>? groupMemberIds,
+    Map<String, dynamic>? settings,
+    String? vercelUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? publishedAt,
-    String? customDomain,
-    String? vercelUrl,
-    int? viewCount,
-    List<String>? collaboratorIds,
   }) {
     return MemorialPageModel(
       id: id ?? this.id,
@@ -129,49 +191,22 @@ class MemorialPageModel extends Equatable {
       birthDate: birthDate ?? this.birthDate,
       deathDate: deathDate ?? this.deathDate,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      templateId: templateId ?? this.templateId,
+      isPublished: isPublished ?? this.isPublished,
       status: status ?? this.status,
       privacyLevel: privacyLevel ?? this.privacyLevel,
-      password: password ?? this.password,
       contentBlocks: contentBlocks ?? this.contentBlocks,
-      templateId: templateId ?? this.templateId,
-      themeSettings: themeSettings ?? this.themeSettings,
+      viewCount: viewCount ?? this.viewCount,
+      collaboratorIds: collaboratorIds ?? this.collaboratorIds,
+      groupMemberIds: groupMemberIds ?? this.groupMemberIds,
+      settings: settings ?? this.settings,
+      vercelUrl: vercelUrl ?? this.vercelUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       publishedAt: publishedAt ?? this.publishedAt,
-      customDomain: customDomain ?? this.customDomain,
-      vercelUrl: vercelUrl ?? this.vercelUrl,
-      viewCount: viewCount ?? this.viewCount,
-      collaboratorIds: collaboratorIds ?? this.collaboratorIds,
     );
   }
 
-  // ToJson
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'ownerId': ownerId,
-      'name': name,
-      'subtitle': subtitle,
-      'birthDate': birthDate?.toIso8601String(),
-      'deathDate': deathDate?.toIso8601String(),
-      'profileImageUrl': profileImageUrl,
-      'status': status.toString().split('.').last,
-      'privacyLevel': privacyLevel.toString().split('.').last,
-      'password': password,
-      'contentBlocks': contentBlocks.map((block) => block.toJson()).toList(),
-      'templateId': templateId,
-      'themeSettings': themeSettings,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
-      'publishedAt': publishedAt?.toIso8601String(),
-      'customDomain': customDomain,
-      'vercelUrl': vercelUrl,
-      'viewCount': viewCount,
-      'collaboratorIds': collaboratorIds,
-    };
-  }
-
-  // FromJson
   factory MemorialPageModel.fromJson(Map<String, dynamic> json) {
     return MemorialPageModel(
       id: json['id'] as String,
@@ -185,35 +220,81 @@ class MemorialPageModel extends Equatable {
           ? DateTime.parse(json['deathDate'] as String)
           : null,
       profileImageUrl: json['profileImageUrl'] as String?,
-      status: MemorialStatus.values.firstWhere(
-        (e) => e.toString().split('.').last == json['status'],
-        orElse: () => MemorialStatus.draft,
-      ),
-      privacyLevel: PrivacyLevel.values.firstWhere(
-        (e) => e.toString().split('.').last == json['privacyLevel'],
-        orElse: () => PrivacyLevel.public,
-      ),
-      password: json['password'] as String?,
+      templateId: json['templateId'] as String? ?? 'default',
+      isPublished: json['isPublished'] as bool? ?? false,
+      status: _parseStatus(json['status'] as String?),
+      privacyLevel: _parsePrivacyLevel(json['privacyLevel'] as String?),
       contentBlocks: (json['contentBlocks'] as List?)
-              ?.map((block) =>
-                  ContentBlockModel.fromJson(block as Map<String, dynamic>))
+              ?.map(
+                  (e) => ContentBlockModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      templateId: json['templateId'] as String,
-      themeSettings: json['themeSettings'] as Map<String, dynamic>? ?? {},
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      viewCount: json['viewCount'] as int? ?? 0,
+      collaboratorIds: (json['collaboratorIds'] as List?)?.cast<String>() ?? [],
+      groupMemberIds: (json['groupMemberIds'] as List?)?.cast<String>(),
+      settings: json['settings'] as Map<String, dynamic>?,
+      vercelUrl: json['vercelUrl'] as String?,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
-          : null,
+          : DateTime.now(),
       publishedAt: json['publishedAt'] != null
           ? DateTime.parse(json['publishedAt'] as String)
           : null,
-      customDomain: json['customDomain'] as String?,
-      vercelUrl: json['vercelUrl'] as String?,
-      viewCount: json['viewCount'] as int? ?? 0,
-      collaboratorIds:
-          List<String>.from(json['collaboratorIds'] as List? ?? []),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'ownerId': ownerId,
+      'name': name,
+      'subtitle': subtitle,
+      'birthDate': birthDate?.toIso8601String(),
+      'deathDate': deathDate?.toIso8601String(),
+      'profileImageUrl': profileImageUrl,
+      'templateId': templateId,
+      'isPublished': isPublished,
+      'status': status.toString().split('.').last,
+      'privacyLevel': privacyLevel.toString().split('.').last,
+      'contentBlocks': contentBlocks.map((block) => block.toJson()).toList(),
+      'viewCount': viewCount,
+      'collaboratorIds': collaboratorIds,
+      'groupMemberIds': groupMemberIds,
+      'settings': settings,
+      'vercelUrl': vercelUrl,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'publishedAt': publishedAt?.toIso8601String(),
+    };
+  }
+
+  static MemorialStatus _parseStatus(String? statusString) {
+    if (statusString == null) return MemorialStatus.draft;
+    try {
+      return MemorialStatus.values.firstWhere(
+        (e) => e.toString().split('.').last == statusString,
+      );
+    } catch (_) {
+      return MemorialStatus.draft;
+    }
+  }
+
+  static PrivacyLevel _parsePrivacyLevel(String? privacyString) {
+    if (privacyString == null) return PrivacyLevel.private;
+    try {
+      return PrivacyLevel.values.firstWhere(
+        (e) => e.toString().split('.').last == privacyString,
+      );
+    } catch (_) {
+      return PrivacyLevel.private;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}.${date.month}.${date.year}';
   }
 
   @override
@@ -225,18 +306,18 @@ class MemorialPageModel extends Equatable {
         birthDate,
         deathDate,
         profileImageUrl,
+        templateId,
+        isPublished,
         status,
         privacyLevel,
-        password,
         contentBlocks,
-        templateId,
-        themeSettings,
+        viewCount,
+        collaboratorIds,
+        groupMemberIds,
+        settings,
+        vercelUrl,
         createdAt,
         updatedAt,
         publishedAt,
-        customDomain,
-        vercelUrl,
-        viewCount,
-        collaboratorIds,
       ];
 }

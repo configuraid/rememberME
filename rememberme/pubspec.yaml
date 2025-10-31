@@ -19,6 +19,7 @@ dependencies:
   image_picker: ^1.0.4
   package_info_plus: ^5.0.1
   url_launcher: ^6.2.1
+  uuid: ^4.2.1
 
   # Firebase (später aktivieren)
   # firebase_core: ^2.15.0

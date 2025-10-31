@@ -9,7 +9,7 @@ import 'presentation/screens/auth/qr_scanner_screen.dart';
 import 'presentation/screens/dashboard/dashboard_screen.dart';
 import 'presentation/screens/memorial/memorial_list_screen.dart';
 import 'presentation/screens/memorial/memorial_detail_screen.dart';
-import 'presentation/screens/memorial/page_builder_screen.dart';
+import 'presentation/screens/memorial/page_builder/page_builder_screen.dart';
 import 'presentation/screens/profile/profile_screen.dart';
 import 'presentation/screens/profile/license_screen.dart';
 

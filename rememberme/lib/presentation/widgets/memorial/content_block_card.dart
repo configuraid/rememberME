@@ -44,26 +44,24 @@ class ContentBlockCard extends StatelessWidget {
 
   IconData _getBlockIcon() {
     switch (block.type) {
-      case ContentBlockType.heroSection:
+      case ContentBlockType.hero:
         return Icons.image;
-      case ContentBlockType.textBlock:
+      case ContentBlockType.text:
         return Icons.text_fields;
-      case ContentBlockType.imageGallery:
+      case ContentBlockType.gallery:
         return Icons.photo_library;
-      case ContentBlockType.quoteSection:
+      case ContentBlockType.quote:
         return Icons.format_quote;
-      case ContentBlockType.videoCollage:
+      case ContentBlockType.video:
         return Icons.video_library;
-      case ContentBlockType.audioPlayer:
+      case ContentBlockType.audio:
         return Icons.audiotrack;
       case ContentBlockType.timeline:
         return Icons.timeline;
-      case ContentBlockType.guestbook:
+      case ContentBlockType.condolences:
         return Icons.book;
-      case ContentBlockType.memoryMap:
+      case ContentBlockType.map:
         return Icons.map;
-      case ContentBlockType.photoGallery3D:
-        return Icons.view_in_ar;
     }
   }
 
