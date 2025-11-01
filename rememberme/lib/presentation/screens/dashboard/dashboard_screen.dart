@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rememberme/presentation/screens/memorial/memorial_list_screen.dart';
+import 'package:rememberme/presentation/screens/memorial/memorial_screen.dart';
 import 'package:rememberme/presentation/screens/profile/profile_screen.dart';
 import '../../../business_logic/auth/auth_bloc.dart';
 import '../../../business_logic/auth/auth_state.dart';
@@ -60,8 +60,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               label: 'Übersicht',
             ),
             BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.memories),
-              label: 'Gedenkseiten',
+              icon: Icon(CupertinoIcons.heart),
+              label: 'Gedenkseite',
             ),
             BottomNavigationBarItem(
               icon: Icon(CupertinoIcons.person),
@@ -89,7 +89,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite),
-            label: AppStrings.myMemorials,
+            label: 'Gedenkseite',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
@@ -97,17 +97,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      floatingActionButton: _selectedIndex == 1
-          ? FloatingActionButton.extended(
-              onPressed: () =>
-                  Navigator.of(context, rootNavigator: true).pushNamed(
-                AppRoutes.memorialList,
-                arguments: {'create': true},
-              ),
-              icon: const Icon(Icons.add),
-              label: const Text('Erstellen'),
-            )
-          : null,
     );
   }
 
@@ -233,7 +222,111 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildMemorialsTab() {
-    return const MemorialListScreen();
+    return BlocBuilder<MemorialBloc, MemorialState>(
+      builder: (context, memorialState) {
+        // Ladezustand
+        if (memorialState.isLoading) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Meine Gedenkseite'),
+            ),
+            body: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        // Fehler
+        if (memorialState.hasError) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Meine Gedenkseite'),
+            ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline,
+                      size: 64, color: AppColors.error),
+                  const SizedBox(height: 16),
+                  Text(
+                    memorialState.errorMessage ?? 'Ein Fehler ist aufgetreten',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => _loadData(),
+                    child: const Text('Erneut versuchen'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Keine Gedenkseite vorhanden
+        if (memorialState.memorials.isEmpty) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Meine Gedenkseite'),
+            ),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.favorite_border,
+                      size: 80,
+                      color: AppColors.accent.withOpacity(0.5),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Noch keine Gedenkseite',
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Erstelle jetzt deine persönliche Gedenkseite',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    ElevatedButton.icon(
+                      onPressed: () =>
+                          Navigator.of(context, rootNavigator: true).pushNamed(
+                        AppRoutes.memorialCreate,
+                      ),
+                      icon: const Icon(Icons.add, size: 24),
+                      label: const Text(
+                        'Gedenkseite erstellen',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        // Gedenkseite vorhanden → Detail-Ansicht anzeigen
+        final memorial = memorialState.memorials.first;
+
+        return MemorialDetailScreen(memorial: memorial);
+      },
+    );
   }
 
   Widget _buildProfileTab() {
@@ -273,11 +366,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Expanded(
           child: _buildActionButton(
             context,
-            'Neue Seite',
-            Icons.add_circle_outline,
+            'Bearbeiten',
+            Icons.edit_outlined,
             AppColors.accent,
-            () => Navigator.of(context, rootNavigator: true)
-                .pushNamed(AppRoutes.memorialList),
+            () {
+              // Navigiere zur Gedenkseite
+              setState(() => _selectedIndex = 1);
+            },
           ),
         ),
         const SizedBox(width: 12),

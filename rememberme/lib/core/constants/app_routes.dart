@@ -8,6 +8,7 @@ class AppRoutes {
   static const String dashboard = '/dashboard';
   static const String memorialList = '/memorials';
   static const String memorialDetail = '/memorial-detail';
+  static const String memorialCreate = '/memorial-create';
   static const String pageBuilder = '/page-builder';
 
   // Profile Routes

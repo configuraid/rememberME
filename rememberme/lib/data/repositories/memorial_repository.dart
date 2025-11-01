@@ -16,9 +16,10 @@ class MemorialRepository {
   }
 
   void _initializeMockData() {
+    print('📦 MemorialRepository - Initialisiere Mock-Daten...');
     final now = DateTime.now();
 
-    // Beispiel Gedenkseite 1 - Veröffentlicht
+    // ✨ NUR NOCH EINE Beispiel-Gedenkseite - Veröffentlicht mit vollem Inhalt
     _mockMemorials.add(
       MemorialPageModel(
         id: 'memorial-1',
@@ -171,105 +172,39 @@ class MemorialRepository {
       ),
     );
 
-    // Beispiel Gedenkseite 2 - Entwurf
-    _mockMemorials.add(
-      MemorialPageModel(
-        id: 'memorial-2',
-        ownerId: 'user-1',
-        name: 'Johann Schmidt',
-        subtitle: 'Unvergessen',
-        birthDate: DateTime(1945, 7, 8),
-        deathDate: DateTime(2024, 9, 15),
-        status: MemorialStatus.draft,
-        isPublished: false,
-        privacyLevel: PrivacyLevel.familyOnly,
-        templateId: 'template-2',
-        createdAt: now.subtract(const Duration(days: 3)),
-        updatedAt: now.subtract(const Duration(days: 3)),
-        contentBlocks: [
-          // Hero Block (minimalistisch)
-          ContentBlockModel(
-            id: 'block-6',
-            type: ContentBlockType.hero,
-            order: 0,
-            data: {
-              'title': 'Johann Schmidt',
-              'subtitle': '8. Juli 1945 - 15. September 2024',
-            },
-            styles: {
-              'layout': 'centered',
-              'textColor': '#2C3E50',
-            },
-            createdAt: now.subtract(const Duration(days: 3)),
-            updatedAt: now.subtract(const Duration(days: 3)),
-          ),
-        ],
-      ),
-    );
-
-    // Beispiel Gedenkseite 3 - Privat mit mehr Inhalt
-    _mockMemorials.add(
-      MemorialPageModel(
-        id: 'memorial-3',
-        ownerId: 'user-1',
-        name: 'Elisabeth Weber',
-        subtitle: 'Für immer in unseren Herzen',
-        birthDate: DateTime(1958, 11, 23),
-        deathDate: DateTime(2024, 10, 5),
-        profileImageUrl: 'https://via.placeholder.com/400',
-        status: MemorialStatus.draft,
-        isPublished: false,
-        privacyLevel: PrivacyLevel.private,
-        templateId: 'template-1',
-        createdAt: now.subtract(const Duration(days: 1)),
-        updatedAt: now.subtract(const Duration(days: 1)),
-        contentBlocks: [
-          ContentBlockModel(
-            id: 'block-7',
-            type: ContentBlockType.hero,
-            order: 0,
-            data: {
-              'title': 'Elisabeth Weber',
-              'subtitle': '23. November 1958 - 5. Oktober 2024',
-              'imageUrl':
-                  'https://via.placeholder.com/800/FFC0CB/000000?text=Elisabeth',
-            },
-            createdAt: now.subtract(const Duration(days: 1)),
-            updatedAt: now.subtract(const Duration(days: 1)),
-          ),
-          ContentBlockModel(
-            id: 'block-8',
-            type: ContentBlockType.text,
-            order: 1,
-            data: {
-              'heading': 'Ein Leben voller Musik',
-              'content':
-                  'Elisabeth war eine talentierte Pianistin, die ihr Leben der Musik widmete. Als Musiklehrerin inspirierte sie Generationen von Schülern.',
-            },
-            createdAt: now.subtract(const Duration(days: 1)),
-            updatedAt: now.subtract(const Duration(days: 1)),
-          ),
-        ],
-      ),
-    );
+    print(
+        '✅ MemorialRepository - ${_mockMemorials.length} Memorial(s) initialisiert');
+    print(
+        '📄 Memorial: ${_mockMemorials.first.name} (${_mockMemorials.first.id})');
   }
 
   // Alle Gedenkseiten eines Users abrufen
   Future<List<MemorialPageModel>> getMemorialsByUserId(String userId) async {
+    print('🔍 Repository - Lade Memorials für User: $userId');
     await Future.delayed(const Duration(milliseconds: 500));
-    return _mockMemorials
+
+    final userMemorials = _mockMemorials
         .where((memorial) =>
             memorial.ownerId == userId ||
             memorial.collaboratorIds.contains(userId))
         .toList();
+
+    print(
+        '✅ Repository - ${userMemorials.length} Memorial(s) gefunden für User: $userId');
+    return userMemorials;
   }
 
   // Einzelne Gedenkseite abrufen
   Future<MemorialPageModel?> getMemorialById(String memorialId) async {
+    print('🔍 Repository - Lade Memorial: $memorialId');
     await Future.delayed(const Duration(milliseconds: 300));
+
     try {
-      return _mockMemorials.firstWhere((m) => m.id == memorialId);
+      final memorial = _mockMemorials.firstWhere((m) => m.id == memorialId);
+      print('✅ Repository - Memorial gefunden: ${memorial.name}');
+      return memorial;
     } catch (e) {
+      print('❌ Repository - Memorial nicht gefunden: $memorialId');
       return null;
     }
   }
@@ -282,6 +217,7 @@ class MemorialRepository {
     DateTime? birthDate,
     DateTime? deathDate,
   }) async {
+    print('➕ Repository - Erstelle neue Gedenkseite: $name');
     await Future.delayed(const Duration(milliseconds: 500));
 
     final now = DateTime.now();
@@ -322,25 +258,44 @@ class MemorialRepository {
     );
 
     _mockMemorials.add(newMemorial);
+    print('✅ Repository - Memorial erstellt: ${newMemorial.id}');
+    print(
+        '📊 Repository - Aktuell ${_mockMemorials.length} Memorial(s) gespeichert');
     return newMemorial;
   }
 
   // Gedenkseite aktualisieren
   Future<MemorialPageModel> updateMemorial(MemorialPageModel memorial) async {
+    print(
+        '🔄 Repository - Aktualisiere Memorial: ${memorial.name} (${memorial.id})');
     await Future.delayed(const Duration(milliseconds: 500));
 
     final index = _mockMemorials.indexWhere((m) => m.id == memorial.id);
     if (index != -1) {
       _mockMemorials[index] = memorial.copyWith(updatedAt: DateTime.now());
+      print('✅ Repository - Memorial aktualisiert: ${memorial.name}');
       return _mockMemorials[index];
     }
+
+    print('❌ Repository - Memorial nicht gefunden: ${memorial.id}');
     throw Exception('Gedenkseite nicht gefunden');
   }
 
   // Gedenkseite löschen
   Future<void> deleteMemorial(String memorialId) async {
+    print('🗑️ Repository - Lösche Memorial: $memorialId');
     await Future.delayed(const Duration(milliseconds: 500));
+
+    final countBefore = _mockMemorials.length;
     _mockMemorials.removeWhere((m) => m.id == memorialId);
+    final countAfter = _mockMemorials.length;
+
+    if (countBefore > countAfter) {
+      print('✅ Repository - Memorial gelöscht');
+      print('📊 Repository - Verbleibende Memorials: $countAfter');
+    } else {
+      print('⚠️ Repository - Kein Memorial gelöscht (ID nicht gefunden)');
+    }
   }
 
   // Content-Block hinzufügen
@@ -348,14 +303,18 @@ class MemorialRepository {
     String memorialId,
     ContentBlockModel block,
   ) async {
+    print('➕ Repository - Füge Content-Block hinzu: ${block.type}');
     await Future.delayed(const Duration(milliseconds: 300));
 
     final memorial = await getMemorialById(memorialId);
     if (memorial == null) {
+      print('❌ Repository - Memorial nicht gefunden für Block-Hinzufügung');
       throw Exception('Gedenkseite nicht gefunden');
     }
 
     final updatedBlocks = [...memorial.contentBlocks, block];
+    print(
+        '✅ Repository - Block hinzugefügt, nun ${updatedBlocks.length} Blocks');
     return updateMemorial(memorial.copyWith(contentBlocks: updatedBlocks));
   }
 
@@ -364,10 +323,12 @@ class MemorialRepository {
     String memorialId,
     ContentBlockModel block,
   ) async {
+    print('🔄 Repository - Aktualisiere Content-Block: ${block.id}');
     await Future.delayed(const Duration(milliseconds: 300));
 
     final memorial = await getMemorialById(memorialId);
     if (memorial == null) {
+      print('❌ Repository - Memorial nicht gefunden für Block-Update');
       throw Exception('Gedenkseite nicht gefunden');
     }
 
@@ -375,6 +336,7 @@ class MemorialRepository {
       return b.id == block.id ? block : b;
     }).toList();
 
+    print('✅ Repository - Block aktualisiert');
     return updateMemorial(memorial.copyWith(contentBlocks: updatedBlocks));
   }
 
@@ -383,15 +345,21 @@ class MemorialRepository {
     String memorialId,
     String blockId,
   ) async {
+    print('🗑️ Repository - Lösche Content-Block: $blockId');
     await Future.delayed(const Duration(milliseconds: 300));
 
     final memorial = await getMemorialById(memorialId);
     if (memorial == null) {
+      print('❌ Repository - Memorial nicht gefunden für Block-Löschung');
       throw Exception('Gedenkseite nicht gefunden');
     }
 
+    final countBefore = memorial.contentBlocks.length;
     final updatedBlocks =
         memorial.contentBlocks.where((b) => b.id != blockId).toList();
+
+    print(
+        '✅ Repository - Block gelöscht, ${countBefore} → ${updatedBlocks.length} Blocks');
     return updateMemorial(memorial.copyWith(contentBlocks: updatedBlocks));
   }
 
@@ -400,10 +368,12 @@ class MemorialRepository {
     String memorialId,
     List<String> blockIds,
   ) async {
+    print('🔀 Repository - Sortiere ${blockIds.length} Content-Blocks neu');
     await Future.delayed(const Duration(milliseconds: 300));
 
     final memorial = await getMemorialById(memorialId);
     if (memorial == null) {
+      print('❌ Repository - Memorial nicht gefunden für Block-Sortierung');
       throw Exception('Gedenkseite nicht gefunden');
     }
 
@@ -416,20 +386,24 @@ class MemorialRepository {
       reorderedBlocks.add(block.copyWith(order: i));
     }
 
+    print('✅ Repository - Blocks neu sortiert');
     return updateMemorial(memorial.copyWith(contentBlocks: reorderedBlocks));
   }
 
   // Gedenkseite veröffentlichen
   Future<MemorialPageModel> publishMemorial(String memorialId) async {
+    print('🌐 Repository - Veröffentliche Memorial: $memorialId');
     await Future.delayed(const Duration(seconds: 2)); // Simuliere Deployment
 
     final memorial = await getMemorialById(memorialId);
     if (memorial == null) {
+      print('❌ Repository - Memorial nicht gefunden für Veröffentlichung');
       throw Exception('Gedenkseite nicht gefunden');
     }
 
     // Validierung
     if (memorial.contentBlocks.isEmpty) {
+      print('❌ Repository - Memorial hat keine Content-Blocks');
       throw Exception('Gedenkseite muss mindestens einen Block enthalten');
     }
 
@@ -441,6 +415,9 @@ class MemorialRepository {
         .replaceAll(RegExp(r'^-|-$'), '');
     final shortId = memorial.id.substring(0, 8);
     final vercelUrl = 'https://$slug-$shortId.memorial.vercel.app';
+
+    print('✅ Repository - Memorial veröffentlicht');
+    print('🔗 Repository - Vercel URL: $vercelUrl');
 
     return updateMemorial(
       memorial.copyWith(
@@ -454,13 +431,16 @@ class MemorialRepository {
 
   // Gedenkseite zurück in Entwurf
   Future<MemorialPageModel> unpublishMemorial(String memorialId) async {
+    print('📝 Repository - Zurück zu Entwurf: $memorialId');
     await Future.delayed(const Duration(milliseconds: 500));
 
     final memorial = await getMemorialById(memorialId);
     if (memorial == null) {
+      print('❌ Repository - Memorial nicht gefunden');
       throw Exception('Gedenkseite nicht gefunden');
     }
 
+    print('✅ Repository - Memorial ist nun Entwurf');
     return updateMemorial(
       memorial.copyWith(
         status: MemorialStatus.draft,
@@ -471,13 +451,16 @@ class MemorialRepository {
 
   // Gedenkseite archivieren
   Future<MemorialPageModel> archiveMemorial(String memorialId) async {
+    print('📦 Repository - Archiviere Memorial: $memorialId');
     await Future.delayed(const Duration(milliseconds: 500));
 
     final memorial = await getMemorialById(memorialId);
     if (memorial == null) {
+      print('❌ Repository - Memorial nicht gefunden');
       throw Exception('Gedenkseite nicht gefunden');
     }
 
+    print('✅ Repository - Memorial archiviert');
     return updateMemorial(
       memorial.copyWith(
         status: MemorialStatus.archived,
@@ -488,9 +471,11 @@ class MemorialRepository {
 
   // Gruppenmitglieder abrufen
   Future<List<GroupMemberModel>> getGroupMembers(String memorialId) async {
+    print('👥 Repository - Lade Gruppenmitglieder für: $memorialId');
     await Future.delayed(const Duration(milliseconds: 300));
+
     // Mock-Daten - später aus Firebase
-    return [
+    final members = [
       GroupMemberModel(
         id: 'member-1',
         memorialId: memorialId,
@@ -511,6 +496,9 @@ class MemorialRepository {
         invitedAt: DateTime.now().subtract(const Duration(days: 2)),
       ),
     ];
+
+    print('✅ Repository - ${members.length} Gruppenmitglieder gefunden');
+    return members;
   }
 
   // Gruppenmitglied einladen
@@ -519,6 +507,7 @@ class MemorialRepository {
     required String userEmail,
     required UserRole role,
   }) async {
+    print('📧 Repository - Lade Gruppenmitglied ein: $userEmail als $role');
     await Future.delayed(const Duration(milliseconds: 500));
 
     final member = GroupMemberModel.create(
@@ -531,17 +520,21 @@ class MemorialRepository {
       invitationCode: 'INV-${DateTime.now().millisecondsSinceEpoch}',
     );
 
+    print('✅ Repository - Einladung erstellt: ${member.invitationCode}');
     return member;
   }
 
   // Gruppenmitglied entfernen
   Future<void> removeGroupMember(String memorialId, String memberId) async {
+    print('🗑️ Repository - Entferne Gruppenmitglied: $memberId');
     await Future.delayed(const Duration(milliseconds: 300));
+    print('✅ Repository - Gruppenmitglied entfernt (Mock)');
     // Mock - später Firebase
   }
 
   // Gedenkseiten-Views erhöhen
   Future<void> incrementViewCount(String memorialId) async {
+    print('👁️ Repository - Erhöhe View-Count für: $memorialId');
     await Future.delayed(const Duration(milliseconds: 100));
 
     final memorial = await getMemorialById(memorialId);
@@ -549,11 +542,13 @@ class MemorialRepository {
       await updateMemorial(
         memorial.copyWith(viewCount: memorial.viewCount + 1),
       );
+      print('✅ Repository - View-Count erhöht auf: ${memorial.viewCount + 1}');
     }
   }
 
   // Statistiken abrufen
   Future<Map<String, dynamic>> getStatistics(String userId) async {
+    print('📊 Repository - Lade Statistiken für User: $userId');
     await Future.delayed(const Duration(milliseconds: 300));
 
     final memorials = await getMemorialsByUserId(userId);
@@ -562,7 +557,7 @@ class MemorialRepository {
       (sum, memorial) => sum + memorial.viewCount,
     );
 
-    return {
+    final stats = {
       'totalMemorials': memorials.length,
       'publishedMemorials':
           memorials.where((m) => m.status == MemorialStatus.published).length,
@@ -574,6 +569,10 @@ class MemorialRepository {
         (sum, memorial) => sum + memorial.contentBlocks.length,
       ),
     };
+
+    print(
+        '✅ Repository - Statistiken geladen: ${stats['totalMemorials']} Memorials, ${stats['totalViews']} Views');
+    return stats;
   }
 
   // Helper: Datum formatieren
