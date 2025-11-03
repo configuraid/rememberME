@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum UserRole { owner, coAdmin, editor, viewer }
 
@@ -11,6 +12,7 @@ class UserModel extends Equatable {
   final DateTime createdAt;
   final DateTime? lastLoginAt;
   final UserRole role;
+  final String? firebaseUid;
 
   const UserModel({
     required this.id,
@@ -21,9 +23,9 @@ class UserModel extends Equatable {
     required this.createdAt,
     this.lastLoginAt,
     this.role = UserRole.owner,
+    this.firebaseUid,
   });
 
-  // CopyWith Methode
   UserModel copyWith({
     String? id,
     String? name,
@@ -33,6 +35,7 @@ class UserModel extends Equatable {
     DateTime? createdAt,
     DateTime? lastLoginAt,
     UserRole? role,
+    String? firebaseUid,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -43,10 +46,10 @@ class UserModel extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       role: role ?? this.role,
+      firebaseUid: firebaseUid ?? this.firebaseUid,
     );
   }
 
-  // ToJson (später für Firebase)
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -54,13 +57,14 @@ class UserModel extends Equatable {
       'email': email,
       'profileImageUrl': profileImageUrl,
       'authKey': authKey,
-      'createdAt': createdAt.toIso8601String(),
-      'lastLoginAt': lastLoginAt?.toIso8601String(),
+      'createdAt': Timestamp.fromDate(createdAt),
+      'lastLoginAt':
+          lastLoginAt != null ? Timestamp.fromDate(lastLoginAt!) : null,
       'role': role.toString().split('.').last,
+      'firebaseUid': firebaseUid,
     };
   }
 
-  // FromJson (später für Firebase)
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] as String,
@@ -68,18 +72,18 @@ class UserModel extends Equatable {
       email: json['email'] as String,
       profileImageUrl: json['profileImageUrl'] as String?,
       authKey: json['authKey'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: (json['createdAt'] as Timestamp).toDate(),
       lastLoginAt: json['lastLoginAt'] != null
-          ? DateTime.parse(json['lastLoginAt'] as String)
+          ? (json['lastLoginAt'] as Timestamp).toDate()
           : null,
       role: UserRole.values.firstWhere(
         (e) => e.toString().split('.').last == json['role'],
         orElse: () => UserRole.viewer,
       ),
+      firebaseUid: json['firebaseUid'] as String?,
     );
   }
 
-  // Leere User Factory
   factory UserModel.empty() {
     return UserModel(
       id: '',
@@ -100,5 +104,6 @@ class UserModel extends Equatable {
         createdAt,
         lastLoginAt,
         role,
+        firebaseUid,
       ];
 }

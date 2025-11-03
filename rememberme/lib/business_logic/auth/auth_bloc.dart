@@ -24,9 +24,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     // Token erneuern
     on<AuthTokenRefreshRequested>(_onRefreshToken);
+
+    // Auth-Status beim App-Start prüfen
+    add(const AuthStatusChecked());
   }
 
-  // Login mit Auth-Key Handler
+  /// Login mit Auth-Key Handler
   Future<void> _onLoginWithKey(
     AuthLoginWithKeyRequested event,
     Emitter<AuthState> emit,
@@ -47,7 +50,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  // Login mit QR-Code Handler
+  /// Login mit QR-Code Handler
   Future<void> _onLoginWithQR(
     AuthLoginWithQRRequested event,
     Emitter<AuthState> emit,
@@ -68,7 +71,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  // Logout Handler
+  /// Logout Handler
   Future<void> _onLogout(
     AuthLogoutRequested event,
     Emitter<AuthState> emit,
@@ -83,7 +86,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  // Profil aktualisieren Handler
+  /// Profil aktualisieren Handler
   Future<void> _onUpdateProfile(
     AuthUpdateProfileRequested event,
     Emitter<AuthState> emit,
@@ -104,30 +107,34 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       emit(AuthState.authenticated(updatedUser));
     } catch (e) {
-      emit(AuthState.error(
-          'Fehler beim Aktualisieren des Profils: ${e.toString()}'));
+      emit(state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: 'Fehler beim Aktualisieren des Profils: ${e.toString()}',
+      ));
     }
   }
 
-  // Auth-Status prüfen Handler
+  /// Auth-Status prüfen Handler
   Future<void> _onCheckAuthStatus(
     AuthStatusChecked event,
     Emitter<AuthState> emit,
   ) async {
-    try {
-      final isLoggedIn = authRepository.isLoggedIn;
+    emit(AuthState.loading());
 
-      if (isLoggedIn && authRepository.currentUser != null) {
-        emit(AuthState.authenticated(authRepository.currentUser!));
+    try {
+      final user = await authRepository.checkAuthStatus();
+
+      if (user != null) {
+        emit(AuthState.authenticated(user));
       } else {
         emit(AuthState.unauthenticated());
       }
     } catch (e) {
-      emit(AuthState.error('Fehler beim Prüfen des Auth-Status'));
+      emit(AuthState.unauthenticated());
     }
   }
 
-  // Token erneuern Handler
+  /// Token erneuern Handler
   Future<void> _onRefreshToken(
     AuthTokenRefreshRequested event,
     Emitter<AuthState> emit,
@@ -139,7 +146,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthState.authenticated(authRepository.currentUser!));
       }
     } catch (e) {
-      emit(AuthState.error('Fehler beim Erneuern des Tokens'));
+      emit(state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: 'Fehler beim Erneuern des Tokens: ${e.toString()}',
+      ));
     }
   }
 }

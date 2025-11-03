@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:io';
-import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../business_logic/auth/auth_bloc.dart';
-import '../../business_logic/auth/auth_event.dart';
 import '../../business_logic/auth/auth_state.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
@@ -41,9 +39,19 @@ class _SplashScreenState extends State<SplashScreen>
 
     _animationController.forward();
 
-    // Auth-Status prüfen nach kurzer Verzögerung
-    Timer(const Duration(seconds: 2), () {
-      context.read<AuthBloc>().add(const AuthStatusChecked());
+    // Warte auf Auth-Status (wird automatisch im AuthBloc gemacht)
+    // Nach Animation navigieren wir basierend auf dem State
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return; // ✅ Wichtig: Prüfen ob Widget noch existiert!
+
+      final authState = context.read<AuthBloc>().state;
+
+      if (authState.isAuthenticated) {
+        Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
+      } else if (authState.status == AuthStatus.unauthenticated) {
+        Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+      }
+      // Falls noch loading, wartet der BlocListener
     });
   }
 
@@ -57,10 +65,19 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state.isAuthenticated) {
-          Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
-        } else if (state.status == AuthStatus.unauthenticated) {
-          Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+        // Nur navigieren wenn Animation fertig ist (nach 2 Sekunden)
+        if (state.isAuthenticated ||
+            state.status == AuthStatus.unauthenticated) {
+          // Warte bis Animation fertig ist
+          Future.delayed(const Duration(seconds: 2), () {
+            if (!mounted) return;
+
+            if (state.isAuthenticated) {
+              Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
+            } else if (state.status == AuthStatus.unauthenticated) {
+              Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+            }
+          });
         }
       },
       child: Scaffold(
