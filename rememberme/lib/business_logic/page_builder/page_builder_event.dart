@@ -1,5 +1,7 @@
+// lib/business_logic/page_builder/page_builder_event.dart
+
 import 'package:equatable/equatable.dart';
-import '../../../data/models/content_block_model.dart';
+import 'package:rememberme/data/models/content_block_model.dart';
 
 abstract class PageBuilderEvent extends Equatable {
   const PageBuilderEvent();
@@ -8,7 +10,9 @@ abstract class PageBuilderEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-// Page Builder für Memorial laden
+// ===== LOADING =====
+
+/// Load page builder for a memorial
 class PageBuilderLoadRequested extends PageBuilderEvent {
   final String memorialId;
 
@@ -16,37 +20,47 @@ class PageBuilderLoadRequested extends PageBuilderEvent {
 
   @override
   List<Object?> get props => [memorialId];
-}
-
-// Block hinzufügen
-class PageBuilderBlockAddRequested extends PageBuilderEvent {
-  final ContentBlockType blockType;
-  final Map<String, dynamic>? initialData;
-
-  const PageBuilderBlockAddRequested({
-    required this.blockType,
-    this.initialData,
-  });
 
   @override
-  List<Object?> get props => [blockType, initialData];
+  String toString() => 'PageBuilderLoadRequested(memorialId: $memorialId)';
 }
 
-// Block aktualisieren
+// ===== BLOCK MANAGEMENT =====
+
+/// Add a new block
+class PageBuilderBlockAddRequested extends PageBuilderEvent {
+  final ContentBlockType blockType;
+
+  const PageBuilderBlockAddRequested(this.blockType);
+
+  @override
+  List<Object?> get props => [blockType];
+
+  @override
+  String toString() => 'PageBuilderBlockAddRequested(type: ${blockType.name})';
+}
+
+/// Update block content
 class PageBuilderBlockUpdateRequested extends PageBuilderEvent {
   final String blockId;
-  final Map<String, dynamic> data;
+  final String key;
+  final dynamic value;
 
   const PageBuilderBlockUpdateRequested({
     required this.blockId,
-    required this.data,
+    required this.key,
+    required this.value,
   });
 
   @override
-  List<Object?> get props => [blockId, data];
+  List<Object?> get props => [blockId, key, value];
+
+  @override
+  String toString() =>
+      'PageBuilderBlockUpdateRequested(blockId: $blockId, key: $key)';
 }
 
-// Block löschen
+/// Delete a block
 class PageBuilderBlockDeleteRequested extends PageBuilderEvent {
   final String blockId;
 
@@ -54,9 +68,12 @@ class PageBuilderBlockDeleteRequested extends PageBuilderEvent {
 
   @override
   List<Object?> get props => [blockId];
+
+  @override
+  String toString() => 'PageBuilderBlockDeleteRequested(blockId: $blockId)';
 }
 
-// Block verschieben/sortieren
+/// Reorder blocks (drag & drop)
 class PageBuilderBlockReorderRequested extends PageBuilderEvent {
   final int oldIndex;
   final int newIndex;
@@ -68,49 +85,28 @@ class PageBuilderBlockReorderRequested extends PageBuilderEvent {
 
   @override
   List<Object?> get props => [oldIndex, newIndex];
-}
-
-// Block-Style ändern
-class PageBuilderBlockStyleChangeRequested extends PageBuilderEvent {
-  final String blockId;
-  final String styleKey;
-  final dynamic styleValue;
-
-  const PageBuilderBlockStyleChangeRequested({
-    required this.blockId,
-    required this.styleKey,
-    required this.styleValue,
-  });
 
   @override
-  List<Object?> get props => [blockId, styleKey, styleValue];
+  String toString() =>
+      'PageBuilderBlockReorderRequested(from: $oldIndex, to: $newIndex)';
 }
 
-// Block-Template auswählen
-class PageBuilderBlockTemplateSelectRequested extends PageBuilderEvent {
+/// Duplicate a block
+class PageBuilderBlockDuplicateRequested extends PageBuilderEvent {
   final String blockId;
-  final String templateId;
 
-  const PageBuilderBlockTemplateSelectRequested({
-    required this.blockId,
-    required this.templateId,
-  });
-
-  @override
-  List<Object?> get props => [blockId, templateId];
-}
-
-// Block zur Bearbeitung auswählen
-class PageBuilderBlockSelectRequested extends PageBuilderEvent {
-  final String? blockId;
-
-  const PageBuilderBlockSelectRequested(this.blockId);
+  const PageBuilderBlockDuplicateRequested(this.blockId);
 
   @override
   List<Object?> get props => [blockId];
+
+  @override
+  String toString() => 'PageBuilderBlockDuplicateRequested(blockId: $blockId)';
 }
 
-// Änderungen speichern
+// ===== SAVING =====
+
+/// Save all changes
 class PageBuilderSaveRequested extends PageBuilderEvent {
   final String memorialId;
 
@@ -118,29 +114,25 @@ class PageBuilderSaveRequested extends PageBuilderEvent {
 
   @override
   List<Object?> get props => [memorialId];
-}
-
-// Vorschau-Modus umschalten
-class PageBuilderPreviewToggleRequested extends PageBuilderEvent {
-  const PageBuilderPreviewToggleRequested();
-}
-
-// Rückgängig machen
-class PageBuilderUndoRequested extends PageBuilderEvent {
-  const PageBuilderUndoRequested();
-}
-
-// Wiederholen
-class PageBuilderRedoRequested extends PageBuilderEvent {
-  const PageBuilderRedoRequested();
-}
-
-// Template laden
-class PageBuilderTemplateLoadRequested extends PageBuilderEvent {
-  final String templateId;
-
-  const PageBuilderTemplateLoadRequested(this.templateId);
 
   @override
-  List<Object?> get props => [templateId];
+  String toString() => 'PageBuilderSaveRequested(memorialId: $memorialId)';
+}
+
+// ===== UNDO/REDO =====
+
+/// Undo last change
+class PageBuilderUndoRequested extends PageBuilderEvent {
+  const PageBuilderUndoRequested();
+
+  @override
+  String toString() => 'PageBuilderUndoRequested()';
+}
+
+/// Redo last undone change
+class PageBuilderRedoRequested extends PageBuilderEvent {
+  const PageBuilderRedoRequested();
+
+  @override
+  String toString() => 'PageBuilderRedoRequested()';
 }

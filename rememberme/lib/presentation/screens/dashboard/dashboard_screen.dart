@@ -46,7 +46,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final screens = [
-      _buildHomeTab(),
       _buildMemorialsTab(),
       _buildProfileTab(),
     ];
@@ -55,10 +54,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return CupertinoTabScaffold(
         tabBar: CupertinoTabBar(
           items: const [
-            BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.home),
-              label: 'Übersicht',
-            ),
             BottomNavigationBarItem(
               icon: Icon(CupertinoIcons.heart),
               label: 'Gedenkseite',
@@ -97,127 +92,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildHomeTab() {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, authState) {
-        return BlocBuilder<MemorialBloc, MemorialState>(
-          builder: (context, memorialState) {
-            final user = authState.user;
-            final memorials = memorialState.memorials;
-
-            return Scaffold(
-              appBar: AppBar(
-                title: const Text(AppStrings.dashboard),
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.notifications_outlined),
-                    onPressed: () {},
-                  ),
-                ],
-              ),
-              body: RefreshIndicator(
-                onRefresh: () async => _loadData(),
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Begrüßung
-                        Text(
-                          'Hallo, ${user?.name ?? ""}!',
-                          style: Theme.of(context).textTheme.headlineMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Willkommen in deinem Dashboard',
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Statistik-Karten
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildStatCard(
-                                context,
-                                'Gedenkseiten',
-                                '${memorials.length}',
-                                Icons.favorite,
-                                AppColors.accent,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _buildStatCard(
-                                context,
-                                'Besucher',
-                                '${memorials.fold<int>(0, (sum, m) => sum + m.viewCount)}',
-                                Icons.visibility,
-                                AppColors.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Schnellzugriff
-                        Text(
-                          AppStrings.quickActions,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 16),
-
-                        _buildQuickActions(context),
-
-                        const SizedBox(height: 24),
-
-                        // Letzte Aktivitäten
-                        Text(
-                          AppStrings.recentActivity,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 16),
-
-                        ...memorials.take(3).map((memorial) {
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor:
-                                    AppColors.accent.withOpacity(0.2),
-                                child: const Icon(Icons.favorite,
-                                    color: AppColors.accent),
-                              ),
-                              title: Text(memorial.name),
-                              subtitle: Text(
-                                'Erstellt am ${memorial.createdAt.day}.${memorial.createdAt.month}.${memorial.createdAt.year}',
-                              ),
-                              trailing:
-                                  const Icon(Icons.arrow_forward_ios, size: 16),
-                              onTap: () =>
-                                  Navigator.of(context, rootNavigator: true)
-                                      .pushNamed(
-                                AppRoutes.memorialDetail,
-                                arguments: memorial,
-                              ),
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 

@@ -41,130 +41,37 @@ class MemorialRepository {
         collaboratorIds: ['user-2'],
         contentBlocks: [
           // Hero Block
-          ContentBlockModel(
+          ContentBlock(
             id: 'block-1',
-            type: ContentBlockType.hero,
-            order: 0,
-            data: {
-              'title': 'Maria Müller',
-              'subtitle': '15. März 1950 - 22. August 2024',
-              'imageUrl': 'https://via.placeholder.com/800',
-            },
-            styles: {
-              'layout': 'centered',
-              'textColor': '#FFFFFF',
-              'overlayOpacity': 0.4,
-            },
+            type: ContentBlockType.divider,
             createdAt: now.subtract(const Duration(days: 15)),
             updatedAt: now.subtract(const Duration(days: 10)),
           ),
           // Text Block
-          ContentBlockModel(
+          ContentBlock(
             id: 'block-2',
             type: ContentBlockType.text,
-            order: 1,
-            data: {
-              'heading': 'Biografie',
-              'content':
-                  'Maria war eine liebevolle Mutter und Großmutter. Sie widmete ihr Leben ihrer Familie und ihrer Leidenschaft für Gartenarbeit. Ihre warme Art und ihr strahlendes Lächeln werden uns immer in Erinnerung bleiben.\n\nGeboren in München, verbrachte sie ihr ganzes Leben in Bayern. Nach ihrer Ausbildung zur Krankenschwester arbeitete sie über 30 Jahre im städtischen Krankenhaus, wo sie unzähligen Patienten half und Hoffnung schenkte.',
-            },
-            styles: {
-              'alignment': 'left',
-              'fontSize': 'medium',
-              'lineHeight': 1.6,
-            },
             createdAt: now.subtract(const Duration(days: 15)),
             updatedAt: now.subtract(const Duration(days: 10)),
           ),
           // Gallery Block
-          ContentBlockModel(
+          ContentBlock(
             id: 'block-3',
             type: ContentBlockType.gallery,
-            order: 2,
-            data: {
-              'images': [
-                'https://via.placeholder.com/400/FFB6C1/000000?text=Hochzeit',
-                'https://via.placeholder.com/400/87CEEB/000000?text=Familie',
-                'https://via.placeholder.com/400/98FB98/000000?text=Garten',
-                'https://via.placeholder.com/400/DDA0DD/000000?text=Urlaub',
-                'https://via.placeholder.com/400/F0E68C/000000?text=Geburtstag',
-                'https://via.placeholder.com/400/FFE4B5/000000?text=Freunde',
-              ],
-            },
-            styles: {
-              'layout': 'grid',
-              'columns': 3,
-              'spacing': 16,
-              'borderRadius': 8,
-            },
             createdAt: now.subtract(const Duration(days: 15)),
             updatedAt: now.subtract(const Duration(days: 10)),
           ),
           // Quote Block
-          ContentBlockModel(
+          ContentBlock(
             id: 'block-4',
             type: ContentBlockType.quote,
-            order: 3,
-            data: {
-              'quote':
-                  'Die Liebe ist stärker als der Tod, und die Erinnerung währt ewig.',
-              'author': 'Unbekannt',
-            },
-            styles: {
-              'style': 'classic',
-              'fontSize': 'large',
-              'italics': true,
-              'color': '#555555',
-            },
             createdAt: now.subtract(const Duration(days: 15)),
             updatedAt: now.subtract(const Duration(days: 10)),
           ),
           // Timeline Block
-          ContentBlockModel(
+          ContentBlock(
             id: 'block-5',
-            type: ContentBlockType.timeline,
-            order: 4,
-            data: {
-              'events': [
-                {
-                  'date': '15. März 1950',
-                  'title': 'Geboren in München',
-                  'description': 'Geburt in München, Bayern',
-                },
-                {
-                  'date': '1968',
-                  'title': 'Ausbildung zur Krankenschwester',
-                  'description':
-                      'Beginn der Ausbildung am städtischen Krankenhaus',
-                },
-                {
-                  'date': '1972',
-                  'title': 'Hochzeit mit Hans Müller',
-                  'description': 'Kirchliche Trauung in St. Peter',
-                },
-                {
-                  'date': '1974 & 1977',
-                  'title': 'Geburt der Kinder',
-                  'description': 'Anna (1974) und Thomas (1977)',
-                },
-                {
-                  'date': '2000',
-                  'title': 'Ruhestand',
-                  'description': 'Nach 32 Jahren im Pflegedienst',
-                },
-                {
-                  'date': '22. August 2024',
-                  'title': 'Verstorben',
-                  'description': 'Friedlich im Kreise ihrer Familie',
-                },
-              ],
-            },
-            styles: {
-              'layout': 'vertical',
-              'lineColor': '#3498DB',
-              'iconColor': '#3498DB',
-              'cardStyle': 'elevated',
-            },
+            type: ContentBlockType.gallery,
             createdAt: now.subtract(const Duration(days: 15)),
             updatedAt: now.subtract(const Duration(days: 10)),
           ),
@@ -237,20 +144,9 @@ class MemorialRepository {
       createdAt: now,
       updatedAt: now,
       contentBlocks: [
-        ContentBlockModel(
+        ContentBlock(
           id: _uuid.v4(),
-          type: ContentBlockType.hero,
-          order: 0,
-          data: {
-            'title': name,
-            'subtitle': birthDate != null && deathDate != null
-                ? '${_formatDate(birthDate)} - ${_formatDate(deathDate)}'
-                : 'In liebevoller Erinnerung',
-          },
-          styles: {
-            'layout': 'centered',
-            'textColor': '#FFFFFF',
-          },
+          type: ContentBlockType.header,
           createdAt: now,
           updatedAt: now,
         ),
@@ -301,7 +197,7 @@ class MemorialRepository {
   // Content-Block hinzufügen
   Future<MemorialPageModel> addContentBlock(
     String memorialId,
-    ContentBlockModel block,
+    ContentBlock block,
   ) async {
     print('➕ Repository - Füge Content-Block hinzu: ${block.type}');
     await Future.delayed(const Duration(milliseconds: 300));
@@ -321,7 +217,7 @@ class MemorialRepository {
   // Content-Block aktualisieren
   Future<MemorialPageModel> updateContentBlock(
     String memorialId,
-    ContentBlockModel block,
+    ContentBlock block,
   ) async {
     print('🔄 Repository - Aktualisiere Content-Block: ${block.id}');
     await Future.delayed(const Duration(milliseconds: 300));
@@ -378,12 +274,11 @@ class MemorialRepository {
     }
 
     // Erstelle neue Block-Liste in der richtigen Reihenfolge
-    final reorderedBlocks = <ContentBlockModel>[];
+    final reorderedBlocks = <ContentBlock>[];
     for (var i = 0; i < blockIds.length; i++) {
       final block = memorial.contentBlocks.firstWhere(
         (b) => b.id == blockIds[i],
       );
-      reorderedBlocks.add(block.copyWith(order: i));
     }
 
     print('✅ Repository - Blocks neu sortiert');

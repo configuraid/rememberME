@@ -1,148 +1,197 @@
-import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart'; // WICHTIG: Für Flutter's Color class
+import 'package:uuid/uuid.dart';
 
+/// Simple content block types for memorial pages
 enum ContentBlockType {
-  hero,
-  text,
-  gallery,
-  quote,
-  timeline,
-  video,
-  audio,
-  map,
-  condolences,
+  header, // Überschrift
+  text, // Text/Absatz
+  image, // Einzelbild
+  gallery, // Bildergalerie
+  quote, // Zitat
+  divider, // Trennlinie
+  video, // Video
+  date, // Lebensdaten (Geboren - Gestorben)
 }
 
-class ContentBlockModel extends Equatable {
+/// Simplified content block for memorial pages
+class ContentBlock {
   final String id;
   final ContentBlockType type;
-  final int order;
-  final Map<String, dynamic> data;
-  final Map<String, dynamic> styles;
+  final Map<String, dynamic> content;
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  ContentBlockModel({
-    required this.id,
+  ContentBlock({
+    String? id,
     required this.type,
-    required this.order,
-    this.data = const {},
-    this.styles = const {},
+    Map<String, dynamic>? content,
     DateTime? createdAt,
     DateTime? updatedAt,
-  })  : createdAt = createdAt ?? DateTime.now(),
+  })  : id = id ?? const Uuid().v4(),
+        content = content ?? _getDefaultContent(type),
+        createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
 
-  // Helper Getters für spezifische Block-Typen
-
-  // Hero Block
-  String? get heroImageUrl => data['imageUrl'] as String?;
-  String? get heroTitle => data['title'] as String?;
-  String? get heroSubtitle => data['subtitle'] as String?;
-
-  // Text Block
-  String? get textContent => data['content'] as String?;
-  String? get textHeading => data['heading'] as String?;
-
-  // Gallery Block
-  List<String> get galleryImages =>
-      (data['images'] as List?)?.cast<String>() ?? [];
-
-  // Quote Block
-  String? get quoteText => data['quote'] as String?;
-  String? get quoteAuthor => data['author'] as String?;
-  String? get quoteContext => data['context'] as String?;
-
-  // Timeline Block
-  List<Map<String, dynamic>> get timelineEvents =>
-      (data['events'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-
-  // Style Helpers
-  String get layoutStyle => styles['layout'] as String? ?? 'default';
-  String get themeStyle => styles['theme'] as String? ?? 'default';
-
-  Color? get primaryColor {
-    final colorHex = styles['primaryColor'] as String?;
-    return colorHex != null ? _hexToColor(colorHex) : null;
+  static Map<String, dynamic> _getDefaultContent(ContentBlockType type) {
+    switch (type) {
+      case ContentBlockType.header:
+        return {
+          'text': 'Überschrift eingeben',
+          'level': 1, // h1, h2, h3
+          'align': 'center',
+          'color': '#000000',
+        };
+      case ContentBlockType.text:
+        return {
+          'text': 'Text eingeben...',
+          'align': 'left',
+          'fontSize': 16.0,
+          'color': '#333333',
+        };
+      case ContentBlockType.image:
+        return {
+          'url': '',
+          'caption': '',
+          'fit': 'cover',
+        };
+      case ContentBlockType.gallery:
+        return {
+          'images': <String>[], // List of URLs
+          'columns': 3,
+        };
+      case ContentBlockType.quote:
+        return {
+          'text': 'Zitat eingeben...',
+          'author': '',
+          'color': '#666666',
+        };
+      case ContentBlockType.divider:
+        return {
+          'color': '#E0E0E0',
+          'thickness': 1.0,
+          'margin': 20.0,
+        };
+      case ContentBlockType.video:
+        return {
+          'url': '',
+          'caption': '',
+        };
+      case ContentBlockType.date:
+        return {
+          'birthDate': '',
+          'deathDate': '',
+          'format': 'DD.MM.YYYY',
+        };
+    }
   }
 
-  ContentBlockModel copyWith({
-    String? id,
+  ContentBlock copyWith({
     ContentBlockType? type,
-    int? order,
-    Map<String, dynamic>? data,
-    Map<String, dynamic>? styles,
-    DateTime? createdAt,
+    Map<String, dynamic>? content,
     DateTime? updatedAt,
   }) {
-    return ContentBlockModel(
-      id: id ?? this.id,
+    return ContentBlock(
+      id: id,
       type: type ?? this.type,
-      order: order ?? this.order,
-      data: data ?? this.data,
-      styles: styles ?? this.styles,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      content: content ?? this.content,
+      createdAt: createdAt,
+      updatedAt: updatedAt ?? DateTime.now(),
     );
   }
 
-  factory ContentBlockModel.fromJson(Map<String, dynamic> json) {
-    return ContentBlockModel(
-      id: json['id'] as String,
-      type: _parseBlockType(json['type'] as String?),
-      order: json['order'] as int? ?? 0,
-      data: Map<String, dynamic>.from(json['data'] ?? {}),
-      styles: Map<String, dynamic>.from(json['styles'] ?? {}),
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'] as String)
-          : null,
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'] as String)
-          : null,
+  ContentBlock updateContent(String key, dynamic value) {
+    return copyWith(
+      content: {...content, key: value},
+      updatedAt: DateTime.now(),
     );
+  }
+
+  T getContent<T>(String key, T defaultValue) {
+    return content[key] as T? ?? defaultValue;
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'type': type.toString().split('.').last,
-      'order': order,
-      'data': data,
-      'styles': styles,
+      'type': type.name,
+      'content': content,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
   }
 
-  static ContentBlockType _parseBlockType(String? typeString) {
-    if (typeString == null) return ContentBlockType.text;
+  factory ContentBlock.fromJson(Map<String, dynamic> json) {
+    return ContentBlock(
+      id: json['id'],
+      type: ContentBlockType.values.firstWhere((e) => e.name == json['type']),
+      content: Map<String, dynamic>.from(json['content']),
+      createdAt: DateTime.parse(json['createdAt']),
+      updatedAt: DateTime.parse(json['updatedAt']),
+    );
+  }
+}
 
-    try {
-      return ContentBlockType.values.firstWhere(
-        (e) => e.toString().split('.').last == typeString,
-      );
-    } catch (_) {
-      return ContentBlockType.text;
+/// Helper to get display info for block types
+class BlockTypeInfo {
+  static String getTitle(ContentBlockType type) {
+    switch (type) {
+      case ContentBlockType.header:
+        return 'Überschrift';
+      case ContentBlockType.text:
+        return 'Text';
+      case ContentBlockType.image:
+        return 'Bild';
+      case ContentBlockType.gallery:
+        return 'Bildergalerie';
+      case ContentBlockType.quote:
+        return 'Zitat';
+      case ContentBlockType.divider:
+        return 'Trennlinie';
+      case ContentBlockType.video:
+        return 'Video';
+      case ContentBlockType.date:
+        return 'Lebensdaten';
     }
   }
 
-  // Helper Methode zum Konvertieren von Hex zu Color
-  Color _hexToColor(String hex) {
-    hex = hex.replaceAll('#', '');
-    if (hex.length == 6) {
-      hex = 'FF$hex';
+  static String getIcon(ContentBlockType type) {
+    switch (type) {
+      case ContentBlockType.header:
+        return '📝';
+      case ContentBlockType.text:
+        return '📄';
+      case ContentBlockType.image:
+        return '🖼️';
+      case ContentBlockType.gallery:
+        return '📷';
+      case ContentBlockType.quote:
+        return '💬';
+      case ContentBlockType.divider:
+        return '━';
+      case ContentBlockType.video:
+        return '🎬';
+      case ContentBlockType.date:
+        return '📅';
     }
-    return Color(int.parse(hex, radix: 16));
   }
 
-  @override
-  List<Object?> get props => [
-        id,
-        type,
-        order,
-        data,
-        styles,
-        createdAt,
-        updatedAt,
-      ];
+  static String getDescription(ContentBlockType type) {
+    switch (type) {
+      case ContentBlockType.header:
+        return 'Große Überschrift';
+      case ContentBlockType.text:
+        return 'Textabsatz';
+      case ContentBlockType.image:
+        return 'Einzelnes Bild';
+      case ContentBlockType.gallery:
+        return 'Mehrere Bilder';
+      case ContentBlockType.quote:
+        return 'Bedeutsames Zitat';
+      case ContentBlockType.divider:
+        return 'Visueller Trenner';
+      case ContentBlockType.video:
+        return 'Video einbetten';
+      case ContentBlockType.date:
+        return 'Geburts- und Sterbedatum';
+    }
+  }
 }

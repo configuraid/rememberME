@@ -25,7 +25,7 @@ class MemorialPageModel extends Equatable {
   final bool isPublished;
   final MemorialStatus status;
   final PrivacyLevel privacyLevel;
-  final List<ContentBlockModel> contentBlocks;
+  final List<ContentBlock> contentBlocks;
   final int viewCount;
   final List<String> collaboratorIds;
   final List<String>? groupMemberIds;
@@ -70,9 +70,8 @@ class MemorialPageModel extends Equatable {
     return '$birth - $death';
   }
 
-  List<ContentBlockModel> get sortedContentBlocks {
-    final sorted = List<ContentBlockModel>.from(contentBlocks);
-    sorted.sort((a, b) => a.order.compareTo(b.order));
+  List<ContentBlock> get sortedContentBlocks {
+    final sorted = List<ContentBlock>.from(contentBlocks);
     return sorted;
   }
 
@@ -136,7 +135,7 @@ class MemorialPageModel extends Equatable {
   }
 
   // Content Block Helpers
-  ContentBlockModel? getBlockById(String blockId) {
+  ContentBlock? getBlockById(String blockId) {
     try {
       return contentBlocks.firstWhere((block) => block.id == blockId);
     } catch (_) {
@@ -144,7 +143,7 @@ class MemorialPageModel extends Equatable {
     }
   }
 
-  List<ContentBlockModel> getBlocksByType(ContentBlockType type) {
+  List<ContentBlock> getBlocksByType(ContentBlockType type) {
     return contentBlocks.where((block) => block.type == type).toList();
   }
 
@@ -173,7 +172,7 @@ class MemorialPageModel extends Equatable {
     bool? isPublished,
     MemorialStatus? status,
     PrivacyLevel? privacyLevel,
-    List<ContentBlockModel>? contentBlocks,
+    List<ContentBlock>? contentBlocks,
     int? viewCount,
     List<String>? collaboratorIds,
     List<String>? groupMemberIds,
@@ -225,8 +224,7 @@ class MemorialPageModel extends Equatable {
       status: _parseStatus(json['status'] as String?),
       privacyLevel: _parsePrivacyLevel(json['privacyLevel'] as String?),
       contentBlocks: (json['contentBlocks'] as List?)
-              ?.map(
-                  (e) => ContentBlockModel.fromJson(e as Map<String, dynamic>))
+              ?.map((e) => ContentBlock.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
       viewCount: json['viewCount'] as int? ?? 0,

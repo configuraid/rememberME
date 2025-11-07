@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rememberme/data/models/user_model.dart';
 import '../../../business_logic/auth/auth_bloc.dart';
@@ -13,7 +12,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_routes.dart';
 import 'edit_profile_screen.dart';
-import 'settings_screen.dart';
 import 'notifications_settings_screen.dart';
 import 'privacy_settings_screen.dart';
 import 'about_screen.dart';
@@ -315,23 +313,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           onTap: () => Navigator.of(context, rootNavigator: true)
               .pushNamed(AppRoutes.license),
         ),
-        _buildMenuItem(
-          icon: Icons.security,
-          title: 'Passwort ändern',
-          onTap: () => _showChangePasswordDialog(context),
-        ),
         const Divider(height: 1),
         _buildMenuHeader('Einstellungen'),
-        _buildMenuItem(
-          icon: Icons.settings,
-          title: AppStrings.settings,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const SettingsScreen(),
-            ),
-          ),
-        ),
         _buildMenuItem(
           icon: Icons.notifications,
           title: AppStrings.notifications,
@@ -472,82 +455,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text(AppStrings.logout),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showChangePasswordDialog(BuildContext context) {
-    final currentPasswordController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Passwort ändern'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: currentPasswordController,
-              decoration: const InputDecoration(
-                labelText: 'Aktuelles Passwort',
-                border: OutlineInputBorder(),
-              ),
-              obscureText: true,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: newPasswordController,
-              decoration: const InputDecoration(
-                labelText: 'Neues Passwort',
-                border: OutlineInputBorder(),
-              ),
-              obscureText: true,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: confirmPasswordController,
-              decoration: const InputDecoration(
-                labelText: 'Passwort bestätigen',
-                border: OutlineInputBorder(),
-              ),
-              obscureText: true,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text(AppStrings.cancel),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (newPasswordController.text ==
-                  confirmPasswordController.text) {
-                final userId = context.read<AuthBloc>().state.user?.id;
-                if (userId != null) {
-                  context.read<ProfileBloc>().add(
-                        ProfilePasswordChangeRequested(
-                          userId: userId,
-                          currentPassword: currentPasswordController.text,
-                          newPassword: newPasswordController.text,
-                        ),
-                      );
-                }
-                Navigator.of(ctx).pop();
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Passwörter stimmen nicht überein'),
-                    backgroundColor: AppColors.error,
-                  ),
-                );
-              }
-            },
-            child: const Text('Ändern'),
           ),
         ],
       ),

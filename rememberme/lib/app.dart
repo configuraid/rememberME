@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:rememberme/presentation/screens/memorial/memorial_create_screen.dart';
+import 'package:rememberme/presentation/screens/visual_builder/visual_builder_screen.dart';
 import 'dart:io';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_routes.dart';
@@ -9,7 +10,6 @@ import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/auth/qr_scanner_screen.dart';
 import 'presentation/screens/dashboard/dashboard_screen.dart';
 import 'presentation/screens/memorial/memorial_screen.dart';
-import 'presentation/screens/memorial/page_builder/page_builder_screen.dart';
 import 'presentation/screens/profile/profile_screen.dart';
 import 'presentation/screens/profile/license_screen.dart';
 
@@ -52,7 +52,9 @@ class MemorialApp extends StatelessWidget {
       AppRoutes.dashboard: (context) => const DashboardScreen(),
       AppRoutes.memorialDetail: (context) => const MemorialDetailScreen(),
       AppRoutes.memorialCreate: (context) => const MemorialCreateScreen(),
-      AppRoutes.pageBuilder: (context) => const PageBuilderScreen(),
+      AppRoutes.pageBuilder: (context) => const IntuitivePageBuilderScreen(
+            memorialName: 'Hurensohn',
+          ),
       AppRoutes.profile: (context) => const ProfileScreen(),
       AppRoutes.license: (context) => const LicenseScreen(),
     };

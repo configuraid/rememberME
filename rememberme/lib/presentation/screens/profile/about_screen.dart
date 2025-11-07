@@ -116,24 +116,6 @@ class _AboutScreenState extends State<AboutScreen> {
             onTap: () => _launchUrl('mailto:support@digital-memorial.com'),
           ),
 
-          const Divider(),
-
-          ListTile(
-            leading: const Icon(Icons.code),
-            title: const Text('Open Source Lizenzen'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () => showLicensePage(
-              context: context,
-              applicationName: 'Digital Memorial',
-              applicationVersion: _version,
-              applicationIcon: const Icon(
-                Icons.favorite,
-                size: 48,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-
           const SizedBox(height: 32),
 
           // Social Media

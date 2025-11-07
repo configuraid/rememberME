@@ -1,13 +1,11 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:uuid/uuid.dart';
+import 'package:rememberme/data/models/content_block_model.dart';
 import '../../data/repositories/page_builder_repository.dart';
-import '../../data/models/content_block_model.dart';
 import 'page_builder_event.dart';
 import 'page_builder_state.dart';
 
 class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
   final PageBuilderRepository pageBuilderRepository;
-  final _uuid = const Uuid();
 
   PageBuilderBloc({required this.pageBuilderRepository})
       : super(PageBuilderState.initial()) {
@@ -16,14 +14,10 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
     on<PageBuilderBlockUpdateRequested>(_onUpdateBlock);
     on<PageBuilderBlockDeleteRequested>(_onDeleteBlock);
     on<PageBuilderBlockReorderRequested>(_onReorderBlock);
-    on<PageBuilderBlockStyleChangeRequested>(_onChangeBlockStyle);
-    on<PageBuilderBlockTemplateSelectRequested>(_onSelectTemplate);
-    on<PageBuilderBlockSelectRequested>(_onSelectBlock);
+    on<PageBuilderBlockDuplicateRequested>(_onDuplicateBlock);
     on<PageBuilderSaveRequested>(_onSave);
-    on<PageBuilderPreviewToggleRequested>(_onTogglePreview);
     on<PageBuilderUndoRequested>(_onUndo);
     on<PageBuilderRedoRequested>(_onRedo);
-    on<PageBuilderTemplateLoadRequested>(_onLoadTemplate);
   }
 
   Future<void> _onLoad(
@@ -33,17 +27,20 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
     emit(PageBuilderState.loading());
 
     try {
+      print('📦 PageBuilderBloc - Lade Memorial: ${event.memorialId}');
+
       final memorial =
           await pageBuilderRepository.getMemorial(event.memorialId);
       final blocks = memorial.contentBlocks;
-      final templates = await pageBuilderRepository.getAvailableTemplates();
+
+      print('✅ PageBuilderBloc - ${blocks.length} Blocks geladen');
 
       emit(PageBuilderState.loaded(
         memorial: memorial,
         blocks: blocks,
-        templates: templates,
       ));
     } catch (e) {
+      print('❌ PageBuilderBloc - Fehler beim Laden: $e');
       emit(PageBuilderState.error('Fehler beim Laden: ${e.toString()}'));
     }
   }
@@ -53,25 +50,23 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
     Emitter<PageBuilderState> emit,
   ) async {
     try {
-      final newBlock = ContentBlockModel(
-        id: _uuid.v4(),
-        type: event.blockType,
-        order: state.blocks.length,
-        data: event.initialData ?? {},
-        styles: {},
-      );
+      print('➕ PageBuilderBloc - Füge Block hinzu: ${event.blockType.name}');
 
+      final newBlock = ContentBlock(type: event.blockType);
       final updatedBlocks = [...state.blocks, newBlock];
 
       emit(state.copyWith(
         blocks: updatedBlocks,
         selectedBlockId: newBlock.id,
         status: PageBuilderStatus.editing,
-        successMessage: 'Block hinzugefügt',
+        successMessage:
+            '${BlockTypeInfo.getTitle(event.blockType)} hinzugefügt',
       ));
 
       _addToHistory(emit, updatedBlocks);
+      print('✅ PageBuilderBloc - Block hinzugefügt: ${newBlock.id}');
     } catch (e) {
+      print('❌ PageBuilderBloc - Fehler beim Hinzufügen: $e');
       emit(state.copyWith(
         status: PageBuilderStatus.error,
         errorMessage: 'Fehler beim Hinzufügen: ${e.toString()}',
@@ -84,9 +79,11 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
     Emitter<PageBuilderState> emit,
   ) async {
     try {
+      print('🔄 PageBuilderBloc - Aktualisiere Block: ${event.blockId}');
+
       final updatedBlocks = state.blocks.map((block) {
         if (block.id == event.blockId) {
-          return block.copyWith(data: {...block.data, ...event.data});
+          return block.updateContent(event.key, event.value);
         }
         return block;
       }).toList();
@@ -97,7 +94,9 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
       ));
 
       _addToHistory(emit, updatedBlocks);
+      print('✅ PageBuilderBloc - Block aktualisiert');
     } catch (e) {
+      print('❌ PageBuilderBloc - Fehler beim Aktualisieren: $e');
       emit(state.copyWith(
         status: PageBuilderStatus.error,
         errorMessage: 'Fehler beim Aktualisieren: ${e.toString()}',
@@ -110,13 +109,10 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
     Emitter<PageBuilderState> emit,
   ) async {
     try {
+      print('🗑️ PageBuilderBloc - Lösche Block: ${event.blockId}');
+
       final updatedBlocks =
           state.blocks.where((block) => block.id != event.blockId).toList();
-
-      // Order neu setzen
-      for (var i = 0; i < updatedBlocks.length; i++) {
-        updatedBlocks[i] = updatedBlocks[i].copyWith(order: i);
-      }
 
       emit(state.copyWith(
         blocks: updatedBlocks,
@@ -126,7 +122,10 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
       ));
 
       _addToHistory(emit, updatedBlocks);
+      print(
+          '✅ PageBuilderBloc - Block gelöscht, ${updatedBlocks.length} verbleibend');
     } catch (e) {
+      print('❌ PageBuilderBloc - Fehler beim Löschen: $e');
       emit(state.copyWith(
         status: PageBuilderStatus.error,
         errorMessage: 'Fehler beim Löschen: ${e.toString()}',
@@ -139,14 +138,12 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
     Emitter<PageBuilderState> emit,
   ) async {
     try {
-      final updatedBlocks = List<ContentBlockModel>.from(state.blocks);
+      print(
+          '🔀 PageBuilderBloc - Sortiere Blocks: ${event.oldIndex} → ${event.newIndex}');
+
+      final updatedBlocks = List<ContentBlock>.from(state.blocks);
       final block = updatedBlocks.removeAt(event.oldIndex);
       updatedBlocks.insert(event.newIndex, block);
-
-      // Order neu setzen
-      for (var i = 0; i < updatedBlocks.length; i++) {
-        updatedBlocks[i] = updatedBlocks[i].copyWith(order: i);
-      }
 
       emit(state.copyWith(
         blocks: updatedBlocks,
@@ -154,7 +151,9 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
       ));
 
       _addToHistory(emit, updatedBlocks);
+      print('✅ PageBuilderBloc - Blocks neu sortiert');
     } catch (e) {
+      print('❌ PageBuilderBloc - Fehler beim Sortieren: $e');
       emit(state.copyWith(
         status: PageBuilderStatus.error,
         errorMessage: 'Fehler beim Sortieren: ${e.toString()}',
@@ -162,74 +161,44 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
     }
   }
 
-  Future<void> _onChangeBlockStyle(
-    PageBuilderBlockStyleChangeRequested event,
+  Future<void> _onDuplicateBlock(
+    PageBuilderBlockDuplicateRequested event,
     Emitter<PageBuilderState> emit,
   ) async {
     try {
-      final updatedBlocks = state.blocks.map((block) {
-        if (block.id == event.blockId) {
-          final updatedStyles = {...block.styles};
-          updatedStyles[event.styleKey] = event.styleValue;
-          return block.copyWith(styles: updatedStyles);
-        }
-        return block;
-      }).toList();
+      print('📋 PageBuilderBloc - Dupliziere Block: ${event.blockId}');
+
+      final originalIndex =
+          state.blocks.indexWhere((b) => b.id == event.blockId);
+      if (originalIndex == -1) {
+        throw Exception('Block nicht gefunden');
+      }
+
+      final original = state.blocks[originalIndex];
+      final duplicate = ContentBlock(
+        type: original.type,
+        content: Map<String, dynamic>.from(original.content),
+      );
+
+      final updatedBlocks = List<ContentBlock>.from(state.blocks);
+      updatedBlocks.insert(originalIndex + 1, duplicate);
 
       emit(state.copyWith(
         blocks: updatedBlocks,
+        selectedBlockId: duplicate.id,
         status: PageBuilderStatus.editing,
+        successMessage: 'Block dupliziert',
       ));
 
       _addToHistory(emit, updatedBlocks);
+      print('✅ PageBuilderBloc - Block dupliziert: ${duplicate.id}');
     } catch (e) {
+      print('❌ PageBuilderBloc - Fehler beim Duplizieren: $e');
       emit(state.copyWith(
         status: PageBuilderStatus.error,
-        errorMessage: 'Fehler beim Ändern des Styles: ${e.toString()}',
+        errorMessage: 'Fehler beim Duplizieren: ${e.toString()}',
       ));
     }
-  }
-
-  Future<void> _onSelectTemplate(
-    PageBuilderBlockTemplateSelectRequested event,
-    Emitter<PageBuilderState> emit,
-  ) async {
-    try {
-      final template =
-          state.availableTemplates.firstWhere((t) => t.id == event.templateId);
-
-      final updatedBlocks = state.blocks.map((block) {
-        if (block.id == event.blockId) {
-          return block.copyWith(
-            styles: template.defaultStyles,
-          );
-        }
-        return block;
-      }).toList();
-
-      emit(state.copyWith(
-        blocks: updatedBlocks,
-        status: PageBuilderStatus.editing,
-        successMessage: 'Template "${template.name}" angewendet',
-      ));
-
-      _addToHistory(emit, updatedBlocks);
-    } catch (e) {
-      emit(state.copyWith(
-        status: PageBuilderStatus.error,
-        errorMessage: 'Fehler beim Anwenden des Templates: ${e.toString()}',
-      ));
-    }
-  }
-
-  Future<void> _onSelectBlock(
-    PageBuilderBlockSelectRequested event,
-    Emitter<PageBuilderState> emit,
-  ) async {
-    emit(state.copyWith(
-      selectedBlockId: event.blockId,
-      clearSelectedBlock: event.blockId == null,
-    ));
   }
 
   Future<void> _onSave(
@@ -239,6 +208,8 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
     emit(state.copyWith(status: PageBuilderStatus.saving));
 
     try {
+      print('💾 PageBuilderBloc - Speichere ${state.blocks.length} Blocks');
+
       await pageBuilderRepository.saveBlocks(
         memorialId: event.memorialId,
         blocks: state.blocks,
@@ -248,7 +219,10 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
         status: PageBuilderStatus.saved,
         successMessage: 'Änderungen gespeichert',
       ));
+
+      print('✅ PageBuilderBloc - Erfolgreich gespeichert');
     } catch (e) {
+      print('❌ PageBuilderBloc - Fehler beim Speichern: $e');
       emit(state.copyWith(
         status: PageBuilderStatus.error,
         errorMessage: 'Fehler beim Speichern: ${e.toString()}',
@@ -256,26 +230,18 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
     }
   }
 
-  Future<void> _onTogglePreview(
-    PageBuilderPreviewToggleRequested event,
-    Emitter<PageBuilderState> emit,
-  ) async {
-    emit(state.copyWith(
-      isPreviewMode: !state.isPreviewMode,
-      clearSelectedBlock: true,
-    ));
-  }
-
   Future<void> _onUndo(
     PageBuilderUndoRequested event,
     Emitter<PageBuilderState> emit,
   ) async {
     if (state.canUndo) {
+      print('↩️ PageBuilderBloc - Undo');
       final newIndex = state.historyIndex - 1;
       emit(state.copyWith(
         blocks: state.history[newIndex],
         historyIndex: newIndex,
         status: PageBuilderStatus.editing,
+        successMessage: 'Rückgängig gemacht',
       ));
     }
   }
@@ -285,54 +251,36 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
     Emitter<PageBuilderState> emit,
   ) async {
     if (state.canRedo) {
+      print('↪️ PageBuilderBloc - Redo');
       final newIndex = state.historyIndex + 1;
       emit(state.copyWith(
         blocks: state.history[newIndex],
         historyIndex: newIndex,
         status: PageBuilderStatus.editing,
-      ));
-    }
-  }
-
-  Future<void> _onLoadTemplate(
-    PageBuilderTemplateLoadRequested event,
-    Emitter<PageBuilderState> emit,
-  ) async {
-    try {
-      final templateBlocks =
-          await pageBuilderRepository.getTemplateBlocks(event.templateId);
-
-      emit(state.copyWith(
-        blocks: templateBlocks,
-        status: PageBuilderStatus.editing,
-        successMessage: 'Template geladen',
-      ));
-
-      _addToHistory(emit, templateBlocks);
-    } catch (e) {
-      emit(state.copyWith(
-        status: PageBuilderStatus.error,
-        errorMessage: 'Fehler beim Laden des Templates: ${e.toString()}',
+        successMessage: 'Wiederhergestellt',
       ));
     }
   }
 
   void _addToHistory(
     Emitter<PageBuilderState> emit,
-    List<ContentBlockModel> blocks,
+    List<ContentBlock> blocks,
   ) {
     // Entferne alle Einträge nach dem aktuellen Index
     final newHistory = state.history.sublist(0, state.historyIndex + 1);
     newHistory.add(blocks);
 
-    // Limitiere die History auf 20 Einträge
-    final limitedHistory = newHistory.length > 20
-        ? newHistory.sublist(newHistory.length - 20)
+    // Limitiere die History auf 50 Einträge
+    final limitedHistory = newHistory.length > 50
+        ? newHistory.sublist(newHistory.length - 50)
         : newHistory;
 
     emit(state.copyWith(
       history: limitedHistory,
       historyIndex: limitedHistory.length - 1,
     ));
+
+    print(
+        '📜 PageBuilderBloc - History: ${limitedHistory.length} Einträge (Index: ${limitedHistory.length - 1})');
   }
 }

@@ -73,7 +73,7 @@ class MemorialDeleteRequested extends MemorialEvent {
 // Content-Block hinzufügen
 class MemorialContentBlockAddRequested extends MemorialEvent {
   final String memorialId;
-  final ContentBlockModel block;
+  final ContentBlock block;
 
   const MemorialContentBlockAddRequested({
     required this.memorialId,
@@ -87,7 +87,7 @@ class MemorialContentBlockAddRequested extends MemorialEvent {
 // Content-Block aktualisieren
 class MemorialContentBlockUpdateRequested extends MemorialEvent {
   final String memorialId;
-  final ContentBlockModel block;
+  final ContentBlock block;
 
   const MemorialContentBlockUpdateRequested({
     required this.memorialId,

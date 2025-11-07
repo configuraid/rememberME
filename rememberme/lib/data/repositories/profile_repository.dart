@@ -1,4 +1,3 @@
-import '../models/user_model.dart';
 import '../../business_logic/profile/profile_state.dart';
 
 class ProfileRepository {

@@ -592,13 +592,6 @@ class MemorialDetailScreen extends StatelessWidget {
         ),
         _buildActionTile(
           context,
-          Icons.settings_outlined,
-          'Einstellungen',
-          'Privatsphäre und Sichtbarkeit',
-          () => _openSettings(context, memorial),
-        ),
-        _buildActionTile(
-          context,
           Icons.delete_outline,
           'Löschen',
           'Gedenkseite entfernen',
@@ -684,8 +677,8 @@ class MemorialDetailScreen extends StatelessWidget {
         return Icons.videocam_outlined;
       case ContentBlockType.gallery:
         return Icons.photo_library_outlined;
-      case ContentBlockType.timeline:
-        return Icons.timeline;
+      case ContentBlockType.image:
+        return Icons.image_outlined;
       case ContentBlockType.quote:
         return Icons.format_quote;
       default:
@@ -701,8 +694,8 @@ class MemorialDetailScreen extends StatelessWidget {
         return 'Video';
       case ContentBlockType.gallery:
         return 'Galerie';
-      case ContentBlockType.timeline:
-        return 'Zeitleiste';
+      case ContentBlockType.image:
+        return 'Bild';
       case ContentBlockType.quote:
         return 'Zitat';
       default:
@@ -803,16 +796,6 @@ class MemorialDetailScreen extends StatelessWidget {
     print('🔗 Teilen-Funktion für: ${memorial.name}');
     final snackBar = SnackBar(
       content: const Text('Teilen-Funktion kommt bald...'),
-      behavior: SnackBarBehavior.floating,
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-  }
-
-  void _openSettings(BuildContext context, MemorialPageModel memorial) {
-    print('⚙️ Öffne Einstellungen für: ${memorial.name}');
-    final snackBar = SnackBar(
-      content: const Text('Einstellungen werden geladen...'),
       behavior: SnackBarBehavior.floating,
     );
 
