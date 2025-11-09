@@ -3,6 +3,8 @@ class AppRoutes {
   static const String splash = '/';
   static const String login = '/login';
   static const String qrScanner = '/qr-scanner';
+  static const String userSelection = '/user-selection';
+  static const String profileCreation = '/profile-creation';
 
   // Main Routes
   static const String dashboard = '/dashboard';

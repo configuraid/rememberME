@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rememberme/business_logic/auth/auth_bloc.dart';
+import 'package:rememberme/data/models/auth/organization_model.dart';
+import 'package:rememberme/presentation/screens/auth/user_selection_screen.dart';
+import 'package:rememberme/presentation/screens/auth/profile_creation_screen.dart';
 import 'package:rememberme/presentation/screens/memorial/memorial_create_screen.dart';
 import 'package:rememberme/presentation/screens/visual_builder/visual_builder_screen.dart';
+import 'package:rememberme/data/models/memorial_page_model.dart';
 import 'dart:io';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_routes.dart';
@@ -18,13 +24,12 @@ class MemorialApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Plattform-spezifische App
     if (Platform.isIOS) {
       return CupertinoApp(
         title: 'Digital Memorial',
         theme: AppTheme.cupertinoTheme,
         initialRoute: AppRoutes.splash,
-        routes: _buildRoutes(),
+        onGenerateRoute: _onGenerateRoute,
         localizationsDelegates: const [
           DefaultMaterialLocalizations.delegate,
           DefaultCupertinoLocalizations.delegate,
@@ -39,24 +44,99 @@ class MemorialApp extends StatelessWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
       initialRoute: AppRoutes.splash,
-      routes: _buildRoutes(),
+      onGenerateRoute: _onGenerateRoute,
       debugShowCheckedModeBanner: false,
     );
   }
 
-  Map<String, WidgetBuilder> _buildRoutes() {
-    return {
-      AppRoutes.splash: (context) => const SplashScreen(),
-      AppRoutes.login: (context) => const LoginScreen(),
-      AppRoutes.qrScanner: (context) => const QRScannerScreen(),
-      AppRoutes.dashboard: (context) => const DashboardScreen(),
-      AppRoutes.memorialDetail: (context) => const MemorialDetailScreen(),
-      AppRoutes.memorialCreate: (context) => const MemorialCreateScreen(),
-      AppRoutes.pageBuilder: (context) => const IntuitivePageBuilderScreen(
-            memorialName: 'Hurensohn',
-          ),
-      AppRoutes.profile: (context) => const ProfileScreen(),
-      AppRoutes.license: (context) => const LicenseScreen(),
-    };
+  Route<dynamic>? _onGenerateRoute(RouteSettings settings) {
+    print('🚀 Navigate to: ${settings.name} with args: ${settings.arguments}');
+
+    Widget page;
+
+    switch (settings.name) {
+      case AppRoutes.splash:
+        page = const SplashScreen();
+        break;
+
+      case AppRoutes.login:
+        page = const LoginScreen();
+        break;
+
+      case AppRoutes.qrScanner:
+        page = const QRScannerScreen();
+        break;
+
+      // ✅ NEU: User Selection Route
+      case AppRoutes.userSelection:
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args == null) {
+          print('❌ Keine Arguments für UserSelection!');
+          return null;
+        }
+        page = UserSelectionScreen(
+          organization: args['organization'] as OrganizationModel,
+          membersWithData:
+              args['membersWithData'] as List<Map<String, dynamic>>,
+        );
+        break;
+
+      // ✅ NEU: Profile Creation Route
+      case AppRoutes.profileCreation:
+        final organization = settings.arguments as OrganizationModel?;
+        if (organization == null) {
+          print('❌ Keine Organization für ProfileCreation!');
+          return null;
+        }
+        page = ProfileCreationScreen(organization: organization);
+        break;
+
+      case AppRoutes.dashboard:
+        page = const DashboardScreen();
+        break;
+
+      case AppRoutes.memorialDetail:
+        final memorial = settings.arguments as MemorialPageModel?;
+        page = MemorialDetailScreen(memorial: memorial);
+        break;
+
+      case AppRoutes.memorialCreate:
+        page = const MemorialCreateScreen();
+        break;
+
+      case AppRoutes.pageBuilder:
+        final memorial = settings.arguments as MemorialPageModel?;
+        if (memorial == null) {
+          print('❌ Kein Memorial übergeben an PageBuilder!');
+          return null;
+        }
+        page = IntuitivePageBuilderScreen(memorial: memorial);
+        break;
+
+      case AppRoutes.profile:
+        page = const ProfileScreen();
+        break;
+
+      case AppRoutes.license:
+        page = const LicenseScreen();
+        break;
+
+      default:
+        print('❌ Route nicht gefunden: ${settings.name}');
+        return null;
+    }
+
+    // ✅ Platform-spezifische Routes
+    if (Platform.isIOS) {
+      return CupertinoPageRoute(
+        builder: (_) => page,
+        settings: settings,
+      );
+    }
+
+    return MaterialPageRoute(
+      builder: (_) => page,
+      settings: settings,
+    );
   }
 }

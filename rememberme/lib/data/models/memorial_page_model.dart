@@ -15,6 +15,7 @@ enum PrivacyLevel {
 
 class MemorialPageModel extends Equatable {
   final String id;
+  final String organizationId; // ✅ NEU - Pflichtfeld
   final String ownerId;
   final String name;
   final String? subtitle;
@@ -37,6 +38,7 @@ class MemorialPageModel extends Equatable {
 
   const MemorialPageModel({
     required this.id,
+    required this.organizationId, // ✅ NEU - Pflichtfeld
     required this.ownerId,
     required this.name,
     this.subtitle,
@@ -162,6 +164,7 @@ class MemorialPageModel extends Equatable {
 
   MemorialPageModel copyWith({
     String? id,
+    String? organizationId, // ✅ NEU
     String? ownerId,
     String? name,
     String? subtitle,
@@ -184,6 +187,7 @@ class MemorialPageModel extends Equatable {
   }) {
     return MemorialPageModel(
       id: id ?? this.id,
+      organizationId: organizationId ?? this.organizationId, // ✅ NEU
       ownerId: ownerId ?? this.ownerId,
       name: name ?? this.name,
       subtitle: subtitle ?? this.subtitle,
@@ -209,6 +213,7 @@ class MemorialPageModel extends Equatable {
   factory MemorialPageModel.fromJson(Map<String, dynamic> json) {
     return MemorialPageModel(
       id: json['id'] as String,
+      organizationId: json['organizationId'] as String, // ✅ NEU
       ownerId: json['ownerId'] as String,
       name: json['name'] as String,
       subtitle: json['subtitle'] as String?,
@@ -247,6 +252,7 @@ class MemorialPageModel extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'organizationId': organizationId, // ✅ NEU
       'ownerId': ownerId,
       'name': name,
       'subtitle': subtitle,
@@ -298,6 +304,7 @@ class MemorialPageModel extends Equatable {
   @override
   List<Object?> get props => [
         id,
+        organizationId, // ✅ NEU
         ownerId,
         name,
         subtitle,

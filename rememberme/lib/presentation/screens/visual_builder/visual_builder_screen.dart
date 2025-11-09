@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rememberme/data/models/content_block_model.dart';
+import 'package:rememberme/data/models/memorial_page_model.dart';
+import 'package:rememberme/business_logic/memorial/memorial_bloc.dart';
+import 'package:rememberme/business_logic/memorial/memorial_event.dart';
 import '../../widgets/page_builder/content_block_widget.dart';
 import '../../widgets/page_builder/add_block_bottom_sheet.dart';
 import '../../widgets/page_builder/block_settings_bottom_sheet.dart';
 
 class IntuitivePageBuilderScreen extends StatefulWidget {
-  final String memorialName;
+  final MemorialPageModel memorial;
 
   const IntuitivePageBuilderScreen({
     super.key,
-    required this.memorialName,
+    required this.memorial,
   });
 
   @override
@@ -22,34 +26,26 @@ class _IntuitivePageBuilderScreenState
     extends State<IntuitivePageBuilderScreen> {
   List<ContentBlock> _blocks = [];
   String? _selectedBlockId;
+  bool _hasUnsavedChanges = false;
 
   @override
   void initState() {
     super.initState();
-    _loadExampleContent();
+    _loadMemorialContent();
   }
 
-  void _loadExampleContent() {
-    // Beispiel-Inhalt für Demo
-    _blocks = [
-      ContentBlock(
-        type: ContentBlockType.header,
-        content: {
-          'text': 'In liebevollem Gedenken',
-          'level': 1,
-          'align': 'center',
-          'color': '#2C3E50',
-        },
-      ),
-      ContentBlock(
-        type: ContentBlockType.date,
-        content: {
-          'birthDate': '15.03.1950',
-          'deathDate': '28.10.2024',
-          'format': 'DD.MM.YYYY',
-        },
-      ),
-    ];
+  void _loadMemorialContent() {
+    // ✅ Lade die ECHTEN Blöcke aus dem Memorial
+    _blocks = List.from(widget.memorial.contentBlocks);
+    print('📦 Geladene Blöcke: ${_blocks.length}');
+  }
+
+  void _markAsChanged() {
+    if (!_hasUnsavedChanges) {
+      setState(() {
+        _hasUnsavedChanges = true;
+      });
+    }
   }
 
   void _showSuccessMessage(String message) {
@@ -75,33 +71,74 @@ class _IntuitivePageBuilderScreenState
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: Text(widget.memorialName),
-        centerTitle: true,
+  Future<bool> _onWillPop() async {
+    if (!_hasUnsavedChanges) {
+      return true; // Keine Änderungen, kann zurück
+    }
+
+    // Zeige Warnung bei ungespeicherten Änderungen
+    final shouldPop = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Ungespeicherte Änderungen'),
+        content: const Text(
+          'Du hast ungespeicherte Änderungen. Möchtest du wirklich zurück?',
+        ),
         actions: [
-          // Preview
-          IconButton(
-            icon: const Icon(Icons.visibility),
-            onPressed: _showPreview,
-            tooltip: 'Vorschau',
+          CupertinoDialogAction(
+            child: const Text('Abbrechen'),
+            onPressed: () => Navigator.pop(context, false),
           ),
-          // Save
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: _save,
-            tooltip: 'Speichern',
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            child: const Text('Verwerfen'),
+            onPressed: () => Navigator.pop(context, true),
           ),
         ],
       ),
-      body: _blocks.isEmpty ? _buildEmptyState() : _buildBlockList(),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddBlockSheet,
-        icon: const Icon(Icons.add),
-        label: const Text('Block hinzufügen'),
+    );
+
+    return shouldPop ?? false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        backgroundColor: Colors.grey[50],
+        appBar: AppBar(
+          title: Text(widget.memorial.name),
+          centerTitle: true,
+          actions: [
+            // Unsaved changes indicator
+            if (_hasUnsavedChanges)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.only(right: 8),
+                  child: Icon(Icons.circle, color: Colors.orange, size: 12),
+                ),
+              ),
+            // Preview
+            IconButton(
+              icon: const Icon(Icons.visibility),
+              onPressed: _showPreview,
+              tooltip: 'Vorschau',
+            ),
+            // Save
+            IconButton(
+              icon: const Icon(Icons.check),
+              onPressed: _save,
+              tooltip: 'Speichern',
+            ),
+          ],
+        ),
+        body: _blocks.isEmpty ? _buildEmptyState() : _buildBlockList(),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _showAddBlockSheet,
+          icon: const Icon(Icons.add),
+          label: const Text('Block hinzufügen'),
+        ),
       ),
     );
   }
@@ -220,6 +257,7 @@ class _IntuitivePageBuilderScreenState
       final newBlock = ContentBlock(type: type);
       _blocks.add(newBlock);
       _selectedBlockId = newBlock.id;
+      _markAsChanged();
     });
 
     // Scroll to new block
@@ -240,10 +278,8 @@ class _IntuitivePageBuilderScreenState
       final index = _blocks.indexWhere((b) => b.id == block.id);
       _blocks.insert(index + 1, duplicate);
       _selectedBlockId = duplicate.id;
+      _markAsChanged();
     });
-
-    // Optional: Show success message (removed ScaffoldMessenger)
-    // The duplicated block is now visible, which is feedback enough
   }
 
   void _deleteBlock(String blockId) {
@@ -265,6 +301,7 @@ class _IntuitivePageBuilderScreenState
                 if (_selectedBlockId == blockId) {
                   _selectedBlockId = null;
                 }
+                _markAsChanged();
               });
               Navigator.pop(context);
             },
@@ -283,6 +320,7 @@ class _IntuitivePageBuilderScreenState
       }
       final block = _blocks.removeAt(oldIndex);
       _blocks.insert(newIndex, block);
+      _markAsChanged();
     });
   }
 
@@ -291,6 +329,7 @@ class _IntuitivePageBuilderScreenState
       final index = _blocks.indexWhere((b) => b.id == blockId);
       if (index != -1) {
         _blocks[index] = _blocks[index].updateContent(key, value);
+        _markAsChanged();
       }
     });
   }
@@ -313,33 +352,60 @@ class _IntuitivePageBuilderScreenState
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => _PreviewScreen(blocks: _blocks),
+        builder: (context) => _PreviewScreen(
+          memorial: widget.memorial,
+          blocks: _blocks,
+        ),
       ),
     );
   }
 
   void _save() {
-    // TODO: Save to backend
-    final json = _blocks.map((b) => b.toJson()).toList();
-    print('Saving blocks: $json');
+    print('💾 Speichere ${_blocks.length} Blöcke...');
+
+    // Erstelle aktualisiertes Memorial mit neuen Blöcken
+    final updatedMemorial = widget.memorial.copyWith(
+      contentBlocks: _blocks,
+      updatedAt: DateTime.now(),
+    );
+
+    // Sende Update-Event ans BLoC
+    context.read<MemorialBloc>().add(
+          MemorialUpdateRequested(updatedMemorial),
+        );
+
+    setState(() {
+      _hasUnsavedChanges = false;
+    });
 
     _showSuccessMessage('✓ Seite gespeichert');
+
+    // Optional: Nach 1.5 Sekunden zurück
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    });
   }
 }
 
 // ===== PREVIEW SCREEN =====
 
 class _PreviewScreen extends StatelessWidget {
+  final MemorialPageModel memorial;
   final List<ContentBlock> blocks;
 
-  const _PreviewScreen({required this.blocks});
+  const _PreviewScreen({
+    required this.memorial,
+    required this.blocks,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Vorschau'),
+        title: Text('Vorschau - ${memorial.name}'),
         centerTitle: true,
       ),
       body: ListView.builder(

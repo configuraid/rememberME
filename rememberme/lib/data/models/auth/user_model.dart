@@ -8,7 +8,9 @@ class UserModel extends Equatable {
   final String name;
   final String email;
   final String? profileImageUrl;
-  final String authKey;
+  final String?
+      authKey; // Deprecated - wird durch primaryOrganizationId ersetzt
+  final String? primaryOrganizationId; // ✅ NEU: Haupt-Organisation des Users
   final DateTime createdAt;
   final DateTime? lastLoginAt;
   final UserRole role;
@@ -19,7 +21,8 @@ class UserModel extends Equatable {
     required this.name,
     required this.email,
     this.profileImageUrl,
-    required this.authKey,
+    this.authKey,
+    this.primaryOrganizationId,
     required this.createdAt,
     this.lastLoginAt,
     this.role = UserRole.owner,
@@ -32,6 +35,7 @@ class UserModel extends Equatable {
     String? email,
     String? profileImageUrl,
     String? authKey,
+    String? primaryOrganizationId,
     DateTime? createdAt,
     DateTime? lastLoginAt,
     UserRole? role,
@@ -43,6 +47,8 @@ class UserModel extends Equatable {
       email: email ?? this.email,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
       authKey: authKey ?? this.authKey,
+      primaryOrganizationId:
+          primaryOrganizationId ?? this.primaryOrganizationId,
       createdAt: createdAt ?? this.createdAt,
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       role: role ?? this.role,
@@ -56,7 +62,8 @@ class UserModel extends Equatable {
       'name': name,
       'email': email,
       'profileImageUrl': profileImageUrl,
-      'authKey': authKey,
+      'authKey': authKey, // Deprecated
+      'primaryOrganizationId': primaryOrganizationId,
       'createdAt': Timestamp.fromDate(createdAt),
       'lastLoginAt':
           lastLoginAt != null ? Timestamp.fromDate(lastLoginAt!) : null,
@@ -71,7 +78,8 @@ class UserModel extends Equatable {
       name: json['name'] as String,
       email: json['email'] as String,
       profileImageUrl: json['profileImageUrl'] as String?,
-      authKey: json['authKey'] as String,
+      authKey: json['authKey'] as String?,
+      primaryOrganizationId: json['primaryOrganizationId'] as String?,
       createdAt: (json['createdAt'] as Timestamp).toDate(),
       lastLoginAt: json['lastLoginAt'] != null
           ? (json['lastLoginAt'] as Timestamp).toDate()
@@ -89,7 +97,6 @@ class UserModel extends Equatable {
       id: '',
       name: '',
       email: '',
-      authKey: '',
       createdAt: DateTime.now(),
     );
   }
@@ -101,6 +108,7 @@ class UserModel extends Equatable {
         email,
         profileImageUrl,
         authKey,
+        primaryOrganizationId,
         createdAt,
         lastLoginAt,
         role,

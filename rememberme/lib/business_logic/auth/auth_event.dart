@@ -7,7 +7,11 @@ abstract class AuthEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-// Login mit Auth-Key
+// ========================================
+// AUTH KEY / QR CODE LOGIN
+// ========================================
+
+/// Login mit Auth-Key (Organisation-Login)
 class AuthLoginWithKeyRequested extends AuthEvent {
   final String authKey;
 
@@ -17,7 +21,7 @@ class AuthLoginWithKeyRequested extends AuthEvent {
   List<Object?> get props => [authKey];
 }
 
-// Login mit QR-Code
+/// Login mit QR-Code (Organisation-Login)
 class AuthLoginWithQRRequested extends AuthEvent {
   final String qrCode;
 
@@ -27,12 +31,49 @@ class AuthLoginWithQRRequested extends AuthEvent {
   List<Object?> get props => [qrCode];
 }
 
-// Logout
-class AuthLogoutRequested extends AuthEvent {
-  const AuthLogoutRequested();
+// ========================================
+// USER SELECTION & PROFILE CREATION
+// ========================================
+
+/// User Selection - Wähle existierenden User aus Organisation
+class AuthUserSelectionRequested extends AuthEvent {
+  final String organizationId;
+  final String userId;
+  final String? pin; // Optional PIN für geschützte Profile
+
+  const AuthUserSelectionRequested({
+    required this.organizationId,
+    required this.userId,
+    this.pin,
+  });
+
+  @override
+  List<Object?> get props => [organizationId, userId, pin];
 }
 
-// User-Profil aktualisieren
+/// Neues Profil erstellen in Organisation
+class AuthNewProfileCreationRequested extends AuthEvent {
+  final String organizationId;
+  final String name;
+  final String email;
+  final String? pin; // Optional PIN zum Schützen des Profils
+
+  const AuthNewProfileCreationRequested({
+    required this.organizationId,
+    required this.name,
+    required this.email,
+    this.pin,
+  });
+
+  @override
+  List<Object?> get props => [organizationId, name, email, pin];
+}
+
+// ========================================
+// PROFILE MANAGEMENT
+// ========================================
+
+/// User-Profil aktualisieren
 class AuthUpdateProfileRequested extends AuthEvent {
   final String? name;
   final String? email;
@@ -48,12 +89,21 @@ class AuthUpdateProfileRequested extends AuthEvent {
   List<Object?> get props => [name, email, profileImageUrl];
 }
 
-// Auth-Status prüfen
+// ========================================
+// AUTH STATUS & SESSION
+// ========================================
+
+/// Auth-Status prüfen (beim App-Start)
 class AuthStatusChecked extends AuthEvent {
   const AuthStatusChecked();
 }
 
-// Token erneuern
+/// Token erneuern
 class AuthTokenRefreshRequested extends AuthEvent {
   const AuthTokenRefreshRequested();
+}
+
+/// Logout
+class AuthLogoutRequested extends AuthEvent {
+  const AuthLogoutRequested();
 }

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../business_logic/memorial/memorial_bloc.dart';
-import '../../../business_logic/memorial/memorial_event.dart';
-import '../../../business_logic/memorial/memorial_state.dart';
-import '../../../business_logic/auth/auth_bloc.dart';
+import 'package:rememberme/business_logic/auth/auth_bloc.dart';
+import 'package:rememberme/business_logic/memorial/memorial_bloc.dart';
+import 'package:rememberme/business_logic/memorial/memorial_event.dart';
+import 'package:rememberme/business_logic/memorial/memorial_state.dart';
 import '../../../data/models/memorial_page_model.dart' hide MemorialStatus;
 import '../../../data/models/content_block_model.dart';
 import '../../../core/constants/app_colors.dart';
@@ -58,12 +58,23 @@ class MemorialDetailScreen extends StatelessWidget {
           if (memorial == null && state.memorials.isEmpty) {
             print('🎨 Kein Memorial vorhanden - zeige Create Screen');
 
-            // Optional: Lade Memorials des Users, falls noch nicht geschehen
+            // ✅ Lade Memorials des Users, falls noch nicht geschehen
             if (state.status == MemorialStatus.initial) {
               print('🔄 Status ist initial - lade Memorials');
-              final userId = context.read<AuthBloc>().state.user?.id;
-              if (userId != null) {
-                context.read<MemorialBloc>().add(MemorialLoadRequested(userId));
+              final authState = context.read<AuthBloc>().state;
+              final user = authState.user;
+
+              if (user != null && user.primaryOrganizationId != null) {
+                print('📚 Lade Memorials für User: ${user.name}');
+                print('🏢 Organisation: ${user.primaryOrganizationId}');
+
+                // ✅ Lade Memorials mit organizationId + userId
+                context.read<MemorialBloc>().add(
+                      MemorialLoadRequested(
+                        organizationId: user.primaryOrganizationId!,
+                        userId: user.id,
+                      ),
+                    );
               }
             }
 
@@ -161,7 +172,6 @@ class MemorialDetailScreen extends StatelessWidget {
       body: RefreshIndicator(
         onRefresh: () async {
           print('🔄 Pull-to-Refresh: Lade Memorial neu');
-          // Reload memorial
           context.read<MemorialBloc>().add(
                 MemorialDetailLoadRequested(memorial.id),
               );
@@ -170,16 +180,12 @@ class MemorialDetailScreen extends StatelessWidget {
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
-              // Header mit Profilbild
               _buildHeader(context, memorial),
-
-              // Hauptaktionen
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Bearbeiten Button
                     ElevatedButton.icon(
                       onPressed: () =>
                           _navigateToPageBuilder(context, memorial),
@@ -193,10 +199,7 @@ class MemorialDetailScreen extends StatelessWidget {
                         backgroundColor: AppColors.primary,
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
-                    // Vorschau Button
                     OutlinedButton.icon(
                       onPressed: () => _showPreview(context, memorial),
                       icon: const Icon(Icons.visibility_outlined),
@@ -208,17 +211,10 @@ class MemorialDetailScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                     ),
-
                     const SizedBox(height: 24),
-
-                    // Content Preview
                     _buildContentPreview(context, memorial),
-
                     const SizedBox(height: 24),
-
-                    // Weitere Aktionen
                     _buildActionsSection(context, memorial),
-
                     const SizedBox(height: 80),
                   ],
                 ),
@@ -259,16 +255,12 @@ class MemorialDetailScreen extends StatelessWidget {
             SliverToBoxAdapter(
               child: Column(
                 children: [
-                  // Header mit Profilbild
                   _buildHeader(context, memorial),
-
-                  // Hauptaktionen
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Bearbeiten Button
                         CupertinoButton.filled(
                           onPressed: () =>
                               _navigateToPageBuilder(context, memorial),
@@ -284,10 +276,7 @@ class MemorialDetailScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-
                         const SizedBox(height: 12),
-
-                        // Vorschau Button
                         CupertinoButton(
                           onPressed: () => _showPreview(context, memorial),
                           color:
@@ -313,20 +302,11 @@ class MemorialDetailScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-
                         const SizedBox(height: 24),
-
-                        // Content Preview
                         _buildContentPreview(context, memorial),
-
                         const SizedBox(height: 24),
-
-                        // Weitere Aktionen
                         _buildActionsSection(context, memorial),
-
                         const SizedBox(height: 24),
-
-                        // Veröffentlichen Button (wenn noch nicht veröffentlicht)
                         if (!memorial.isPublished)
                           CupertinoButton.filled(
                             onPressed: () =>
@@ -343,7 +323,6 @@ class MemorialDetailScreen extends StatelessWidget {
                               ],
                             ),
                           ),
-
                         const SizedBox(height: 80),
                       ],
                     ),
@@ -356,8 +335,6 @@ class MemorialDetailScreen extends StatelessWidget {
       ),
     );
   }
-
-  // ===== GEMEINSAME WIDGETS =====
 
   Widget _buildHeader(BuildContext context, MemorialPageModel memorial) {
     return Container(
@@ -375,7 +352,6 @@ class MemorialDetailScreen extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 24),
-          // Profilbild
           Container(
             width: 120,
             height: 120,
@@ -403,7 +379,6 @@ class MemorialDetailScreen extends StatelessWidget {
                   ),
           ),
           const SizedBox(height: 16),
-          // Name
           Text(
             memorial.name,
             style: const TextStyle(
@@ -413,7 +388,6 @@ class MemorialDetailScreen extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          // Lebensdaten
           Text(
             memorial.lifespan,
             style: TextStyle(
@@ -422,41 +396,39 @@ class MemorialDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          // Status Badge
-          _buildStatusChip(memorial),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusChip(MemorialPageModel memorial) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: memorial.isPublished
-            ? AppColors.success.withOpacity(0.15)
-            : AppColors.warning.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            memorial.isPublished ? Icons.check_circle : Icons.edit,
-            size: 18,
-            color: memorial.isPublished ? AppColors.success : AppColors.warning,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            memorial.isPublished ? 'Veröffentlicht' : 'Entwurf',
-            style: TextStyle(
-              color:
-                  memorial.isPublished ? AppColors.success : AppColors.warning,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: memorial.isPublished
+                  ? AppColors.success.withOpacity(0.15)
+                  : AppColors.warning.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  memorial.isPublished ? Icons.check_circle : Icons.edit,
+                  size: 18,
+                  color: memorial.isPublished
+                      ? AppColors.success
+                      : AppColors.warning,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  memorial.isPublished ? 'Veröffentlicht' : 'Entwurf',
+                  style: TextStyle(
+                    color: memorial.isPublished
+                        ? AppColors.success
+                        : AppColors.warning,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
             ),
           ),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -506,67 +478,93 @@ class MemorialDetailScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Inhalte',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Inhalte',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
+              child: Text(
+                '${memorial.contentBlocks.length} ${memorial.contentBlocks.length == 1 ? "Block" : "Blöcke"}',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
-        ...memorial.sortedContentBlocks.take(3).map((block) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Platform.isIOS
-                  ? CupertinoColors.systemBackground.resolveFrom(context)
-                  : Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: memorial.contentBlocks.asMap().entries.map((entry) {
+            final index = entry.key;
+            final block = entry.value;
+
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
                 color: Platform.isIOS
-                    ? CupertinoColors.separator.resolveFrom(context)
-                    : Colors.grey[300]!,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    _getBlockIcon(block.type),
-                    color: AppColors.primary,
-                    size: 24,
-                  ),
+                    ? CupertinoColors.systemGrey6.resolveFrom(context)
+                    : Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.grey[300]!,
+                  width: 1,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _getBlockTypeName(block.type),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${index + 1}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          );
-        }),
-        if (memorial.contentBlocks.length > 3)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              '+ ${memorial.contentBlocks.length - 3} weitere',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
+                  const SizedBox(width: 8),
+                  Icon(
+                    _getBlockIcon(block.type),
+                    size: 16,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _getBlockTypeName(block.type),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
+            );
+          }).toList(),
+        ),
       ],
     );
   }
@@ -667,8 +665,6 @@ class MemorialDetailScreen extends StatelessWidget {
     );
   }
 
-  // ===== HILFSFUNKTIONEN =====
-
   IconData _getBlockIcon(ContentBlockType type) {
     switch (type) {
       case ContentBlockType.text:
@@ -703,8 +699,6 @@ class MemorialDetailScreen extends StatelessWidget {
     }
   }
 
-  // ===== AKTIONEN =====
-
   void _navigateToPageBuilder(
       BuildContext context, MemorialPageModel memorial) {
     print('📝 Navigiere zum PageBuilder für: ${memorial.name}');
@@ -716,12 +710,12 @@ class MemorialDetailScreen extends StatelessWidget {
 
   void _showPreview(BuildContext context, MemorialPageModel memorial) {
     print('👁️ Zeige Vorschau für: ${memorial.name}');
-    final snackBar = SnackBar(
-      content: const Text('Vorschau wird geladen...'),
-      behavior: SnackBarBehavior.floating,
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Vorschau wird geladen...'),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
-
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
   void _publishMemorial(BuildContext context, MemorialPageModel memorial) {
@@ -737,15 +731,11 @@ class MemorialDetailScreen extends StatelessWidget {
           ),
           actions: [
             CupertinoDialogAction(
-              onPressed: () {
-                print('❌ Veröffentlichung abgebrochen');
-                Navigator.of(ctx).pop();
-              },
+              onPressed: () => Navigator.of(ctx).pop(),
               child: const Text('Abbrechen'),
             ),
             CupertinoDialogAction(
               onPressed: () {
-                print('✅ Veröffentlichung bestätigt');
                 context
                     .read<MemorialBloc>()
                     .add(MemorialPublishRequested(memorial.id));
@@ -767,15 +757,11 @@ class MemorialDetailScreen extends StatelessWidget {
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                print('❌ Veröffentlichung abgebrochen');
-                Navigator.of(ctx).pop();
-              },
+              onPressed: () => Navigator.of(ctx).pop(),
               child: const Text('Abbrechen'),
             ),
             ElevatedButton(
               onPressed: () {
-                print('✅ Veröffentlichung bestätigt');
                 context
                     .read<MemorialBloc>()
                     .add(MemorialPublishRequested(memorial.id));
@@ -794,12 +780,12 @@ class MemorialDetailScreen extends StatelessWidget {
 
   void _shareMemorial(BuildContext context, MemorialPageModel memorial) {
     print('🔗 Teilen-Funktion für: ${memorial.name}');
-    final snackBar = SnackBar(
-      content: const Text('Teilen-Funktion kommt bald...'),
-      behavior: SnackBarBehavior.floating,
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Teilen-Funktion kommt bald...'),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
-
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
   void _showDeleteDialog(BuildContext context, String memorialId) {
@@ -813,24 +799,15 @@ class MemorialDetailScreen extends StatelessWidget {
           content: const Text(AppStrings.confirmDelete),
           actions: [
             CupertinoDialogAction(
-              onPressed: () {
-                print('❌ Löschen abgebrochen');
-                Navigator.of(ctx).pop();
-              },
+              onPressed: () => Navigator.of(ctx).pop(),
               child: const Text('Abbrechen'),
             ),
             CupertinoDialogAction(
               onPressed: () {
-                print(
-                    '🗑️ Löschung bestätigt, sende MemorialDeleteRequested Event');
                 context
                     .read<MemorialBloc>()
                     .add(MemorialDeleteRequested(memorialId));
-                Navigator.of(ctx).pop(); // 🔥 NUR den Dialog schließen
-                print(
-                    '🗑️ Dialog geschlossen - BlocListener kümmert sich um Navigation');
-                // KEIN Navigator.of(context).pop() hier!
-                // Der BlocListener übernimmt die Navigation nach erfolgreichem Löschen
+                Navigator.of(ctx).pop();
               },
               isDestructiveAction: true,
               child: const Text('Löschen'),
@@ -846,24 +823,15 @@ class MemorialDetailScreen extends StatelessWidget {
           content: const Text(AppStrings.confirmDelete),
           actions: [
             TextButton(
-              onPressed: () {
-                print('❌ Löschen abgebrochen');
-                Navigator.of(ctx).pop();
-              },
+              onPressed: () => Navigator.of(ctx).pop(),
               child: const Text(AppStrings.cancel),
             ),
             ElevatedButton(
               onPressed: () {
-                print(
-                    '🗑️ Löschung bestätigt, sende MemorialDeleteRequested Event');
                 context
                     .read<MemorialBloc>()
                     .add(MemorialDeleteRequested(memorialId));
-                Navigator.of(ctx).pop(); // 🔥 NUR den Dialog schließen
-                print(
-                    '🗑️ Dialog geschlossen - BlocListener kümmert sich um Navigation');
-                // KEIN Navigator.of(context).pop() hier!
-                // Der BlocListener übernimmt die Navigation nach erfolgreichem Löschen
+                Navigator.of(ctx).pop();
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
               child: const Text(AppStrings.delete),

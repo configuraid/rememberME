@@ -4,7 +4,7 @@ import '../constants/app_colors.dart';
 import 'text_styles.dart';
 
 class AppTheme {
-  // Material Theme für Android
+  // Material Theme für Android (unverändert)
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
@@ -20,8 +20,6 @@ class AppTheme {
         onSurface: AppColors.textPrimary,
         onError: AppColors.textLight,
       ),
-
-      // AppBar Theme
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.textLight,
@@ -41,8 +39,6 @@ class AppTheme {
           size: 24,
         ),
       ),
-
-      // Card Theme
       cardTheme: CardThemeData(
         color: AppColors.surface,
         elevation: 2,
@@ -52,8 +48,6 @@ class AppTheme {
         ),
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
-
-      // Button Themes
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
@@ -69,7 +63,6 @@ class AppTheme {
           ),
         ),
       ),
-
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primary,
@@ -84,7 +77,6 @@ class AppTheme {
           ),
         ),
       ),
-
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary,
@@ -95,8 +87,6 @@ class AppTheme {
           ),
         ),
       ),
-
-      // Icon Button Theme
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
           foregroundColor: AppColors.textPrimary,
@@ -104,8 +94,6 @@ class AppTheme {
           highlightColor: AppColors.primary.withOpacity(0.12),
         ),
       ),
-
-      // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surface,
@@ -135,8 +123,6 @@ class AppTheme {
         hintStyle: const TextStyle(color: AppColors.textSecondary),
         errorStyle: const TextStyle(color: AppColors.error),
       ),
-
-      // Floating Action Button
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppColors.accent,
         foregroundColor: AppColors.textLight,
@@ -145,8 +131,6 @@ class AppTheme {
           borderRadius: BorderRadius.all(Radius.circular(16)),
         ),
       ),
-
-      // Bottom Navigation Bar
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.surface,
         selectedItemColor: AppColors.primary,
@@ -156,8 +140,6 @@ class AppTheme {
         selectedLabelStyle: TextStyle(fontWeight: FontWeight.w600),
         unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w400),
       ),
-
-      // Chip Theme
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surface,
         selectedColor: AppColors.primary.withOpacity(0.2),
@@ -178,8 +160,6 @@ class AppTheme {
           side: const BorderSide(color: AppColors.border),
         ),
       ),
-
-      // Dialog Theme - KORRIGIERT: DialogThemeData statt DialogTheme
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.surface,
         elevation: 24,
@@ -196,8 +176,6 @@ class AppTheme {
           color: AppColors.textSecondary,
         ),
       ),
-
-      // SnackBar Theme
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.textPrimary,
         contentTextStyle: const TextStyle(
@@ -210,8 +188,6 @@ class AppTheme {
         ),
         actionTextColor: AppColors.accent,
       ),
-
-      // Switch Theme
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -226,8 +202,6 @@ class AppTheme {
           return AppColors.textSecondary.withOpacity(0.3);
         }),
       ),
-
-      // Checkbox Theme
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -240,8 +214,6 @@ class AppTheme {
           borderRadius: BorderRadius.circular(4),
         ),
       ),
-
-      // Radio Theme
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -250,8 +222,6 @@ class AppTheme {
           return AppColors.textSecondary;
         }),
       ),
-
-      // Slider Theme
       sliderTheme: SliderThemeData(
         activeTrackColor: AppColors.primary,
         inactiveTrackColor: AppColors.primary.withOpacity(0.3),
@@ -264,15 +234,11 @@ class AppTheme {
           fontWeight: FontWeight.w600,
         ),
       ),
-
-      // Progress Indicator Theme
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColors.primary,
         circularTrackColor: AppColors.border,
         linearTrackColor: AppColors.border,
       ),
-
-      // Tab Bar Theme - KORRIGIERT: TabBarThemeData statt TabBarTheme
       tabBarTheme: const TabBarThemeData(
         labelColor: AppColors.primary,
         unselectedLabelColor: AppColors.textSecondary,
@@ -287,8 +253,6 @@ class AppTheme {
           fontWeight: FontWeight.w400,
         ),
       ),
-
-      // Drawer Theme
       drawerTheme: const DrawerThemeData(
         backgroundColor: AppColors.surface,
         elevation: 16,
@@ -299,8 +263,6 @@ class AppTheme {
           ),
         ),
       ),
-
-      // List Tile Theme - KORRIGIERT: const entfernt wegen withOpacity
       listTileTheme: ListTileThemeData(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         iconColor: AppColors.textSecondary,
@@ -312,8 +274,6 @@ class AppTheme {
           borderRadius: BorderRadius.all(Radius.circular(8)),
         ),
       ),
-
-      // Expansion Tile Theme
       expansionTileTheme: const ExpansionTileThemeData(
         backgroundColor: AppColors.surface,
         collapsedBackgroundColor: AppColors.surface,
@@ -325,8 +285,6 @@ class AppTheme {
           borderRadius: BorderRadius.all(Radius.circular(8)),
         ),
       ),
-
-      // Popup Menu Theme
       popupMenuTheme: PopupMenuThemeData(
         color: AppColors.surface,
         elevation: 8,
@@ -338,8 +296,6 @@ class AppTheme {
           fontSize: 16,
         ),
       ),
-
-      // Tooltip Theme
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(
           color: AppColors.textPrimary.withOpacity(0.9),
@@ -352,8 +308,6 @@ class AppTheme {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         waitDuration: const Duration(milliseconds: 500),
       ),
-
-      // Bottom Sheet Theme
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.surface,
         elevation: 16,
@@ -364,23 +318,17 @@ class AppTheme {
         ),
         clipBehavior: Clip.antiAlias,
       ),
-
-      // Divider
       dividerTheme: const DividerThemeData(
         color: AppColors.divider,
         thickness: 1,
         space: 1,
       ),
-
-      // Badge Theme
       badgeTheme: const BadgeThemeData(
         backgroundColor: AppColors.error,
         textColor: AppColors.textLight,
         smallSize: 6,
         largeSize: 16,
       ),
-
-      // Navigation Bar Theme (Material 3)
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.surface,
         indicatorColor: AppColors.primary.withOpacity(0.2),
@@ -412,8 +360,6 @@ class AppTheme {
           );
         }),
       ),
-
-      // Text Theme
       textTheme: TextTheme(
         displayLarge: TextStyles.displayLarge,
         displayMedium: TextStyles.displayMedium,
@@ -434,7 +380,6 @@ class AppTheme {
     );
   }
 
-  // Dark Theme
   static ThemeData get darkTheme {
     return lightTheme.copyWith(
       scaffoldBackgroundColor: AppColors.surfaceDark,
@@ -448,8 +393,6 @@ class AppTheme {
         onSurface: AppColors.textLight,
         onError: AppColors.textLight,
       ),
-
-      // AppBar Theme Dark
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.surfaceDark,
         foregroundColor: AppColors.textLight,
@@ -465,8 +408,6 @@ class AppTheme {
           size: 24,
         ),
       ),
-
-      // Card Theme Dark
       cardTheme: CardThemeData(
         color: const Color(0xFF2A2A2A),
         elevation: 2,
@@ -476,8 +417,6 @@ class AppTheme {
         ),
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
-
-      // Dialog Theme Dark - KORRIGIERT: DialogThemeData statt DialogTheme
       dialogTheme: DialogThemeData(
         backgroundColor: const Color(0xFF2A2A2A),
         elevation: 24,
@@ -494,8 +433,6 @@ class AppTheme {
           color: Color(0xFFB0B0B0),
         ),
       ),
-
-      // Bottom Sheet Theme Dark
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: Color(0xFF2A2A2A),
         elevation: 16,
@@ -506,8 +443,6 @@ class AppTheme {
         ),
         clipBehavior: Clip.antiAlias,
       ),
-
-      // Input Decoration Theme Dark
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: const Color(0xFF2A2A2A),
@@ -532,8 +467,6 @@ class AppTheme {
         labelStyle: const TextStyle(color: Color(0xFFB0B0B0)),
         hintStyle: const TextStyle(color: Color(0xFF707070)),
       ),
-
-      // Text Theme Dark
       textTheme: TextTheme(
         displayLarge:
             TextStyles.displayLarge.copyWith(color: AppColors.textLight),
@@ -564,7 +497,7 @@ class AppTheme {
     );
   }
 
-  // Cupertino Theme für iOS
+  // ✅ KRITISCHER FIX: Cupertino Theme mit inherit: false
   static CupertinoThemeData get cupertinoTheme {
     return const CupertinoThemeData(
       primaryColor: AppColors.primary,
@@ -572,35 +505,40 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.background,
       textTheme: CupertinoTextThemeData(
         primaryColor: AppColors.textPrimary,
+        // ✅ ALLE TextStyles mit inherit: false
         textStyle: TextStyle(
           fontSize: 16,
           color: AppColors.textPrimary,
+          inherit: false,
         ),
         actionTextStyle: TextStyle(
           fontSize: 16,
           color: AppColors.primary,
           fontWeight: FontWeight.w600,
+          inherit: false,
         ),
         navTitleTextStyle: TextStyle(
           fontSize: 17,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
+          inherit: false,
         ),
         navLargeTitleTextStyle: TextStyle(
           fontSize: 34,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
+          inherit: false,
         ),
         tabLabelTextStyle: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w500,
           color: AppColors.textSecondary,
+          inherit: false,
         ),
       ),
     );
   }
 
-  // Helper: Custom Colors für spezielle Widgets
   static BoxDecoration get gradientContainer {
     return const BoxDecoration(
       gradient: LinearGradient(

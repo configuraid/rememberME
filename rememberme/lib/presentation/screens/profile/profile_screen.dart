@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rememberme/data/models/user_model.dart';
+import 'package:rememberme/data/models/auth/user_model.dart';
 import '../../../business_logic/auth/auth_bloc.dart';
 import '../../../business_logic/auth/auth_event.dart';
 import '../../../business_logic/auth/auth_state.dart';
@@ -36,6 +36,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (userId != null) {
       context.read<ProfileBloc>().add(ProfileLoadRequested(userId));
     }
+  }
+
+  // ✅ Helper Methode für sichere Initialen-Extraktion
+  String _getInitials(String? name) {
+    if (name == null || name.trim().isEmpty) {
+      return 'U';
+    }
+
+    final trimmedName = name.trim();
+
+    // Wenn mehrere Wörter, nimm ersten Buchstaben von jedem (max 2)
+    final parts = trimmedName.split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+
+    // Einzelner Name
+    return trimmedName[0].toUpperCase();
   }
 
   @override
@@ -131,7 +149,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     : null,
                 child: profileState.profileImageUrl == null
                     ? Text(
-                        user?.name.substring(0, 1).toUpperCase() ?? 'U',
+                        // ✅ FIX: Sichere Initialen-Extraktion
+                        _getInitials(user?.name),
                         style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
@@ -160,7 +179,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            profileState.name ?? user?.name ?? '',
+            profileState.name ?? user?.name ?? 'Unbekannt',
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rememberme/presentation/widgets/memorial/template_detail_bottom_sheet.dart';
-import '../../../business_logic/memorial/memorial_bloc.dart';
-import '../../../business_logic/memorial/memorial_event.dart';
-import '../../../business_logic/memorial/memorial_state.dart';
-import '../../../business_logic/auth/auth_bloc.dart';
+import 'package:rememberme/business_logic/auth/auth_bloc.dart';
+import 'package:rememberme/business_logic/memorial/memorial_bloc.dart';
+import 'package:rememberme/business_logic/memorial/memorial_event.dart';
+import 'package:rememberme/business_logic/memorial/memorial_state.dart';
+import '../../../presentation/widgets/memorial/template_detail_bottom_sheet.dart';
 import '../../../core/constants/app_colors.dart';
 
 enum CreateTab { details, design }
@@ -167,16 +167,31 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
 
   void _createMemorial() {
     if (_formKey.currentState?.validate() ?? false) {
-      final userId = context.read<AuthBloc>().state.user?.id;
+      final authState = context.read<AuthBloc>().state;
+      final user = authState.user;
 
-      if (userId == null) {
+      if (user == null) {
         _showError('Benutzer nicht gefunden');
         return;
       }
 
+      // ✅ Prüfe ob primaryOrganizationId vorhanden ist
+      if (user.primaryOrganizationId == null) {
+        _showError('Keine Organisation gefunden');
+        return;
+      }
+
+      print('📝 MemorialCreateScreen - Erstelle Memorial');
+      print('👤 User: ${user.name} (${user.id})');
+      print('🏢 Organisation: ${user.primaryOrganizationId}');
+      print('📋 Name: ${_nameController.text.trim()}');
+      print('🎨 Template: $_selectedTemplate');
+
+      // ✅ Sende Event mit organizationId
       context.read<MemorialBloc>().add(
             MemorialCreateRequested(
-              ownerId: userId,
+              organizationId: user.primaryOrganizationId!, // ✅ WICHTIG!
+              ownerId: user.id,
               name: _nameController.text.trim(),
               templateId: _selectedTemplate,
               birthDate: _birthDate,
@@ -221,9 +236,13 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
   Widget build(BuildContext context) {
     return BlocListener<MemorialBloc, MemorialState>(
       listener: (context, state) {
+        print('🎧 MemorialCreateScreen Listener - Status: ${state.status}');
+
         if (state.status == MemorialStatus.success) {
+          print('✅ Memorial erfolgreich erstellt - navigiere zurück');
           Navigator.of(context).pop();
         } else if (state.hasError) {
+          print('❌ Fehler: ${state.errorMessage}');
           _showError(state.errorMessage ?? 'Ein Fehler ist aufgetreten');
         }
       },

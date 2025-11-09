@@ -2,15 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rememberme/business_logic/auth/auth_bloc.dart';
+import 'package:rememberme/business_logic/memorial/memorial_bloc.dart';
+import 'package:rememberme/business_logic/memorial/memorial_event.dart';
+import 'package:rememberme/business_logic/memorial/memorial_state.dart';
 import 'package:rememberme/presentation/screens/memorial/memorial_screen.dart';
-import 'package:rememberme/presentation/screens/profile/profile_screen.dart';
-import '../../../business_logic/auth/auth_bloc.dart';
-import '../../../business_logic/auth/auth_state.dart';
-import '../../../business_logic/memorial/memorial_bloc.dart';
-import '../../../business_logic/memorial/memorial_event.dart';
-import '../../../business_logic/memorial/memorial_state.dart';
-import '../../../business_logic/license/license_bloc.dart';
-import '../../../business_logic/license/license_event.dart';
+import '../profile/profile_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_routes.dart';
@@ -32,11 +29,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _loadData() {
-    final userId = context.read<AuthBloc>().state.user?.id;
-    if (userId != null) {
-      context.read<MemorialBloc>().add(MemorialLoadRequested(userId));
-      context.read<LicenseBloc>().add(LicenseLoadRequested(userId));
+    print('📚 DashboardScreen - Lade Daten...');
+
+    final authState = context.read<AuthBloc>().state;
+    final user = authState.user;
+
+    if (user == null) {
+      print('❌ DashboardScreen - Kein User gefunden');
+      return;
     }
+
+    if (user.primaryOrganizationId == null) {
+      print('❌ DashboardScreen - Keine Organisation gefunden');
+      return;
+    }
+
+    print('👤 User: ${user.name} (${user.id})');
+    print('🏢 Organisation: ${user.primaryOrganizationId}');
+
+    // ✅ Lade Memorials mit organizationId + userId
+    context.read<MemorialBloc>().add(
+          MemorialLoadRequested(
+            organizationId: user.primaryOrganizationId!,
+            userId: user.id,
+          ),
+        );
+
+    print('✅ DashboardScreen - Daten werden geladen');
   }
 
   void _onItemTapped(int index) {
@@ -79,10 +98,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onTap: _onItemTapped,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: AppStrings.dashboard,
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.favorite),
             label: 'Gedenkseite',
           ),
@@ -98,8 +113,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildMemorialsTab() {
     return BlocBuilder<MemorialBloc, MemorialState>(
       builder: (context, memorialState) {
+        print('🏗️ DashboardScreen - Memorial Tab wird gebaut');
+        print('📊 Status: ${memorialState.status}');
+        print('📊 Anzahl Memorials: ${memorialState.memorials.length}');
+
         // Ladezustand
         if (memorialState.isLoading) {
+          print('⏳ DashboardScreen - Lädt...');
           return Scaffold(
             appBar: AppBar(
               title: const Text('Meine Gedenkseite'),
@@ -112,6 +132,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         // Fehler
         if (memorialState.hasError) {
+          print('❌ DashboardScreen - Fehler: ${memorialState.errorMessage}');
           return Scaffold(
             appBar: AppBar(
               title: const Text('Meine Gedenkseite'),
@@ -140,6 +161,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         // Keine Gedenkseite vorhanden
         if (memorialState.memorials.isEmpty) {
+          print('📝 DashboardScreen - Keine Memorials vorhanden');
           return Scaffold(
             appBar: AppBar(
               title: const Text('Meine Gedenkseite'),
@@ -172,10 +194,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     const SizedBox(height: 32),
                     ElevatedButton.icon(
-                      onPressed: () =>
-                          Navigator.of(context, rootNavigator: true).pushNamed(
-                        AppRoutes.memorialCreate,
-                      ),
+                      onPressed: () {
+                        print('➕ Navigiere zu Memorial Create');
+                        Navigator.of(context, rootNavigator: true).pushNamed(
+                          AppRoutes.memorialCreate,
+                        );
+                      },
                       icon: const Icon(Icons.add, size: 24),
                       label: const Text(
                         'Gedenkseite erstellen',
@@ -197,6 +221,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         // Gedenkseite vorhanden → Detail-Ansicht anzeigen
         final memorial = memorialState.memorials.first;
+        print('📄 DashboardScreen - Zeige Memorial: ${memorial.name}');
 
         return MemorialDetailScreen(memorial: memorial);
       },

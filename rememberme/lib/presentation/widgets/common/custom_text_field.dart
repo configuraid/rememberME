@@ -13,6 +13,11 @@ class CustomTextField extends StatelessWidget {
   final bool obscureText;
   final TextInputType? keyboardType;
   final int? maxLines;
+  final TextInputAction? textInputAction; // ✅ Hinzugefügt
+  final void Function(String)? onFieldSubmitted; // ✅ Hinzugefügt
+  final bool enabled;
+  final FocusNode? focusNode;
+  final void Function(String)? onChanged;
 
   const CustomTextField({
     super.key,
@@ -26,6 +31,11 @@ class CustomTextField extends StatelessWidget {
     this.obscureText = false,
     this.keyboardType,
     this.maxLines = 1,
+    this.textInputAction, // ✅ Hinzugefügt
+    this.onFieldSubmitted, // ✅ Hinzugefügt
+    this.enabled = true,
+    this.focusNode,
+    this.onChanged,
   });
 
   @override
@@ -54,6 +64,11 @@ class CustomTextField extends StatelessWidget {
       obscureText: obscureText,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      textInputAction: textInputAction, // ✅ Hinzugefügt
+      onFieldSubmitted: onFieldSubmitted, // ✅ Hinzugefügt
+      enabled: enabled,
+      focusNode: focusNode,
+      onChanged: onChanged,
     );
   }
 
@@ -63,9 +78,12 @@ class CustomTextField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
+            color: enabled
+                ? CupertinoColors.label.resolveFrom(context)
+                : CupertinoColors.inactiveGray.resolveFrom(context),
           ),
         ),
         const SizedBox(height: 8),
@@ -75,21 +93,69 @@ class CustomTextField extends StatelessWidget {
           prefix: prefixIcon != null
               ? Padding(
                   padding: const EdgeInsets.only(left: 8),
-                  child: Icon(prefixIcon, size: 20),
+                  child: Icon(
+                    prefixIcon,
+                    size: 20,
+                    color: enabled
+                        ? CupertinoColors.systemGrey.resolveFrom(context)
+                        : CupertinoColors.inactiveGray.resolveFrom(context),
+                  ),
                 )
               : null,
           suffix: suffixIcon != null
               ? CupertinoButton(
                   padding: EdgeInsets.zero,
-                  onPressed: onSuffixIconPressed,
-                  child: Icon(suffixIcon, size: 20),
+                  onPressed: enabled ? onSuffixIconPressed : null,
+                  child: Icon(
+                    suffixIcon,
+                    size: 20,
+                    color: enabled
+                        ? CupertinoColors.systemGrey.resolveFrom(context)
+                        : CupertinoColors.inactiveGray.resolveFrom(context),
+                  ),
                 )
               : null,
           obscureText: obscureText,
           keyboardType: keyboardType,
           maxLines: maxLines,
           padding: const EdgeInsets.all(12),
+          textInputAction: textInputAction, // ✅ Hinzugefügt
+          onSubmitted:
+              onFieldSubmitted, // ✅ Hinzugefügt (CupertinoTextField verwendet onSubmitted statt onFieldSubmitted)
+          enabled: enabled,
+          focusNode: focusNode,
+          onChanged: onChanged,
+          decoration: BoxDecoration(
+            color: enabled
+                ? CupertinoColors.systemBackground.resolveFrom(context)
+                : CupertinoColors.systemGrey6.resolveFrom(context),
+            border: Border.all(
+              color: CupertinoColors.separator.resolveFrom(context),
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
+        // Validierungs-Fehler für iOS (da CupertinoTextField kein validator hat)
+        if (!enabled || validator == null)
+          const SizedBox.shrink()
+        else
+          Builder(
+            builder: (context) {
+              final errorText = validator?.call(controller.text);
+              if (errorText == null) return const SizedBox.shrink();
+
+              return Padding(
+                padding: const EdgeInsets.only(top: 8, left: 8),
+                child: Text(
+                  errorText,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: CupertinoColors.destructiveRed,
+                  ),
+                ),
+              );
+            },
+          ),
       ],
     );
   }

@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'user_model.dart';
+import 'auth/user_model.dart';
 
 class GroupMemberModel extends Equatable {
   final String id;

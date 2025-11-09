@@ -98,6 +98,7 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
         templateId: event.templateId,
         birthDate: event.birthDate,
         deathDate: event.deathDate,
+        organizationId: event.organizationId,
       );
 
       // Alle Gedenkseiten neu laden

@@ -31,6 +31,7 @@ class PageBuilderRepository {
       viewCount: 0,
       createdAt: DateTime.now().subtract(const Duration(days: 7)),
       updatedAt: DateTime.now(),
+      organizationId: 'org-123',
     );
   }
 

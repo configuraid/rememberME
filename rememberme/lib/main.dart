@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rememberme/app.dart';
 import 'firebase_options.dart';
-import 'data/repositories/auth_repository.dart';
+import 'data/repositories/auth/auth_repository.dart';
 import 'data/repositories/memorial_repository.dart';
 import 'data/repositories/license_repository.dart';
 import 'data/repositories/profile_repository.dart';
