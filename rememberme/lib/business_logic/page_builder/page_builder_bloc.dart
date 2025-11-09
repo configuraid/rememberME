@@ -20,6 +20,7 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
     on<PageBuilderRedoRequested>(_onRedo);
   }
 
+  // ✅ FIX: Null-Behandlung für getMemorial
   Future<void> _onLoad(
     PageBuilderLoadRequested event,
     Emitter<PageBuilderState> emit,
@@ -31,6 +32,14 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
 
       final memorial =
           await pageBuilderRepository.getMemorial(event.memorialId);
+
+      // ✅ FIX: Prüfe ob Memorial existiert
+      if (memorial == null) {
+        print('❌ PageBuilderBloc - Memorial nicht gefunden');
+        emit(PageBuilderState.error('Memorial nicht gefunden'));
+        return;
+      }
+
       final blocks = memorial.contentBlocks;
 
       print('✅ PageBuilderBloc - ${blocks.length} Blocks geladen');

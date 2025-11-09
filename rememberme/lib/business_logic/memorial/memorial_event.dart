@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
-import 'package:rememberme/data/models/auth/user_model.dart';
-import '../../data/models/memorial_page_model.dart';
+import '../../data/models/auth/user_model.dart';
 import '../../data/models/content_block_model.dart';
+import '../../data/models/memorial_page_model.dart';
 
 abstract class MemorialEvent extends Equatable {
   const MemorialEvent();
@@ -10,41 +10,28 @@ abstract class MemorialEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-// ========================================
-// LOAD EVENTS
-// ========================================
-
-/// Gedenkseiten einer Organisation laden
+// ✅ GEÄNDERT: Nutzt organizationId statt userId
 class MemorialLoadRequested extends MemorialEvent {
   final String organizationId;
-  final String userId; // Optional: Filter nach User
 
-  const MemorialLoadRequested({
-    required this.organizationId,
-    required this.userId,
-  });
+  const MemorialLoadRequested({required this.organizationId});
 
   @override
-  List<Object?> get props => [organizationId, userId];
+  List<Object?> get props => [organizationId];
 }
 
-/// Einzelne Gedenkseite laden
 class MemorialDetailLoadRequested extends MemorialEvent {
   final String memorialId;
 
-  const MemorialDetailLoadRequested(this.memorialId);
+  const MemorialDetailLoadRequested({required this.memorialId});
 
   @override
   List<Object?> get props => [memorialId];
 }
 
-// ========================================
-// CREATE / UPDATE / DELETE
-// ========================================
-
-/// Neue Gedenkseite erstellen
+// ✅ GEÄNDERT: Nutzt organizationId statt userId (war vorher nur implizit)
 class MemorialCreateRequested extends MemorialEvent {
-  final String organizationId; // ✅ Hinzugefügt!
+  final String organizationId;
   final String ownerId;
   final String name;
   final String templateId;
@@ -65,31 +52,24 @@ class MemorialCreateRequested extends MemorialEvent {
       [organizationId, ownerId, name, templateId, birthDate, deathDate];
 }
 
-/// Gedenkseite aktualisieren
 class MemorialUpdateRequested extends MemorialEvent {
   final MemorialPageModel memorial;
 
-  const MemorialUpdateRequested(this.memorial);
+  const MemorialUpdateRequested({required this.memorial});
 
   @override
   List<Object?> get props => [memorial];
 }
 
-/// Gedenkseite löschen
 class MemorialDeleteRequested extends MemorialEvent {
   final String memorialId;
 
-  const MemorialDeleteRequested(this.memorialId);
+  const MemorialDeleteRequested({required this.memorialId});
 
   @override
   List<Object?> get props => [memorialId];
 }
 
-// ========================================
-// CONTENT BLOCK EVENTS
-// ========================================
-
-/// Content-Block hinzufügen
 class MemorialContentBlockAddRequested extends MemorialEvent {
   final String memorialId;
   final ContentBlock block;
@@ -103,7 +83,6 @@ class MemorialContentBlockAddRequested extends MemorialEvent {
   List<Object?> get props => [memorialId, block];
 }
 
-/// Content-Block aktualisieren
 class MemorialContentBlockUpdateRequested extends MemorialEvent {
   final String memorialId;
   final ContentBlock block;
@@ -117,7 +96,6 @@ class MemorialContentBlockUpdateRequested extends MemorialEvent {
   List<Object?> get props => [memorialId, block];
 }
 
-/// Content-Block löschen
 class MemorialContentBlockDeleteRequested extends MemorialEvent {
   final String memorialId;
   final String blockId;
@@ -131,21 +109,15 @@ class MemorialContentBlockDeleteRequested extends MemorialEvent {
   List<Object?> get props => [memorialId, blockId];
 }
 
-// ========================================
-// PUBLISH & SHARE
-// ========================================
-
-/// Gedenkseite veröffentlichen
 class MemorialPublishRequested extends MemorialEvent {
   final String memorialId;
 
-  const MemorialPublishRequested(this.memorialId);
+  const MemorialPublishRequested({required this.memorialId});
 
   @override
   List<Object?> get props => [memorialId];
 }
 
-/// Gruppenmitglied einladen
 class MemorialInviteMemberRequested extends MemorialEvent {
   final String memorialId;
   final String userEmail;
@@ -161,15 +133,10 @@ class MemorialInviteMemberRequested extends MemorialEvent {
   List<Object?> get props => [memorialId, userEmail, role];
 }
 
-// ========================================
-// ANALYTICS
-// ========================================
-
-/// Views erhöhen
 class MemorialIncrementViewRequested extends MemorialEvent {
   final String memorialId;
 
-  const MemorialIncrementViewRequested(this.memorialId);
+  const MemorialIncrementViewRequested({required this.memorialId});
 
   @override
   List<Object?> get props => [memorialId];

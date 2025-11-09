@@ -369,9 +369,9 @@ class _IntuitivePageBuilderScreenState
       updatedAt: DateTime.now(),
     );
 
-    // Sende Update-Event ans BLoC
+    // ✅ Sende Update-Event ans BLoC
     context.read<MemorialBloc>().add(
-          MemorialUpdateRequested(updatedMemorial),
+          MemorialUpdateRequested(memorial: updatedMemorial),
         );
 
     setState(() {

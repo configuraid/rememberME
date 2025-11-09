@@ -42,7 +42,7 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     on<MemorialIncrementViewRequested>(_onIncrementView);
   }
 
-  // Gedenkseiten laden Handler
+  // ✅ FIX: Gedenkseiten laden Handler - nutzt jetzt organizationId
   Future<void> _onLoadMemorials(
     MemorialLoadRequested event,
     Emitter<MemorialState> emit,
@@ -50,8 +50,9 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(MemorialState.loading());
 
     try {
-      final memorials =
-          await memorialRepository.getMemorialsByUserId(event.userId);
+      // ✅ GEÄNDERT: Nutze getMemorialsByOrganization statt getMemorialsByUserId
+      final memorials = await memorialRepository
+          .getMemorialsByOrganization(event.organizationId);
       emit(MemorialState.loaded(memorials));
     } catch (e) {
       emit(MemorialState.error(
@@ -84,7 +85,7 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     }
   }
 
-  // Neue Gedenkseite erstellen Handler
+  // ✅ FIX: Neue Gedenkseite erstellen Handler - Memorials neu laden mit organizationId
   Future<void> _onCreateMemorial(
     MemorialCreateRequested event,
     Emitter<MemorialState> emit,
@@ -93,17 +94,17 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
 
     try {
       final newMemorial = await memorialRepository.createMemorial(
+        organizationId: event.organizationId,
         ownerId: event.ownerId,
         name: event.name,
         templateId: event.templateId,
         birthDate: event.birthDate,
         deathDate: event.deathDate,
-        organizationId: event.organizationId,
       );
 
-      // Alle Gedenkseiten neu laden
-      final memorials =
-          await memorialRepository.getMemorialsByUserId(event.ownerId);
+      // ✅ GEÄNDERT: Alle Gedenkseiten mit organizationId neu laden
+      final memorials = await memorialRepository
+          .getMemorialsByOrganization(event.organizationId);
 
       emit(MemorialState.success(
         'Gedenkseite erfolgreich erstellt',
@@ -283,15 +284,14 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(state.copyWith(status: MemorialStatus.updating));
 
     try {
-      await memorialRepository.inviteGroupMember(
-        memorialId: event.memorialId,
-        userEmail: event.userEmail,
-        role: event.role,
-      );
+      // ⚠️ HINWEIS: Diese Methode existiert nicht mehr im neuen Repository
+      // Du musst diese Funktionalität über OrganizationRepository implementieren
+      // Hier als Platzhalter gelassen
 
       emit(state.copyWith(
-        status: MemorialStatus.success,
-        successMessage: 'Einladung erfolgreich versendet',
+        status: MemorialStatus.error,
+        errorMessage:
+            'Mitglieder-Einladung muss über OrganizationRepository implementiert werden',
       ));
     } catch (e) {
       emit(MemorialState.error(

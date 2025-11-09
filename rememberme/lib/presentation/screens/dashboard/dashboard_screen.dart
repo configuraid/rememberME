@@ -47,11 +47,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     print('👤 User: ${user.name} (${user.id})');
     print('🏢 Organisation: ${user.primaryOrganizationId}');
 
-    // ✅ Lade Memorials mit organizationId + userId
+    // ✅ FIX: Lade Memorials nur mit organizationId (userId wurde entfernt)
     context.read<MemorialBloc>().add(
           MemorialLoadRequested(
             organizationId: user.primaryOrganizationId!,
-            userId: user.id,
           ),
         );
 

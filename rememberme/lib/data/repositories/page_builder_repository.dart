@@ -1,75 +1,35 @@
-// lib/data/repositories/page_builder_repository.dart
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:rememberme/data/models/content_block_model.dart';
-
 import '../models/memorial_page_model.dart';
+import 'package:uuid/uuid.dart';
 
 class PageBuilderRepository {
-  /// Load memorial with its content blocks
-  Future<MemorialPageModel> getMemorial(String memorialId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final _uuid = const Uuid();
 
+  /// Load memorial with its content blocks
+  Future<MemorialPageModel?> getMemorial(String memorialId) async {
     print('📦 PageBuilderRepository - Lade Memorial: $memorialId');
 
-    // TODO: Replace with actual API call
-    // Example: final response = await http.get('/api/memorials/$memorialId');
+    try {
+      final doc =
+          await _firestore.collection('memorials').doc(memorialId).get();
 
-    // For now, return mock memorial with example blocks
-    return MemorialPageModel(
-      id: memorialId,
-      ownerId: 'user-1',
-      name: 'Max Mustermann',
-      subtitle: 'In liebevoller Erinnerung',
-      birthDate: DateTime(1950, 1, 1),
-      deathDate: DateTime(2024, 1, 1),
-      profileImageUrl: 'https://via.placeholder.com/400',
-      templateId: 'template1',
-      isPublished: false,
-      status: MemorialStatus.draft,
-      privacyLevel: PrivacyLevel.private,
-      contentBlocks: _getExampleBlocks(),
-      viewCount: 0,
-      createdAt: DateTime.now().subtract(const Duration(days: 7)),
-      updatedAt: DateTime.now(),
-      organizationId: 'org-123',
-    );
-  }
+      if (!doc.exists) {
+        print('❌ PageBuilderRepository - Memorial nicht gefunden');
+        return null;
+      }
 
-  /// Get example/starter blocks for a new memorial
-  List<ContentBlock> _getExampleBlocks() {
-    return [
-      // Header block
-      ContentBlock(
-        type: ContentBlockType.header,
-        content: {
-          'text': 'Max Mustermann',
-          'level': 1,
-          'align': 'center',
-          'color': '#2C3E50',
-        },
-      ),
-
-      // Date block
-      ContentBlock(
-        type: ContentBlockType.date,
-        content: {
-          'birthDate': '01.01.1950',
-          'deathDate': '01.01.2024',
-          'format': 'DD.MM.YYYY',
-        },
-      ),
-
-      // Text block
-      ContentBlock(
-        type: ContentBlockType.text,
-        content: {
-          'text': 'Hier kannst du über das Leben erzählen...',
-          'fontSize': 16.0,
-          'align': 'left',
-          'color': '#333333',
-        },
-      ),
-    ];
+      final memorial =
+          MemorialPageModel.fromJson({...doc.data()!, 'id': doc.id});
+      print('✅ PageBuilderRepository - Memorial geladen: ${memorial.name}');
+      print(
+          '📊 PageBuilderRepository - ${memorial.contentBlocks.length} Blocks');
+      return memorial;
+    } catch (e) {
+      print('❌ PageBuilderRepository - Fehler beim Laden: $e');
+      return null;
+    }
   }
 
   /// Save content blocks to memorial
@@ -77,36 +37,46 @@ class PageBuilderRepository {
     required String memorialId,
     required List<ContentBlock> blocks,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 800));
-
     print(
         '💾 PageBuilderRepository - Speichere ${blocks.length} Blocks für Memorial: $memorialId');
 
-    // TODO: Replace with actual API call
-    // Example:
-    // final json = blocks.map((b) => b.toJson()).toList();
-    // await http.put(
-    //   '/api/memorials/$memorialId/blocks',
-    //   body: jsonEncode({'blocks': json}),
-    // );
+    try {
+      // Konvertiere Blocks zu JSON
+      final blocksJson = blocks.map((b) => b.toJson()).toList();
 
-    // Simulate success
-    print('✅ PageBuilderRepository - Blocks erfolgreich gespeichert');
+      // Update Memorial mit neuen Blocks
+      await _firestore.collection('memorials').doc(memorialId).update({
+        'contentBlocks': blocksJson,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      print('✅ PageBuilderRepository - Blocks erfolgreich gespeichert');
+    } catch (e) {
+      print('❌ PageBuilderRepository - Fehler beim Speichern: $e');
+      rethrow;
+    }
   }
 
   /// Load a specific block by ID
   Future<ContentBlock?> getBlock(String memorialId, String blockId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-
     print('📦 PageBuilderRepository - Lade Block: $blockId');
 
-    final memorial = await getMemorial(memorialId);
     try {
-      final block = memorial.contentBlocks.firstWhere((b) => b.id == blockId);
+      final memorial = await getMemorial(memorialId);
+      if (memorial == null) {
+        print('❌ PageBuilderRepository - Memorial nicht gefunden');
+        return null;
+      }
+
+      final block =
+          memorial.contentBlocks.firstWhere((b) => b.id == blockId, orElse: () {
+        throw Exception('Block nicht gefunden: $blockId');
+      });
+
       print('✅ PageBuilderRepository - Block gefunden: ${block.type.name}');
       return block;
     } catch (e) {
-      print('❌ PageBuilderRepository - Block nicht gefunden: $blockId');
+      print('❌ PageBuilderRepository - Fehler: $e');
       return null;
     }
   }
@@ -116,19 +86,26 @@ class PageBuilderRepository {
     required String memorialId,
     required ContentBlock block,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-
     print('➕ PageBuilderRepository - Füge Block hinzu: ${block.type.name}');
 
-    // TODO: API call to add block
-    // Example:
-    // final response = await http.post(
-    //   '/api/memorials/$memorialId/blocks',
-    //   body: jsonEncode(block.toJson()),
-    // );
+    try {
+      final memorial = await getMemorial(memorialId);
+      if (memorial == null) {
+        throw Exception('Memorial nicht gefunden');
+      }
 
-    print('✅ PageBuilderRepository - Block hinzugefügt: ${block.id}');
-    return block;
+      // Füge Block zur Liste hinzu
+      final updatedBlocks = [...memorial.contentBlocks, block];
+
+      // Speichere aktualisierte Blocks
+      await saveBlocks(memorialId: memorialId, blocks: updatedBlocks);
+
+      print('✅ PageBuilderRepository - Block hinzugefügt: ${block.id}');
+      return block;
+    } catch (e) {
+      print('❌ PageBuilderRepository - Fehler: $e');
+      rethrow;
+    }
   }
 
   /// Update a single block
@@ -136,19 +113,28 @@ class PageBuilderRepository {
     required String memorialId,
     required ContentBlock block,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-
     print('🔄 PageBuilderRepository - Aktualisiere Block: ${block.id}');
 
-    // TODO: API call to update block
-    // Example:
-    // await http.put(
-    //   '/api/memorials/$memorialId/blocks/${block.id}',
-    //   body: jsonEncode(block.toJson()),
-    // );
+    try {
+      final memorial = await getMemorial(memorialId);
+      if (memorial == null) {
+        throw Exception('Memorial nicht gefunden');
+      }
 
-    print('✅ PageBuilderRepository - Block aktualisiert');
-    return block;
+      // Aktualisiere Block in der Liste
+      final updatedBlocks = memorial.contentBlocks.map((b) {
+        return b.id == block.id ? block : b;
+      }).toList();
+
+      // Speichere aktualisierte Blocks
+      await saveBlocks(memorialId: memorialId, blocks: updatedBlocks);
+
+      print('✅ PageBuilderRepository - Block aktualisiert');
+      return block;
+    } catch (e) {
+      print('❌ PageBuilderRepository - Fehler: $e');
+      rethrow;
+    }
   }
 
   /// Delete a single block
@@ -156,15 +142,26 @@ class PageBuilderRepository {
     required String memorialId,
     required String blockId,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-
     print('🗑️ PageBuilderRepository - Lösche Block: $blockId');
 
-    // TODO: API call to delete block
-    // Example:
-    // await http.delete('/api/memorials/$memorialId/blocks/$blockId');
+    try {
+      final memorial = await getMemorial(memorialId);
+      if (memorial == null) {
+        throw Exception('Memorial nicht gefunden');
+      }
 
-    print('✅ PageBuilderRepository - Block gelöscht');
+      // Entferne Block aus der Liste
+      final updatedBlocks =
+          memorial.contentBlocks.where((b) => b.id != blockId).toList();
+
+      // Speichere aktualisierte Blocks
+      await saveBlocks(memorialId: memorialId, blocks: updatedBlocks);
+
+      print('✅ PageBuilderRepository - Block gelöscht');
+    } catch (e) {
+      print('❌ PageBuilderRepository - Fehler: $e');
+      rethrow;
+    }
   }
 
   /// Reorder blocks
@@ -172,18 +169,32 @@ class PageBuilderRepository {
     required String memorialId,
     required List<String> blockIds,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-
     print('🔀 PageBuilderRepository - Sortiere ${blockIds.length} Blocks neu');
 
-    // TODO: API call to reorder
-    // Example:
-    // await http.put(
-    //   '/api/memorials/$memorialId/blocks/reorder',
-    //   body: jsonEncode({'blockIds': blockIds}),
-    // );
+    try {
+      final memorial = await getMemorial(memorialId);
+      if (memorial == null) {
+        throw Exception('Memorial nicht gefunden');
+      }
 
-    print('✅ PageBuilderRepository - Blocks neu sortiert');
+      // Erstelle neue Block-Liste in der richtigen Reihenfolge
+      final reorderedBlocks = <ContentBlock>[];
+      for (var blockId in blockIds) {
+        final block = memorial.contentBlocks.firstWhere(
+          (b) => b.id == blockId,
+          orElse: () => throw Exception('Block nicht gefunden: $blockId'),
+        );
+        reorderedBlocks.add(block);
+      }
+
+      // Speichere neu sortierte Blocks
+      await saveBlocks(memorialId: memorialId, blocks: reorderedBlocks);
+
+      print('✅ PageBuilderRepository - Blocks neu sortiert');
+    } catch (e) {
+      print('❌ PageBuilderRepository - Fehler: $e');
+      rethrow;
+    }
   }
 
   /// Duplicate a block
@@ -191,38 +202,38 @@ class PageBuilderRepository {
     required String memorialId,
     required String blockId,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-
     print('📋 PageBuilderRepository - Dupliziere Block: $blockId');
 
-    // Get original block
-    final original = await getBlock(memorialId, blockId);
-    if (original == null) {
-      throw Exception('Block nicht gefunden: $blockId');
+    try {
+      // Get original block
+      final original = await getBlock(memorialId, blockId);
+      if (original == null) {
+        throw Exception('Block nicht gefunden: $blockId');
+      }
+
+      // Create duplicate with new ID
+      final duplicate = ContentBlock(
+        id: _uuid.v4(),
+        type: original.type,
+        content: Map<String, dynamic>.from(original.content),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      // Add duplicate to memorial
+      await addBlock(memorialId: memorialId, block: duplicate);
+
+      print('✅ PageBuilderRepository - Block dupliziert: ${duplicate.id}');
+      return duplicate;
+    } catch (e) {
+      print('❌ PageBuilderRepository - Fehler: $e');
+      rethrow;
     }
-
-    // Create duplicate with new ID
-    final duplicate = ContentBlock(
-      type: original.type,
-      content: Map<String, dynamic>.from(original.content),
-    );
-
-    // TODO: API call to save duplicate
-    // await addBlock(memorialId: memorialId, block: duplicate);
-
-    print('✅ PageBuilderRepository - Block dupliziert: ${duplicate.id}');
-    return duplicate;
   }
 
   /// Get template blocks for a specific template
   Future<List<ContentBlock>> getTemplateBlocks(String templateId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
     print('📋 PageBuilderRepository - Lade Template: $templateId');
-
-    // TODO: API call to get template blocks
-    // Example:
-    // final response = await http.get('/api/templates/$templateId/blocks');
 
     // Return example template blocks based on template ID
     switch (templateId) {
@@ -233,13 +244,15 @@ class PageBuilderRepository {
       case 'minimal':
         return _getMinimalTemplate();
       default:
-        return [];
+        return _getClassicTemplate();
     }
   }
 
   List<ContentBlock> _getClassicTemplate() {
+    final now = DateTime.now();
     return [
       ContentBlock(
+        id: _uuid.v4(),
         type: ContentBlockType.header,
         content: {
           'text': 'In liebevollem Gedenken',
@@ -247,15 +260,21 @@ class PageBuilderRepository {
           'align': 'center',
           'color': '#2C3E50',
         },
+        createdAt: now,
+        updatedAt: now,
       ),
       ContentBlock(
+        id: _uuid.v4(),
         type: ContentBlockType.date,
         content: {
           'birthDate': '',
           'deathDate': '',
         },
+        createdAt: now,
+        updatedAt: now,
       ),
       ContentBlock(
+        id: _uuid.v4(),
         type: ContentBlockType.text,
         content: {
           'text': 'Hier kannst du die Geschichte erzählen...',
@@ -263,36 +282,49 @@ class PageBuilderRepository {
           'align': 'left',
           'color': '#333333',
         },
+        createdAt: now,
+        updatedAt: now,
       ),
       ContentBlock(
+        id: _uuid.v4(),
         type: ContentBlockType.gallery,
         content: {
           'images': [],
           'columns': 3,
         },
+        createdAt: now,
+        updatedAt: now,
       ),
       ContentBlock(
+        id: _uuid.v4(),
         type: ContentBlockType.quote,
         content: {
           'text': 'Ein bedeutsames Zitat...',
           'author': '',
           'color': '#666666',
         },
+        createdAt: now,
+        updatedAt: now,
       ),
     ];
   }
 
   List<ContentBlock> _getModernTemplate() {
+    final now = DateTime.now();
     return [
       ContentBlock(
+        id: _uuid.v4(),
         type: ContentBlockType.image,
         content: {
           'url': '',
           'caption': '',
           'fit': 'cover',
         },
+        createdAt: now,
+        updatedAt: now,
       ),
       ContentBlock(
+        id: _uuid.v4(),
         type: ContentBlockType.header,
         content: {
           'text': 'Name der Person',
@@ -300,23 +332,32 @@ class PageBuilderRepository {
           'align': 'left',
           'color': '#1A1A1A',
         },
+        createdAt: now,
+        updatedAt: now,
       ),
       ContentBlock(
+        id: _uuid.v4(),
         type: ContentBlockType.date,
         content: {
           'birthDate': '',
           'deathDate': '',
         },
+        createdAt: now,
+        updatedAt: now,
       ),
       ContentBlock(
+        id: _uuid.v4(),
         type: ContentBlockType.divider,
         content: {
           'color': '#E0E0E0',
           'thickness': 2.0,
           'margin': 20.0,
         },
+        createdAt: now,
+        updatedAt: now,
       ),
       ContentBlock(
+        id: _uuid.v4(),
         type: ContentBlockType.text,
         content: {
           'text': 'Eine kurze Biografie...',
@@ -324,13 +365,17 @@ class PageBuilderRepository {
           'align': 'left',
           'color': '#333333',
         },
+        createdAt: now,
+        updatedAt: now,
       ),
     ];
   }
 
   List<ContentBlock> _getMinimalTemplate() {
+    final now = DateTime.now();
     return [
       ContentBlock(
+        id: _uuid.v4(),
         type: ContentBlockType.header,
         content: {
           'text': 'Name',
@@ -338,15 +383,21 @@ class PageBuilderRepository {
           'align': 'center',
           'color': '#000000',
         },
+        createdAt: now,
+        updatedAt: now,
       ),
       ContentBlock(
+        id: _uuid.v4(),
         type: ContentBlockType.date,
         content: {
           'birthDate': '',
           'deathDate': '',
         },
+        createdAt: now,
+        updatedAt: now,
       ),
       ContentBlock(
+        id: _uuid.v4(),
         type: ContentBlockType.text,
         content: {
           'text': 'In stillem Gedenken...',
@@ -354,6 +405,8 @@ class PageBuilderRepository {
           'align': 'center',
           'color': '#666666',
         },
+        createdAt: now,
+        updatedAt: now,
       ),
     ];
   }
@@ -362,23 +415,30 @@ class PageBuilderRepository {
   Future<Map<String, dynamic>> exportBlocks({
     required String memorialId,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-
     print('📤 PageBuilderRepository - Exportiere Blocks für: $memorialId');
 
-    final memorial = await getMemorial(memorialId);
-    final blocksJson = memorial.contentBlocks.map((b) => b.toJson()).toList();
+    try {
+      final memorial = await getMemorial(memorialId);
+      if (memorial == null) {
+        throw Exception('Memorial nicht gefunden');
+      }
 
-    final export = {
-      'memorialId': memorialId,
-      'exportedAt': DateTime.now().toIso8601String(),
-      'blockCount': memorial.contentBlocks.length,
-      'blocks': blocksJson,
-    };
+      final blocksJson = memorial.contentBlocks.map((b) => b.toJson()).toList();
 
-    print(
-        '✅ PageBuilderRepository - ${export['blockCount']} Blocks exportiert');
-    return export;
+      final export = {
+        'memorialId': memorialId,
+        'exportedAt': DateTime.now().toIso8601String(),
+        'blockCount': memorial.contentBlocks.length,
+        'blocks': blocksJson,
+      };
+
+      print(
+          '✅ PageBuilderRepository - ${export['blockCount']} Blocks exportiert');
+      return export;
+    } catch (e) {
+      print('❌ PageBuilderRepository - Fehler: $e');
+      rethrow;
+    }
   }
 
   /// Import blocks from JSON
@@ -386,20 +446,23 @@ class PageBuilderRepository {
     required String memorialId,
     required Map<String, dynamic> data,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
     print('📥 PageBuilderRepository - Importiere Blocks für: $memorialId');
 
-    final blocksData = data['blocks'] as List;
-    final blocks = blocksData
-        .map((json) => ContentBlock.fromJson(json as Map<String, dynamic>))
-        .toList();
+    try {
+      final blocksData = data['blocks'] as List;
+      final blocks = blocksData
+          .map((json) => ContentBlock.fromJson(json as Map<String, dynamic>))
+          .toList();
 
-    // Save imported blocks
-    await saveBlocks(memorialId: memorialId, blocks: blocks);
+      // Save imported blocks
+      await saveBlocks(memorialId: memorialId, blocks: blocks);
 
-    print('✅ PageBuilderRepository - ${blocks.length} Blocks importiert');
-    return blocks;
+      print('✅ PageBuilderRepository - ${blocks.length} Blocks importiert');
+      return blocks;
+    } catch (e) {
+      print('❌ PageBuilderRepository - Fehler: $e');
+      rethrow;
+    }
   }
 
   /// Validate blocks before saving
@@ -428,5 +491,27 @@ class PageBuilderRepository {
 
     print('✅ PageBuilderRepository - ${blocks.length} Blocks sind valide');
     return true;
+  }
+
+  /// Auto-save functionality
+  Future<void> autoSave({
+    required String memorialId,
+    required List<ContentBlock> blocks,
+  }) async {
+    print('💾 PageBuilderRepository - Auto-Save für: $memorialId');
+
+    try {
+      if (!validateBlocks(blocks)) {
+        print(
+            '⚠️ PageBuilderRepository - Auto-Save übersprungen (Validierung fehlgeschlagen)');
+        return;
+      }
+
+      await saveBlocks(memorialId: memorialId, blocks: blocks);
+      print('✅ PageBuilderRepository - Auto-Save erfolgreich');
+    } catch (e) {
+      print('❌ PageBuilderRepository - Auto-Save Fehler: $e');
+      // Auto-save errors sollten nicht die App crashen
+    }
   }
 }

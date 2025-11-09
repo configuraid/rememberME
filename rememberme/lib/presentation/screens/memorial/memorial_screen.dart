@@ -58,7 +58,7 @@ class MemorialDetailScreen extends StatelessWidget {
           if (memorial == null && state.memorials.isEmpty) {
             print('🎨 Kein Memorial vorhanden - zeige Create Screen');
 
-            // ✅ Lade Memorials des Users, falls noch nicht geschehen
+            // ✅ FIX: Lade Memorials nur mit organizationId
             if (state.status == MemorialStatus.initial) {
               print('🔄 Status ist initial - lade Memorials');
               final authState = context.read<AuthBloc>().state;
@@ -68,11 +68,10 @@ class MemorialDetailScreen extends StatelessWidget {
                 print('📚 Lade Memorials für User: ${user.name}');
                 print('🏢 Organisation: ${user.primaryOrganizationId}');
 
-                // ✅ Lade Memorials mit organizationId + userId
+                // ✅ FIX: Nur organizationId, kein userId
                 context.read<MemorialBloc>().add(
                       MemorialLoadRequested(
                         organizationId: user.primaryOrganizationId!,
-                        userId: user.id,
                       ),
                     );
               }
@@ -173,7 +172,7 @@ class MemorialDetailScreen extends StatelessWidget {
         onRefresh: () async {
           print('🔄 Pull-to-Refresh: Lade Memorial neu');
           context.read<MemorialBloc>().add(
-                MemorialDetailLoadRequested(memorial.id),
+                MemorialDetailLoadRequested(memorialId: memorial.id),
               );
         },
         child: SingleChildScrollView(
@@ -248,7 +247,7 @@ class MemorialDetailScreen extends StatelessWidget {
               onRefresh: () async {
                 print('🔄 Pull-to-Refresh: Lade Memorial neu');
                 context.read<MemorialBloc>().add(
-                      MemorialDetailLoadRequested(memorial.id),
+                      MemorialDetailLoadRequested(memorialId: memorial.id),
                     );
               },
             ),
@@ -738,7 +737,7 @@ class MemorialDetailScreen extends StatelessWidget {
               onPressed: () {
                 context
                     .read<MemorialBloc>()
-                    .add(MemorialPublishRequested(memorial.id));
+                    .add(MemorialPublishRequested(memorialId: memorial.id));
                 Navigator.of(ctx).pop();
               },
               isDefaultAction: true,
@@ -764,7 +763,7 @@ class MemorialDetailScreen extends StatelessWidget {
               onPressed: () {
                 context
                     .read<MemorialBloc>()
-                    .add(MemorialPublishRequested(memorial.id));
+                    .add(MemorialPublishRequested(memorialId: memorial.id));
                 Navigator.of(ctx).pop();
               },
               style: ElevatedButton.styleFrom(
@@ -806,7 +805,7 @@ class MemorialDetailScreen extends StatelessWidget {
               onPressed: () {
                 context
                     .read<MemorialBloc>()
-                    .add(MemorialDeleteRequested(memorialId));
+                    .add(MemorialDeleteRequested(memorialId: memorialId));
                 Navigator.of(ctx).pop();
               },
               isDestructiveAction: true,
@@ -827,15 +826,15 @@ class MemorialDetailScreen extends StatelessWidget {
               child: const Text(AppStrings.cancel),
             ),
             ElevatedButton(
-              onPressed: () {
-                context
-                    .read<MemorialBloc>()
-                    .add(MemorialDeleteRequested(memorialId));
-                Navigator.of(ctx).pop();
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-              child: const Text(AppStrings.delete),
-            ),
+                style:
+                    ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+                child: const Text(AppStrings.delete),
+                onPressed: () {
+                  context
+                      .read<MemorialBloc>()
+                      .add(MemorialDeleteRequested(memorialId: memorialId));
+                  Navigator.of(ctx).pop();
+                }),
           ],
         ),
       );
