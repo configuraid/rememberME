@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -8,7 +9,6 @@ import '../../../business_logic/profile/profile_bloc.dart';
 import '../../../business_logic/profile/profile_event.dart';
 import '../../../business_logic/profile/profile_state.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../widgets/common/loading_indicator.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -69,7 +69,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _selectedImage = File(image.path);
       });
 
-      // Bild sofort hochladen
       final userId = context.read<AuthBloc>().state.user?.id;
       if (userId != null) {
         context.read<ProfileBloc>().add(
@@ -95,7 +94,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _selectedImage = File(photo.path);
       });
 
-      // Bild sofort hochladen
       final userId = context.read<AuthBloc>().state.user?.id;
       if (userId != null) {
         context.read<ProfileBloc>().add(
@@ -109,33 +107,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   void _showImageSourceDialog() {
-    showModalBottomSheet(
+    showCupertinoModalPopup(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Aus Galerie wählen'),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _pickImage();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Foto aufnehmen'),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _takePhoto();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.cancel),
-              title: const Text('Abbrechen'),
-              onTap: () => Navigator.of(ctx).pop(),
-            ),
-          ],
+      builder: (ctx) => CupertinoActionSheet(
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _pickImage();
+            },
+            child: const Text('Aus Galerie wählen'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _takePhoto();
+            },
+            child: const Text('Foto aufnehmen'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('Abbrechen'),
         ),
       ),
     );
@@ -145,6 +138,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (_formKey.currentState!.validate()) {
       final userId = context.read<AuthBloc>().state.user?.id;
       if (userId != null) {
+        print('💾 Speichere Profil für User: $userId');
         context.read<ProfileBloc>().add(
               ProfileUpdateRequested(
                 userId: userId,
@@ -154,48 +148,71 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 bio: _bioController.text,
               ),
             );
-
-        // Nach erfolgreichem Speichern zurück
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) {
-            Navigator.of(context).pop();
-          }
-        });
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ProfileBloc, ProfileState>(
+    // ✅ BlocConsumer mit CupertinoAlertDialog
+    return BlocConsumer<ProfileBloc, ProfileState>(
+      listener: (context, state) {
+        if (state.isSuccess && state.successMessage != null) {
+          // ✅ Zeige Erfolg mit Cupertino Dialog
+          showCupertinoDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => CupertinoAlertDialog(
+              title: const Icon(
+                Icons.check_circle,
+                color: AppColors.success,
+                size: 48,
+              ),
+              content: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(state.successMessage!),
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK'),
+                  onPressed: () {
+                    Navigator.of(ctx).pop(); // Dialog schließen
+                    Navigator.of(context).pop(); // Screen schließen
+                  },
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (state.hasError && state.errorMessage != null) {
+          // ✅ Zeige Fehler mit Cupertino Dialog
+          showCupertinoDialog(
+            context: context,
+            builder: (ctx) => CupertinoAlertDialog(
+              title: const Icon(
+                Icons.error,
+                color: AppColors.error,
+                size: 48,
+              ),
+              content: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(state.errorMessage!),
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK'),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                ),
+              ],
+            ),
+          );
+        }
+      },
       builder: (context, state) {
         return Scaffold(
           appBar: AppBar(
             title: const Text('Profil bearbeiten'),
-            actions: [
-              if (state.isLoading)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                )
-              else
-                TextButton(
-                  onPressed: _saveProfile,
-                  child: const Text(
-                    'Speichern',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-            ],
           ),
           body: Form(
             key: _formKey,
@@ -321,6 +338,44 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   maxLines: 4,
                   maxLength: 200,
                 ),
+
+                const SizedBox(height: 32),
+
+                // ✅ Speichern Button
+                SizedBox(
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: state.isLoading ? null : _saveProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.grey,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: state.isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : const Text(
+                            'Änderungen speichern',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 16),
               ],
             ),
           ),

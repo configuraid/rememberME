@@ -38,41 +38,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ✅ Helper Methode für sichere Initialen-Extraktion
   String _getInitials(String? name) {
     if (name == null || name.trim().isEmpty) {
       return 'U';
     }
 
     final trimmedName = name.trim();
-
-    // Wenn mehrere Wörter, nimm ersten Buchstaben von jedem (max 2)
     final parts = trimmedName.split(RegExp(r'\s+'));
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
 
-    // Einzelner Name
     return trimmedName[0].toUpperCase();
   }
 
   @override
   Widget build(BuildContext context) {
+    // ✅ BlocConsumer mit CupertinoAlertDialog
     return BlocConsumer<ProfileBloc, ProfileState>(
       listener: (context, state) {
         if (state.isSuccess && state.successMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.successMessage!),
-              backgroundColor: AppColors.success,
+          // ✅ Cupertino Dialog statt SnackBar
+          showCupertinoDialog(
+            context: context,
+            builder: (ctx) => CupertinoAlertDialog(
+              title: const Icon(
+                Icons.check_circle,
+                color: AppColors.success,
+                size: 48,
+              ),
+              content: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(state.successMessage!),
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK'),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                ),
+              ],
             ),
           );
         }
+
         if (state.hasError && state.errorMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.errorMessage!),
-              backgroundColor: AppColors.error,
+          // ✅ Cupertino Dialog für Fehler
+          showCupertinoDialog(
+            context: context,
+            builder: (ctx) => CupertinoAlertDialog(
+              title: const Icon(
+                Icons.error,
+                color: AppColors.error,
+                size: 48,
+              ),
+              content: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(state.errorMessage!),
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK'),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                ),
+              ],
             ),
           );
         }
@@ -101,18 +129,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onRefresh: () async => _loadProfile(),
                 child: ListView(
                   children: [
-                    // Profil Header
                     _buildProfileHeader(user, profileState),
-
                     const SizedBox(height: 16),
-
-                    // Statistiken
-                    if (profileState.statistics != null)
-                      _buildStatisticsSection(profileState.statistics!),
-
-                    const SizedBox(height: 8),
-
-                    // Menu Items
                     _buildMenuSection(context, user),
                   ],
                 ),
@@ -149,7 +167,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     : null,
                 child: profileState.profileImageUrl == null
                     ? Text(
-                        // ✅ FIX: Sichere Initialen-Extraktion
                         _getInitials(user?.name),
                         style: const TextStyle(
                           fontSize: 32,
@@ -210,107 +227,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStatisticsSection(ProfileStatistics stats) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Card(
-        child: InkWell(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const StatisticsScreen(),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Statistiken',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const Icon(Icons.arrow_forward_ios, size: 16),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatItem(
-                        'Gedenkseiten',
-                        '${stats.totalMemorials}',
-                        Icons.favorite,
-                        AppColors.accent,
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildStatItem(
-                        'Besucher',
-                        '${stats.totalViews}',
-                        Icons.visibility,
-                        AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatItem(
-                        'Beileidsbekundungen',
-                        '${stats.totalCondolences}',
-                        Icons.message,
-                        AppColors.success,
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildStatItem(
-                        'Gruppen',
-                        '${stats.groupMemberships}',
-                        Icons.group,
-                        AppColors.warning,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatItem(
-      String label, String value, IconData icon, Color color) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 28),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
   Widget _buildMenuSection(BuildContext context, UserModel? user) {
     return Column(
       children: [
@@ -324,13 +240,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               builder: (context) => const EditProfileScreen(),
             ),
           ),
-        ),
-        _buildMenuItem(
-          icon: Icons.workspace_premium,
-          title: AppStrings.license,
-          trailing: _buildPremiumBadge(),
-          onTap: () => Navigator.of(context, rootNavigator: true)
-              .pushNamed(AppRoutes.license),
         ),
         const Divider(height: 1),
         _buildMenuHeader('Einstellungen'),
@@ -434,45 +343,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildPremiumBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Text(
-        'PRO',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
   void _showLogoutDialog(BuildContext context) {
-    showDialog(
+    showCupertinoDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => CupertinoAlertDialog(
         title: const Text(AppStrings.logout),
         content: const Text('Möchten Sie sich wirklich abmelden?'),
         actions: [
-          TextButton(
+          CupertinoDialogAction(
             onPressed: () => Navigator.of(ctx).pop(),
             child: const Text(AppStrings.cancel),
           ),
-          ElevatedButton(
+          CupertinoDialogAction(
+            isDestructiveAction: true,
             onPressed: () {
               context.read<AuthBloc>().add(const AuthLogoutRequested());
               Navigator.of(ctx).pop();
               Navigator.of(context, rootNavigator: true)
                   .pushReplacementNamed(AppRoutes.login);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text(AppStrings.logout),
           ),
         ],
@@ -483,34 +372,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showDeleteAccountDialog(BuildContext context) {
     final passwordController = TextEditingController();
 
-    showDialog(
+    showCupertinoDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => CupertinoAlertDialog(
         title: const Text('Account löschen'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const SizedBox(height: 8),
             const Text(
               'Dieser Vorgang kann nicht rückgängig gemacht werden. Alle Ihre Daten werden dauerhaft gelöscht.',
-              style: TextStyle(color: AppColors.error),
             ),
             const SizedBox(height: 16),
-            TextField(
+            CupertinoTextField(
               controller: passwordController,
-              decoration: const InputDecoration(
-                labelText: 'Passwort zur Bestätigung',
-                border: OutlineInputBorder(),
-              ),
+              placeholder: 'Passwort zur Bestätigung',
               obscureText: true,
             ),
           ],
         ),
         actions: [
-          TextButton(
+          CupertinoDialogAction(
             onPressed: () => Navigator.of(ctx).pop(),
             child: const Text(AppStrings.cancel),
           ),
-          ElevatedButton(
+          CupertinoDialogAction(
+            isDestructiveAction: true,
             onPressed: () {
               final userId = context.read<AuthBloc>().state.user?.id;
               if (userId != null) {
@@ -523,7 +410,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               }
               Navigator.of(ctx).pop();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Account löschen'),
           ),
         ],

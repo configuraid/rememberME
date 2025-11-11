@@ -582,13 +582,6 @@ class MemorialDetailScreen extends StatelessWidget {
         const SizedBox(height: 12),
         _buildActionTile(
           context,
-          Icons.share_outlined,
-          'Teilen',
-          'QR-Code oder Link teilen',
-          () => _shareMemorial(context, memorial),
-        ),
-        _buildActionTile(
-          context,
           Icons.delete_outline,
           'Löschen',
           'Gedenkseite entfernen',
@@ -709,12 +702,30 @@ class MemorialDetailScreen extends StatelessWidget {
 
   void _showPreview(BuildContext context, MemorialPageModel memorial) {
     print('👁️ Zeige Vorschau für: ${memorial.name}');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Vorschau wird geladen...'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+
+    if (Platform.isIOS) {
+      showCupertinoDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (ctx) => CupertinoAlertDialog(
+          content: const Text('Vorschau wird geladen...'),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Für Android: SnackBar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vorschau wird geladen...'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _publishMemorial(BuildContext context, MemorialPageModel memorial) {
@@ -775,16 +786,6 @@ class MemorialDetailScreen extends StatelessWidget {
         ),
       );
     }
-  }
-
-  void _shareMemorial(BuildContext context, MemorialPageModel memorial) {
-    print('🔗 Teilen-Funktion für: ${memorial.name}');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Teilen-Funktion kommt bald...'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   void _showDeleteDialog(BuildContext context, String memorialId) {

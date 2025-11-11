@@ -6,7 +6,6 @@ import '../../../business_logic/license/license_event.dart';
 import '../../../data/models/license_model.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
-import '../../widgets/common/loading_indicator.dart';
 
 class LicenseScreen extends StatelessWidget {
   const LicenseScreen({super.key});
@@ -19,9 +18,9 @@ class LicenseScreen extends StatelessWidget {
       ),
       body: BlocBuilder<LicenseBloc, LicenseState>(
         builder: (context, state) {
-          if (state.isLoading) {
-            return const LoadingIndicator();
-          }
+          /*if (state.isLoading) {
+            return null; //const LoadingIndicator();
+          }*/
 
           if (!state.hasLicense) {
             return const Center(child: Text('Keine Lizenz gefunden'));
