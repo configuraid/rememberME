@@ -366,7 +366,6 @@ class _IntuitivePageBuilderScreenState
     // Erstelle aktualisiertes Memorial mit neuen Blöcken
     final updatedMemorial = widget.memorial.copyWith(
       contentBlocks: _blocks,
-      updatedAt: DateTime.now(),
     );
 
     // ✅ Sende Update-Event ans BLoC

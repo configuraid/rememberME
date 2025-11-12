@@ -15,7 +15,6 @@ import 'edit_profile_screen.dart';
 import 'notifications_settings_screen.dart';
 import 'privacy_settings_screen.dart';
 import 'about_screen.dart';
-import 'statistics_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rememberme/business_logic/auth/auth_bloc.dart';
 import 'package:rememberme/data/models/auth/organization_model.dart';
 import 'package:rememberme/presentation/screens/auth/user_selection_screen.dart';
 import 'package:rememberme/presentation/screens/auth/profile_creation_screen.dart';
@@ -17,7 +15,6 @@ import 'presentation/screens/auth/qr_scanner_screen.dart';
 import 'presentation/screens/dashboard/dashboard_screen.dart';
 import 'presentation/screens/memorial/memorial_screen.dart';
 import 'presentation/screens/profile/profile_screen.dart';
-import 'presentation/screens/profile/license_screen.dart';
 
 class MemorialApp extends StatelessWidget {
   const MemorialApp({super.key});
@@ -115,10 +112,6 @@ class MemorialApp extends StatelessWidget {
 
       case AppRoutes.profile:
         page = const ProfileScreen();
-        break;
-
-      case AppRoutes.license:
-        page = const LicenseScreen();
         break;
 
       default:

@@ -37,9 +37,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
 
     // Gruppenmitglied einladen
     on<MemorialInviteMemberRequested>(_onInviteMember);
-
-    // Views erhöhen
-    on<MemorialIncrementViewRequested>(_onIncrementView);
   }
 
   // ✅ FIX: Gedenkseiten laden Handler - nutzt jetzt organizationId
@@ -296,27 +293,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     } catch (e) {
       emit(MemorialState.error(
           'Fehler beim Einladen des Mitglieds: ${e.toString()}'));
-    }
-  }
-
-  // Views erhöhen Handler
-  Future<void> _onIncrementView(
-    MemorialIncrementViewRequested event,
-    Emitter<MemorialState> emit,
-  ) async {
-    try {
-      await memorialRepository.incrementViewCount(event.memorialId);
-
-      // Optional: Memorial neu laden um aktuelle View-Count zu zeigen
-      final memorial =
-          await memorialRepository.getMemorialById(event.memorialId);
-
-      if (memorial != null && state.selectedMemorial?.id == memorial.id) {
-        emit(state.copyWith(selectedMemorial: memorial));
-      }
-    } catch (e) {
-      // Fehler bei View-Count sind nicht kritisch, daher nur loggen
-      print('Fehler beim Erhöhen der Views: $e');
     }
   }
 }

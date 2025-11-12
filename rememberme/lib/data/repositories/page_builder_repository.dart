@@ -216,8 +216,6 @@ class PageBuilderRepository {
         id: _uuid.v4(),
         type: original.type,
         content: Map<String, dynamic>.from(original.content),
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
       );
 
       // Add duplicate to memorial
@@ -260,8 +258,6 @@ class PageBuilderRepository {
           'align': 'center',
           'color': '#2C3E50',
         },
-        createdAt: now,
-        updatedAt: now,
       ),
       ContentBlock(
         id: _uuid.v4(),
@@ -270,8 +266,6 @@ class PageBuilderRepository {
           'birthDate': '',
           'deathDate': '',
         },
-        createdAt: now,
-        updatedAt: now,
       ),
       ContentBlock(
         id: _uuid.v4(),
@@ -282,8 +276,6 @@ class PageBuilderRepository {
           'align': 'left',
           'color': '#333333',
         },
-        createdAt: now,
-        updatedAt: now,
       ),
       ContentBlock(
         id: _uuid.v4(),
@@ -292,8 +284,6 @@ class PageBuilderRepository {
           'images': [],
           'columns': 3,
         },
-        createdAt: now,
-        updatedAt: now,
       ),
       ContentBlock(
         id: _uuid.v4(),
@@ -303,8 +293,6 @@ class PageBuilderRepository {
           'author': '',
           'color': '#666666',
         },
-        createdAt: now,
-        updatedAt: now,
       ),
     ];
   }
@@ -320,8 +308,6 @@ class PageBuilderRepository {
           'caption': '',
           'fit': 'cover',
         },
-        createdAt: now,
-        updatedAt: now,
       ),
       ContentBlock(
         id: _uuid.v4(),
@@ -332,8 +318,6 @@ class PageBuilderRepository {
           'align': 'left',
           'color': '#1A1A1A',
         },
-        createdAt: now,
-        updatedAt: now,
       ),
       ContentBlock(
         id: _uuid.v4(),
@@ -342,8 +326,6 @@ class PageBuilderRepository {
           'birthDate': '',
           'deathDate': '',
         },
-        createdAt: now,
-        updatedAt: now,
       ),
       ContentBlock(
         id: _uuid.v4(),
@@ -353,8 +335,6 @@ class PageBuilderRepository {
           'thickness': 2.0,
           'margin': 20.0,
         },
-        createdAt: now,
-        updatedAt: now,
       ),
       ContentBlock(
         id: _uuid.v4(),
@@ -365,8 +345,6 @@ class PageBuilderRepository {
           'align': 'left',
           'color': '#333333',
         },
-        createdAt: now,
-        updatedAt: now,
       ),
     ];
   }
@@ -383,8 +361,6 @@ class PageBuilderRepository {
           'align': 'center',
           'color': '#000000',
         },
-        createdAt: now,
-        updatedAt: now,
       ),
       ContentBlock(
         id: _uuid.v4(),
@@ -393,8 +369,6 @@ class PageBuilderRepository {
           'birthDate': '',
           'deathDate': '',
         },
-        createdAt: now,
-        updatedAt: now,
       ),
       ContentBlock(
         id: _uuid.v4(),
@@ -405,8 +379,6 @@ class PageBuilderRepository {
           'align': 'center',
           'color': '#666666',
         },
-        createdAt: now,
-        updatedAt: now,
       ),
     ];
   }

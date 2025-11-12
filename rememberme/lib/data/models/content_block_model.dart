@@ -17,19 +17,13 @@ class ContentBlock {
   final String id;
   final ContentBlockType type;
   final Map<String, dynamic> content;
-  final DateTime createdAt;
-  final DateTime updatedAt;
 
   ContentBlock({
     String? id,
     required this.type,
     Map<String, dynamic>? content,
-    DateTime? createdAt,
-    DateTime? updatedAt,
   })  : id = id ?? const Uuid().v4(),
-        content = content ?? _getDefaultContent(type),
-        createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+        content = content ?? _getDefaultContent(type);
 
   static Map<String, dynamic> _getDefaultContent(ContentBlockType type) {
     switch (type) {
@@ -93,8 +87,6 @@ class ContentBlock {
       id: id,
       type: type ?? this.type,
       content: content ?? this.content,
-      createdAt: createdAt,
-      updatedAt: updatedAt ?? DateTime.now(),
     );
   }
 
@@ -110,22 +102,30 @@ class ContentBlock {
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    final json = {
       'id': id,
       'type': type.name,
       'content': content,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
     };
+
+    print('📦 ContentBlock.toJson(): $json');
+
+    return json;
   }
 
   factory ContentBlock.fromJson(Map<String, dynamic> json) {
+    print('📥 ContentBlock.fromJson(): $json');
+
     return ContentBlock(
-      id: json['id'],
-      type: ContentBlockType.values.firstWhere((e) => e.name == json['type']),
-      content: Map<String, dynamic>.from(json['content']),
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      id: json['id'] as String,
+      type: ContentBlockType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () {
+          print('⚠️ Unbekannter ContentBlockType: ${json['type']}');
+          return ContentBlockType.text;
+        },
+      ),
+      content: Map<String, dynamic>.from(json['content'] as Map),
     );
   }
 }

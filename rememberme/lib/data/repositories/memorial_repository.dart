@@ -7,9 +7,7 @@ class MemorialRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final _uuid = const Uuid();
 
-  MemorialRepository() {
-    // Mock-Daten nicht mehr standardmäßig laden
-  }
+  MemorialRepository();
 
   // ========== MEMORIALS NACH ORGANISATION ==========
 
@@ -22,18 +20,25 @@ class MemorialRepository {
       final querySnapshot = await _firestore
           .collection('memorials')
           .where('organizationId', isEqualTo: organizationId)
-          .orderBy('updatedAt', descending: true)
+          .orderBy('createdAt',
+              descending: true) // ✅ GEÄNDERT: createdAt statt updatedAt
           .get();
 
-      final memorials = querySnapshot.docs
-          .map((doc) =>
-              MemorialPageModel.fromJson({...doc.data(), 'id': doc.id}))
-          .toList();
+      print(
+          '📊 Repository - Query Result: ${querySnapshot.docs.length} Dokumente');
+
+      final memorials = querySnapshot.docs.map((doc) {
+        final data = {...doc.data(), 'id': doc.id};
+        print('📄 Repository - Doc: ${doc.id}');
+        print('   → Data: $data');
+        return MemorialPageModel.fromJson(data);
+      }).toList();
 
       print('✅ Repository - ${memorials.length} Memorial(s) gefunden');
       return memorials;
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ Repository - Fehler beim Laden der Memorials: $e');
+      print('📚 StackTrace: $stackTrace');
       return [];
     }
   }
@@ -56,6 +61,7 @@ class MemorialRepository {
       final memorial =
           MemorialPageModel.fromJson({...doc.data()!, 'id': doc.id});
       print('✅ Repository - Memorial gefunden: ${memorial.name}');
+      print('   → ContentBlocks: ${memorial.contentBlocks.length}');
       return memorial;
     } catch (e) {
       print('❌ Repository - Fehler: $e');
@@ -76,6 +82,7 @@ class MemorialRepository {
   }) async {
     print('➕ Repository - Erstelle neue Gedenkseite: $name');
     print('📍 Organisation: $organizationId');
+    print('👤 Owner: $ownerId');
 
     final now = DateTime.now();
     final newId = _uuid.v4();
@@ -89,39 +96,40 @@ class MemorialRepository {
       birthDate: birthDate,
       deathDate: deathDate,
       templateId: templateId,
-      status: MemorialStatus.draft,
-      isPublished: false,
       privacyLevel: PrivacyLevel.private,
       createdAt: now,
-      updatedAt: now,
       contentBlocks: [
         ContentBlock(
           id: _uuid.v4(),
           type: ContentBlockType.header,
-          createdAt: now,
-          updatedAt: now,
         ),
       ],
     );
 
     try {
+      // ✅ DEBUG: Zeige das JSON das gespeichert wird
+      final jsonData = newMemorial.toJson();
+      print('🔍 Zu speicherndes JSON:');
+      print('   id: ${jsonData['id']}');
+      print('   name: ${jsonData['name']}');
+      print('   organizationId: ${jsonData['organizationId']}');
+      print('   contentBlocks: ${jsonData['contentBlocks']}');
+
       // 1. Memorial in Firestore speichern
-      await _firestore
-          .collection('memorials')
-          .doc(newId)
-          .set(newMemorial.toJson());
+      await _firestore.collection('memorials').doc(newId).set(jsonData);
 
       // 2. Memorial-ID zur Organisation hinzufügen
       await _firestore.collection('organizations').doc(organizationId).update({
         'memorialIds': FieldValue.arrayUnion([newId]),
-        'updatedAt': FieldValue.serverTimestamp(),
       });
 
       print('✅ Repository - Memorial erstellt: ${newMemorial.id}');
       print('✅ Repository - Memorial zur Organisation hinzugefügt');
+
       return newMemorial;
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ Repository - Fehler beim Erstellen: $e');
+      print('📚 StackTrace: $stackTrace');
       rethrow;
     }
   }
@@ -132,19 +140,24 @@ class MemorialRepository {
   Future<MemorialPageModel> updateMemorial(MemorialPageModel memorial) async {
     print(
         '🔄 Repository - Aktualisiere Memorial: ${memorial.name} (${memorial.id})');
+    print('   → ContentBlocks: ${memorial.contentBlocks.length}');
 
     try {
-      final updatedMemorial = memorial.copyWith(updatedAt: DateTime.now());
+      final jsonData = memorial.toJson();
+
+      print('🔍 Update JSON:');
+      print('   contentBlocks: ${jsonData['contentBlocks']}');
 
       await _firestore
           .collection('memorials')
           .doc(memorial.id)
-          .update(updatedMemorial.toJson());
+          .update(jsonData);
 
       print('✅ Repository - Memorial aktualisiert');
-      return updatedMemorial;
-    } catch (e) {
+      return memorial;
+    } catch (e, stackTrace) {
       print('❌ Repository - Fehler beim Aktualisieren: $e');
+      print('📚 StackTrace: $stackTrace');
       rethrow;
     }
   }
@@ -171,13 +184,13 @@ class MemorialRepository {
           .doc(memorial.organizationId)
           .update({
         'memorialIds': FieldValue.arrayRemove([memorialId]),
-        'updatedAt': FieldValue.serverTimestamp(),
       });
 
       print('✅ Repository - Memorial gelöscht');
       print('✅ Repository - Memorial aus Organisation entfernt');
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ Repository - Fehler beim Löschen: $e');
+      print('📚 StackTrace: $stackTrace');
       rethrow;
     }
   }
@@ -319,26 +332,11 @@ class MemorialRepository {
         throw Exception('Gedenkseite muss mindestens einen Block enthalten');
       }
 
-      // Generiere Vercel URL
-      final slug = memorial.name
-          .toLowerCase()
-          .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
-          .replaceAll(RegExp(r'-+'), '-')
-          .replaceAll(RegExp(r'^-|-$'), '');
-      final shortId = memorial.id.substring(0, 8);
-      final vercelUrl = 'https://$slug-$shortId.memorial.vercel.app';
-
-      final updatedMemorial = memorial.copyWith(
-        status: MemorialStatus.published,
-        isPublished: true,
-        publishedAt: DateTime.now(),
-        vercelUrl: vercelUrl,
-      );
+      final updatedMemorial = memorial.copyWith();
 
       await updateMemorial(updatedMemorial);
 
       print('✅ Repository - Memorial veröffentlicht');
-      print('🔗 Repository - Vercel URL: $vercelUrl');
       return updatedMemorial;
     } catch (e) {
       print('❌ Repository - Fehler: $e');
@@ -356,10 +354,7 @@ class MemorialRepository {
         throw Exception('Gedenkseite nicht gefunden');
       }
 
-      final updatedMemorial = memorial.copyWith(
-        status: MemorialStatus.draft,
-        isPublished: false,
-      );
+      final updatedMemorial = memorial.copyWith();
 
       await updateMemorial(updatedMemorial);
 
@@ -381,10 +376,7 @@ class MemorialRepository {
         throw Exception('Gedenkseite nicht gefunden');
       }
 
-      final updatedMemorial = memorial.copyWith(
-        status: MemorialStatus.archived,
-        isPublished: false,
-      );
+      final updatedMemorial = memorial.copyWith();
 
       await updateMemorial(updatedMemorial);
 
@@ -393,98 +385,6 @@ class MemorialRepository {
     } catch (e) {
       print('❌ Repository - Fehler: $e');
       rethrow;
-    }
-  }
-
-  // ========== PERMISSIONS ==========
-
-  /// Prüfe ob User berechtigt ist, Memorial zu bearbeiten
-  Future<bool> canUserEditMemorial(
-    String memorialId,
-    String userId,
-    String organizationId,
-  ) async {
-    print('🔐 Repository - Prüfe Berechtigung für User: $userId');
-
-    try {
-      final membershipQuery = await _firestore
-          .collection('organizationMembers')
-          .where('organizationId', isEqualTo: organizationId)
-          .where('userId', isEqualTo: userId)
-          .limit(1)
-          .get();
-
-      if (membershipQuery.docs.isEmpty) {
-        print('❌ Repository - User ist kein Mitglied der Organisation');
-        return false;
-      }
-
-      final membership = membershipQuery.docs.first.data();
-      final role = membership['role'] as String;
-
-      // Owner, Admin und Editor können bearbeiten
-      final canEdit = role == 'owner' || role == 'admin' || role == 'editor';
-      print('✅ Repository - User-Rolle: $role, Kann bearbeiten: $canEdit');
-      return canEdit;
-    } catch (e) {
-      print('❌ Repository - Fehler beim Prüfen der Berechtigung: $e');
-      return false;
-    }
-  }
-
-  // ========== STATISTIKEN ==========
-
-  /// Gedenkseiten-Views erhöhen
-  Future<void> incrementViewCount(String memorialId) async {
-    print('👁️ Repository - Erhöhe View-Count für: $memorialId');
-
-    try {
-      await _firestore.collection('memorials').doc(memorialId).update({
-        'viewCount': FieldValue.increment(1),
-      });
-      print('✅ Repository - View-Count erhöht');
-    } catch (e) {
-      print('❌ Repository - Fehler: $e');
-    }
-  }
-
-  /// Statistiken für Organisation abrufen
-  Future<Map<String, dynamic>> getOrganizationStatistics(
-      String organizationId) async {
-    print('📊 Repository - Lade Statistiken für Organisation: $organizationId');
-
-    try {
-      final memorials = await getMemorialsByOrganization(organizationId);
-      final totalViews = memorials.fold<int>(
-        0,
-        (sum, memorial) => sum + memorial.viewCount,
-      );
-
-      final stats = {
-        'totalMemorials': memorials.length,
-        'publishedMemorials':
-            memorials.where((m) => m.status == MemorialStatus.published).length,
-        'draftMemorials':
-            memorials.where((m) => m.status == MemorialStatus.draft).length,
-        'totalViews': totalViews,
-        'totalBlocks': memorials.fold<int>(
-          0,
-          (sum, memorial) => sum + memorial.contentBlocks.length,
-        ),
-      };
-
-      print(
-          '✅ Repository - Statistiken geladen: ${stats['totalMemorials']} Memorials, ${stats['totalViews']} Views');
-      return stats;
-    } catch (e) {
-      print('❌ Repository - Fehler: $e');
-      return {
-        'totalMemorials': 0,
-        'publishedMemorials': 0,
-        'draftMemorials': 0,
-        'totalViews': 0,
-        'totalBlocks': 0,
-      };
     }
   }
 }

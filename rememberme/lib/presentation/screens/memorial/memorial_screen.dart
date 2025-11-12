@@ -222,14 +222,6 @@ class MemorialDetailScreen extends StatelessWidget {
           ),
         ),
       ),
-      floatingActionButton: memorial.isPublished
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: () => _publishMemorial(context, memorial),
-              icon: const Icon(Icons.publish),
-              label: const Text('Veröffentlichen'),
-              backgroundColor: AppColors.success,
-            ),
     );
   }
 
@@ -306,23 +298,6 @@ class MemorialDetailScreen extends StatelessWidget {
                         const SizedBox(height: 24),
                         _buildActionsSection(context, memorial),
                         const SizedBox(height: 24),
-                        if (!memorial.isPublished)
-                          CupertinoButton.filled(
-                            onPressed: () =>
-                                _publishMemorial(context, memorial),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(CupertinoIcons.globe, size: 20),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Veröffentlichen',
-                                  style: TextStyle(fontSize: 16),
-                                ),
-                              ],
-                            ),
-                          ),
-                        const SizedBox(height: 80),
                       ],
                     ),
                   ),
@@ -362,20 +337,11 @@ class MemorialDetailScreen extends StatelessWidget {
                 width: 3,
               ),
             ),
-            child: memorial.profileImageUrl != null
-                ? ClipOval(
-                    child: Image.network(
-                      memorial.profileImageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.favorite, size: 48),
-                    ),
-                  )
-                : const Icon(
-                    Icons.favorite,
-                    size: 48,
-                    color: AppColors.accent,
-                  ),
+            child: const Icon(
+              Icons.favorite,
+              size: 48,
+              color: AppColors.accent,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
@@ -395,39 +361,6 @@ class MemorialDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: memorial.isPublished
-                  ? AppColors.success.withOpacity(0.15)
-                  : AppColors.warning.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  memorial.isPublished ? Icons.check_circle : Icons.edit,
-                  size: 18,
-                  color: memorial.isPublished
-                      ? AppColors.success
-                      : AppColors.warning,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  memorial.isPublished ? 'Veröffentlicht' : 'Entwurf',
-                  style: TextStyle(
-                    color: memorial.isPublished
-                        ? AppColors.success
-                        : AppColors.warning,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
         ],
       ),
     );
