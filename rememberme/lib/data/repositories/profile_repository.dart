@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../business_logic/profile/profile_state.dart';
+import '../services/firebase_storage_service.dart';
 
 class ProfileRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorageService _storageService = FirebaseStorageService();
 
   // ========== SETTINGS ==========
 
@@ -212,8 +215,7 @@ class ProfileRepository {
     }
   }
 
-  /// Aktualisiere Profilbild
-  /// TODO: Firebase Storage Integration für Bild-Upload
+  /// Aktualisiere Profilbild mit Firebase Storage Integration
   Future<String> updateProfileImage({
     required String userId,
     required String imagePath,
@@ -221,21 +223,21 @@ class ProfileRepository {
     print('📷 ProfileRepository - Aktualisiere Profilbild für User: $userId');
 
     try {
-      // TODO: Upload zu Firebase Storage
       // 1. Upload image to Firebase Storage
-      // 2. Get download URL
-      // 3. Update user document
+      final imageFile = File(imagePath);
+      final String downloadUrl = await _storageService.uploadProfileImage(
+        userId: userId,
+        imageFile: imageFile,
+      );
 
-      // Placeholder - würde normalerweise Firebase Storage nutzen
-      final imageUrl = 'https://example.com/profile/$userId.jpg';
-
+      // 2. Update user document with new profile image URL
       await _firestore.collection('users').doc(userId).update({
-        'profileImageUrl': imageUrl,
+        'profileImageUrl': downloadUrl,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      print('✅ ProfileRepository - Profilbild aktualisiert: $imageUrl');
-      return imageUrl;
+      print('✅ ProfileRepository - Profilbild aktualisiert: $downloadUrl');
+      return downloadUrl;
     } catch (e) {
       print(
           '❌ ProfileRepository - Fehler beim Aktualisieren des Profilbilds: $e');
@@ -365,7 +367,10 @@ class ProfileRepository {
     print('🗑️ ProfileRepository - Account-Löschung angefordert für: $userId');
 
     try {
-      // 1. Lösche alle Memorials des Users
+      // 1. Lösche Profilbild aus Storage
+      await _storageService.deleteProfileImage(userId: userId);
+
+      // 2. Lösche alle Memorials des Users
       final memorialsQuery = await _firestore
           .collection('memorials')
           .where('ownerId', isEqualTo: userId)
@@ -375,7 +380,7 @@ class ProfileRepository {
         await doc.reference.delete();
       }
 
-      // 2. Lösche alle Mitgliedschaften
+      // 3. Lösche alle Mitgliedschaften
       final membershipsQuery = await _firestore
           .collection('organizationMembers')
           .where('userId', isEqualTo: userId)
@@ -385,10 +390,10 @@ class ProfileRepository {
         await doc.reference.delete();
       }
 
-      // 3. Lösche User-Dokument
+      // 4. Lösche User-Dokument
       await _firestore.collection('users').doc(userId).delete();
 
-      // 4. Lösche Firebase Auth Account
+      // 5. Lösche Firebase Auth Account
       // TODO: FirebaseAuth.instance.currentUser?.delete();
 
       print('✅ ProfileRepository - Account erfolgreich gelöscht');

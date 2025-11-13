@@ -1,14 +1,19 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:rememberme/data/models/content_block_model.dart';
+import 'package:rememberme/data/services/firebase_storage_service.dart';
 
 class BlockSettingsBottomSheet extends StatefulWidget {
   final ContentBlock block;
+  final String memorialId;
   final Function(String key, dynamic value) onUpdate;
 
   const BlockSettingsBottomSheet({
     super.key,
     required this.block,
+    required this.memorialId,
     required this.onUpdate,
   });
 
@@ -19,13 +24,17 @@ class BlockSettingsBottomSheet extends StatefulWidget {
 
 class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
   late Map<String, TextEditingController> _controllers;
-  late Map<String, dynamic> _localContent; // Lokale Kopie der Content-Daten
+  late Map<String, dynamic> _localContent;
+
+  final ImagePicker _imagePicker = ImagePicker();
+  final FirebaseStorageService _storageService = FirebaseStorageService();
+  bool _isUploading = false;
 
   @override
   void initState() {
     super.initState();
     _controllers = {};
-    _localContent = Map.from(widget.block.content); // Kopiere initial content
+    _localContent = Map.from(widget.block.content);
   }
 
   @override
@@ -38,7 +47,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
   void didUpdateWidget(BlockSettingsBottomSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Update local content and controllers if block changed
     if (oldWidget.block != widget.block) {
       _localContent = Map.from(widget.block.content);
 
@@ -51,7 +59,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     }
   }
 
-  // Helper method to update both local state and parent
   void _updateValue(String key, dynamic value) {
     setState(() {
       _localContent[key] = value;
@@ -59,7 +66,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     widget.onUpdate(key, value);
   }
 
-  // Get value from local content with fallback
   T _getContent<T>(String key, T defaultValue) {
     return (_localContent[key] ?? defaultValue) as T;
   }
@@ -71,6 +77,174 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       );
     }
     return _controllers[key]!;
+  }
+
+  Future<void> _handleImageUpload() async {
+    if (_isUploading) return;
+
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
+
+      if (image == null) {
+        print('📷 Kein Bild ausgewählt');
+        return;
+      }
+
+      setState(() => _isUploading = true);
+
+      final String downloadUrl = await _storageService.uploadBlockImage(
+        memorialId: widget.memorialId,
+        blockId: widget.block.id,
+        imageFile: File(image.path),
+      );
+
+      _updateValue('url', downloadUrl);
+
+      if (mounted) {
+        _showSuccessSnackBar('Bild erfolgreich hochgeladen!');
+      }
+    } catch (e) {
+      print('Image Upload Error: $e');
+      if (mounted) {
+        _showErrorDialog('Fehler beim Hochladen', e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    }
+  }
+
+  Future<void> _handleGalleryImagesUpload() async {
+    if (_isUploading) return;
+
+    try {
+      // Get current images
+      final List<String> currentImages = List<String>.from(
+        _getContent<List>('images', []),
+      );
+
+      // Calculate how many more images can be added
+      final int remaining = 6 - currentImages.length;
+
+      if (remaining <= 0) {
+        _showErrorDialog(
+          'Maximum erreicht',
+          'Du kannst maximal 6 Bilder in einer Galerie haben.',
+        );
+        return;
+      }
+
+      // Pick multiple images
+      final List<XFile> images = await _imagePicker.pickMultiImage(
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
+
+      if (images.isEmpty) {
+        print('📷 Keine Bilder ausgewählt');
+        return;
+      }
+
+      // Limit to remaining slots
+      final imagesToUpload = images.take(remaining).toList();
+
+      if (images.length > remaining) {
+        _showErrorDialog(
+          'Zu viele Bilder',
+          'Du kannst nur noch $remaining ${remaining == 1 ? "Bild" : "Bilder"} hinzufügen. Die ersten $remaining werden hochgeladen.',
+        );
+      }
+
+      setState(() => _isUploading = true);
+
+      // Convert XFile to File
+      final List<File> imageFiles =
+          imagesToUpload.map((xfile) => File(xfile.path)).toList();
+
+      // Upload to Firebase Storage
+      final List<String> downloadUrls =
+          await _storageService.uploadGalleryImages(
+        memorialId: widget.memorialId,
+        blockId: widget.block.id,
+        imageFiles: imageFiles,
+      );
+
+      // Add new URLs to existing images
+      final updatedImages = [...currentImages, ...downloadUrls];
+      _updateValue('images', updatedImages);
+
+      if (mounted) {
+        _showSuccessSnackBar(
+          '${downloadUrls.length} ${downloadUrls.length == 1 ? "Bild" : "Bilder"} erfolgreich hochgeladen! ✅',
+        );
+      }
+    } catch (e) {
+      print('Gallery Upload Error: $e');
+      if (mounted) {
+        _showErrorDialog('Fehler beim Hochladen', e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    }
+  }
+
+  // Remove image from gallery
+  void _removeGalleryImage(int index) {
+    final List<String> currentImages = List<String>.from(
+      _getContent<List>('images', []),
+    );
+
+    if (index >= 0 && index < currentImages.length) {
+      currentImages.removeAt(index);
+      _updateValue('images', currentImages);
+    }
+  }
+
+  void _showSuccessSnackBar(String message) {
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => CupertinoAlertDialog(
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+    });
+  }
+
+  void _showErrorDialog(String title, String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showComingSoonDialog(BuildContext context, String message) {
@@ -103,7 +277,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           ),
           child: Column(
             children: [
-              // Handle
               Container(
                 margin: const EdgeInsets.only(top: 12, bottom: 8),
                 width: 40,
@@ -113,8 +286,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-
-              // Header
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -139,10 +310,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   ],
                 ),
               ),
-
               const Divider(height: 1),
-
-              // Settings
               Expanded(
                 child: ListView(
                   controller: scrollController,
@@ -178,7 +346,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     }
   }
 
-  // ===== HEADER SETTINGS =====
   List<Widget> _buildHeaderSettings() {
     return [
       _buildTextField(
@@ -205,7 +372,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     ];
   }
 
-  // ===== TEXT SETTINGS =====
   List<Widget> _buildTextSettings() {
     return [
       _buildTextField(
@@ -229,14 +395,45 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     ];
   }
 
-  // ===== IMAGE SETTINGS =====
   List<Widget> _buildImageSettings() {
+    final currentUrl = _getContent('url', '');
+
     return [
-      _buildTextField(
-        label: 'Bild-URL',
-        key: 'url',
-        defaultValue: '',
-        hint: 'https://...',
+      if (currentUrl.isNotEmpty) ...[
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            currentUrl,
+            height: 200,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              height: 200,
+              color: Colors.grey[200],
+              child: const Icon(Icons.broken_image, size: 64),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+      ElevatedButton.icon(
+        onPressed: _isUploading ? null : _handleImageUpload,
+        icon: _isUploading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Icon(Icons.upload),
+        label: Text(_isUploading ? 'Lädt hoch...' : 'Bild hochladen'),
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size(double.infinity, 48),
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+        ),
       ),
       const SizedBox(height: 16),
       _buildTextField(
@@ -245,24 +442,107 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         defaultValue: '',
         maxLines: 2,
       ),
-      const SizedBox(height: 16),
-      ElevatedButton.icon(
-        onPressed: () {
-          // TODO: Image picker
-          _showComingSoonDialog(context, 'Bild-Upload kommt bald...');
-        },
-        icon: const Icon(Icons.upload),
-        label: const Text('Bild hochladen'),
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(double.infinity, 48),
-        ),
-      ),
     ];
   }
 
-  // ===== GALLERY SETTINGS =====
   List<Widget> _buildGallerySettings() {
+    final List<String> images = List<String>.from(
+      _getContent<List>('images', []),
+    );
+
     return [
+      // Aktuell Bilder anzeigen
+      if (images.isNotEmpty) ...[
+        Text(
+          'Galerie (${images.length}/6)',
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemCount: images.length,
+          itemBuilder: (context, index) {
+            return Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    images[index],
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.broken_image),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: GestureDetector(
+                    onTap: () => _removeGalleryImage(index),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+      ],
+
+      // Upload Button
+      ElevatedButton.icon(
+        onPressed: _isUploading
+            ? null
+            : (images.length < 6 ? _handleGalleryImagesUpload : null),
+        icon: _isUploading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Icon(Icons.add_photo_alternate),
+        label: Text(
+          _isUploading
+              ? 'Lädt hoch...'
+              : images.length < 6
+                  ? 'Bilder hinzufügen (${6 - images.length} übrig)'
+                  : 'Maximum erreicht (6/6)',
+        ),
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size(double.infinity, 48),
+          backgroundColor: images.length < 6 ? Colors.blue : Colors.grey[400],
+          foregroundColor: Colors.white,
+        ),
+      ),
+
+      const SizedBox(height: 16),
+
       _buildDropdown(
         label: 'Spalten',
         key: 'columns',
@@ -273,22 +553,9 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           4: '4 Spalten',
         },
       ),
-      const SizedBox(height: 16),
-      ElevatedButton.icon(
-        onPressed: () {
-          // TODO: Multi image picker
-          _showComingSoonDialog(context, 'Bilder hochladen kommt bald...');
-        },
-        icon: const Icon(Icons.add_photo_alternate),
-        label: const Text('Bilder hinzufügen'),
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(double.infinity, 48),
-        ),
-      ),
     ];
   }
 
-  // ===== QUOTE SETTINGS =====
   List<Widget> _buildQuoteSettings() {
     return [
       _buildTextField(
@@ -308,7 +575,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     ];
   }
 
-  // ===== DIVIDER SETTINGS =====
   List<Widget> _buildDividerSettings() {
     return [
       _buildSlider(
@@ -323,7 +589,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     ];
   }
 
-  // ===== VIDEO SETTINGS =====
   List<Widget> _buildVideoSettings() {
     return [
       _buildTextField(
@@ -342,7 +607,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     ];
   }
 
-  // ===== DATE SETTINGS =====
   List<Widget> _buildDateSettings() {
     return [
       _buildTextField(
@@ -360,8 +624,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       ),
     ];
   }
-
-  // ===== HELPER WIDGETS =====
 
   Widget _buildTextField({
     required String label,

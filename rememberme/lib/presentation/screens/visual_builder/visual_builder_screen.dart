@@ -341,6 +341,8 @@ class _IntuitivePageBuilderScreenState
       backgroundColor: Colors.transparent,
       builder: (context) => BlockSettingsBottomSheet(
         block: block,
+        memorialId:
+            widget.memorial.id, // ✅ NEU: Für Image Upload zu Firebase Storage
         onUpdate: (key, value) => _updateBlockContent(block.id, key, value),
       ),
     );
