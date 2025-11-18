@@ -58,6 +58,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
   // ===== ANDROID VIEW =====
   Widget _buildAndroidView() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) async {
         print('👂 QRScannerScreen Listener - Status: ${state.status}');
@@ -106,16 +109,31 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.black,
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.close_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
             onPressed: _isProcessing ? null : () => Navigator.of(context).pop(),
           ),
           title: const Text(
             'QR-Code scannen',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         body: Stack(
@@ -125,60 +143,105 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Scanner Frame
+                  // Scanner Frame mit Animation
                   Container(
-                    width: 250,
-                    height: 250,
+                    width: 280,
+                    height: 280,
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: _isProcessing ? Colors.grey : AppColors.primary,
-                        width: 3,
+                        color: _isProcessing
+                            ? Colors.grey.shade600
+                            : (isDark
+                                ? AppColors.primaryLight
+                                : AppColors.primary),
+                        width: 4,
                       ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _isProcessing
-                              ? Icons.hourglass_empty
-                              : Icons.qr_code_scanner,
-                          size: 100,
-                          color:
-                              _isProcessing ? Colors.white30 : Colors.white54,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _isProcessing
-                              ? 'Verarbeite QR-Code...'
-                              : 'QR-Code hier positionieren',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Colors.white70,
-                                  ),
-                          textAlign: TextAlign.center,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _isProcessing
+                              ? Colors.grey.withOpacity(0.3)
+                              : (isDark
+                                  ? AppColors.primaryLight.withOpacity(0.4)
+                                  : AppColors.primary.withOpacity(0.4)),
+                          blurRadius: 20,
+                          spreadRadius: 2,
                         ),
                       ],
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Icon mit Background
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: _isProcessing
+                                  ? Colors.grey.shade800
+                                  : (isDark
+                                      ? AppColors.primaryLight.withOpacity(0.2)
+                                      : AppColors.primary.withOpacity(0.2)),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _isProcessing
+                                  ? Icons.sync_rounded
+                                  : Icons.qr_code_scanner_rounded,
+                              size: 64,
+                              color: _isProcessing
+                                  ? Colors.grey.shade400
+                                  : Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            _isProcessing
+                                ? 'Verarbeite QR-Code...'
+                                : 'QR-Code hier positionieren',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
 
                   const SizedBox(height: 48),
 
                   // Anweisungen
-                  Text(
-                    _isProcessing
-                        ? 'Bitte warten...'
-                        : 'Halte den QR-Code vor die Kamera',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
-                        ),
-                    textAlign: TextAlign.center,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Text(
+                      _isProcessing
+                          ? 'Bitte warten...'
+                          : 'Halte den QR-Code vor die Kamera',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 40),
 
-                  // Demo-Scan Button (nur für Entwicklung)
-                  ElevatedButton.icon(
+                  // Demo-Scan Button
+                  FilledButton.icon(
                     onPressed: _isProcessing ? null : _simulateScan,
                     icon: _isProcessing
                         ? const SizedBox(
@@ -190,19 +253,42 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                                   AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : const Icon(Icons.play_arrow),
-                    label: Text(_isProcessing
-                        ? 'Verarbeite...'
-                        : 'Demo-Scan (QR-SCHMIDT-123)'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          _isProcessing ? Colors.grey : AppColors.primary,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
+                        : const Icon(Icons.play_arrow_rounded, size: 24),
+                    label: Text(
+                      _isProcessing ? 'Verarbeite...' : 'Demo-Scan starten',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _isProcessing
+                          ? Colors.grey.shade700
+                          : (isDark
+                              ? AppColors.primaryLight
+                              : AppColors.primary),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 16,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 4,
+                    ),
                   ),
+
+                  if (!_isProcessing) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      'Code: QR-SCHMIDT-123',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.white70,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -215,23 +301,35 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1,
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.info_outline,
-                      color: Colors.white,
-                      size: 20,
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.info.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.info_outline_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Für QR-Scanner wird später ein Plugin wie mobile_scanner integriert',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.white,
-                            ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.white,
+                          height: 1.4,
+                        ),
                       ),
                     ),
                   ],
@@ -242,11 +340,36 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             // Loading Overlay
             if (_isProcessing)
               Container(
-                color: Colors.black45,
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(AppColors.primary),
+                color: Colors.black.withOpacity(0.7),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        strokeWidth: 3,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          isDark ? AppColors.primaryLight : AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Verarbeite QR-Code...',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -481,7 +604,12 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: AppColors.error,
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
         ),
       );
     }

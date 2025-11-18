@@ -107,28 +107,167 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   void _showImageSourceDialog() {
-    showCupertinoModalPopup(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => CupertinoActionSheet(
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _pickImage();
-            },
-            child: const Text('Aus Galerie wählen'),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(
+            color: isDark
+                ? AppColors.primaryLight.withOpacity(0.2)
+                : Colors.grey.shade200,
+            width: 1,
           ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _takePhoto();
-            },
-            child: const Text('Foto aufnehmen'),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color:
+                      isDark ? const Color(0xFF404040) : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              // Title
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                child: Text(
+                  'Profilbild ändern',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? AppColors.textLight
+                            : AppColors.textPrimary,
+                      ),
+                ),
+              ),
+
+              // Galerie Option
+              _buildBottomSheetOption(
+                context: ctx,
+                icon: Icons.photo_library_rounded,
+                title: 'Aus Galerie wählen',
+                isDark: isDark,
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _pickImage();
+                },
+              ),
+
+              // Kamera Option
+              _buildBottomSheetOption(
+                context: ctx,
+                icon: Icons.camera_alt_rounded,
+                title: 'Foto aufnehmen',
+                isDark: isDark,
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _takePhoto();
+                },
+              ),
+
+              const SizedBox(height: 8),
+
+              // Abbrechen
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Abbrechen',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? const Color(0xFF909090)
+                            : Colors.grey.shade600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.of(ctx).pop(),
-          child: const Text('Abbrechen'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomSheetOption({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            AppColors.primaryLight.withOpacity(0.25),
+                            AppColors.primaryLight.withOpacity(0.15),
+                          ]
+                        : [
+                            AppColors.primary.withOpacity(0.15),
+                            AppColors.primary.withOpacity(0.08),
+                          ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.primaryLight.withOpacity(0.3)
+                        : AppColors.primary.withOpacity(0.2),
+                    width: 1.5,
+                  ),
+                ),
+                child: Icon(
+                  icon,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                    ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -152,112 +291,313 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  void _showResultDialog({
+    required bool isSuccess,
+    required String message,
+    required bool isDark,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 340),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark
+                  ? (isSuccess
+                      ? AppColors.success.withOpacity(0.3)
+                      : AppColors.error.withOpacity(0.3))
+                  : Colors.grey.shade200,
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withOpacity(0.5)
+                    : Colors.black.withOpacity(0.15),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 32),
+
+              // Icon mit Animation
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isSuccess
+                        ? [
+                            AppColors.success.withOpacity(0.2),
+                            AppColors.success.withOpacity(0.1),
+                          ]
+                        : [
+                            AppColors.error.withOpacity(0.2),
+                            AppColors.error.withOpacity(0.1),
+                          ],
+                  ),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSuccess
+                        ? AppColors.success.withOpacity(0.4)
+                        : AppColors.error.withOpacity(0.4),
+                    width: 2,
+                  ),
+                ),
+                child: Icon(
+                  isSuccess ? Icons.check_circle_rounded : Icons.error_rounded,
+                  size: 64,
+                  color: isSuccess ? AppColors.success : AppColors.error,
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Title
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  isSuccess ? 'Erfolgreich!' : 'Fehler',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? AppColors.textLight
+                            : AppColors.textPrimary,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Message
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  message,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: isDark
+                            ? const Color(0xFFB0B0B0)
+                            : AppColors.textSecondary,
+                        height: 1.5,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Button
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      if (isSuccess) {
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          isSuccess ? AppColors.success : AppColors.error,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'OK',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // ✅ BlocConsumer mit CupertinoAlertDialog
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return BlocConsumer<ProfileBloc, ProfileState>(
       listener: (context, state) {
         if (state.isSuccess && state.successMessage != null) {
-          // ✅ Zeige Erfolg mit Cupertino Dialog
-          showCupertinoDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (ctx) => CupertinoAlertDialog(
-              title: const Icon(
-                Icons.check_circle,
-                color: AppColors.success,
-                size: 48,
-              ),
-              content: Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(state.successMessage!),
-              ),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK'),
-                  onPressed: () {
-                    Navigator.of(ctx).pop(); // Dialog schließen
-                    Navigator.of(context).pop(); // Screen schließen
-                  },
-                ),
-              ],
-            ),
+          _showResultDialog(
+            isSuccess: true,
+            message: state.successMessage!,
+            isDark: isDark,
           );
         }
 
         if (state.hasError && state.errorMessage != null) {
-          // ✅ Zeige Fehler mit Cupertino Dialog
-          showCupertinoDialog(
-            context: context,
-            builder: (ctx) => CupertinoAlertDialog(
-              title: const Icon(
-                Icons.error,
-                color: AppColors.error,
-                size: 48,
-              ),
-              content: Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(state.errorMessage!),
-              ),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK'),
-                  onPressed: () => Navigator.of(ctx).pop(),
-                ),
-              ],
-            ),
+          _showResultDialog(
+            isSuccess: false,
+            message: state.errorMessage!,
+            isDark: isDark,
           );
         }
       },
       builder: (context, state) {
         return Scaffold(
+          backgroundColor: isDark ? const Color(0xFF121212) : null,
           appBar: AppBar(
             title: const Text('Profil bearbeiten'),
+            elevation: 0,
+            backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
+            foregroundColor: AppColors.textLight,
           ),
           body: Form(
             key: _formKey,
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               children: [
-                // Profilbild
+                const SizedBox(height: 8),
+
+                // Profilbild mit besserem Design
                 Center(
                   child: Stack(
                     children: [
-                      CircleAvatar(
-                        radius: 60,
-                        backgroundColor: AppColors.primary.withOpacity(0.1),
-                        backgroundImage: _selectedImage != null
-                            ? FileImage(_selectedImage!)
-                            : (state.profileImageUrl != null
-                                ? NetworkImage(state.profileImageUrl!)
-                                : null) as ImageProvider?,
-                        child: _selectedImage == null &&
-                                state.profileImageUrl == null
-                            ? Text(
-                                _nameController.text.isNotEmpty
-                                    ? _nameController.text[0].toUpperCase()
-                                    : 'U',
-                                style: const TextStyle(
-                                  fontSize: 48,
-                                  color: AppColors.primary,
-                                ),
-                              )
-                            : null,
+                      // Outer Glow Ring
+                      Container(
+                        width: 136,
+                        height: 136,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: isDark
+                                ? [
+                                    AppColors.primaryLight.withOpacity(0.3),
+                                    AppColors.accent.withOpacity(0.2),
+                                  ]
+                                : [
+                                    AppColors.primary.withOpacity(0.2),
+                                    AppColors.accent.withOpacity(0.15),
+                                  ],
+                          ),
+                        ),
                       ),
+
+                      // Avatar
+                      Positioned.fill(
+                        child: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isDark
+                                    ? const Color(0xFF1E1E1E)
+                                    : Colors.white,
+                                width: 4,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: isDark
+                                      ? Colors.black.withOpacity(0.4)
+                                      : Colors.black.withOpacity(0.1),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: CircleAvatar(
+                              radius: 60,
+                              backgroundColor: isDark
+                                  ? const Color(0xFF2A2A2A)
+                                  : AppColors.primary.withOpacity(0.1),
+                              backgroundImage: _selectedImage != null
+                                  ? FileImage(_selectedImage!)
+                                  : (state.profileImageUrl != null
+                                      ? NetworkImage(state.profileImageUrl!)
+                                      : null) as ImageProvider?,
+                              child: _selectedImage == null &&
+                                      state.profileImageUrl == null
+                                  ? Text(
+                                      _nameController.text.isNotEmpty
+                                          ? _nameController.text[0]
+                                              .toUpperCase()
+                                          : 'U',
+                                      style: TextStyle(
+                                        fontSize: 48,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark
+                                            ? AppColors.primaryLight
+                                            : AppColors.primary,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Camera Button
                       Positioned(
-                        bottom: 0,
-                        right: 0,
+                        bottom: 2,
+                        right: 2,
                         child: GestureDetector(
                           onTap: _showImageSourceDialog,
                           child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: AppColors.accent,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: isDark
+                                    ? [
+                                        AppColors.primaryLight,
+                                        AppColors.primaryLight.withOpacity(0.8),
+                                      ]
+                                    : [
+                                        AppColors.accent,
+                                        AppColors.accent.withOpacity(0.9),
+                                      ],
+                              ),
                               shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isDark
+                                    ? const Color(0xFF1E1E1E)
+                                    : Colors.white,
+                                width: 3,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: isDark
+                                      ? AppColors.primaryLight.withOpacity(0.3)
+                                      : AppColors.accent.withOpacity(0.4),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: const Icon(
-                              Icons.camera_alt,
-                              size: 24,
+                              Icons.camera_alt_rounded,
+                              size: 22,
                               color: Colors.white,
                             ),
                           ),
@@ -266,18 +606,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
 
-                // Name
-                TextFormField(
+                const SizedBox(height: 40),
+
+                // Name Field
+                _buildTextField(
                   controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Name',
-                    prefixIcon: const Icon(Icons.person),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                  label: 'Name',
+                  icon: Icons.person_rounded,
+                  isDark: isDark,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Bitte geben Sie einen Namen ein';
@@ -285,18 +622,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
 
-                // E-Mail
-                TextFormField(
+                const SizedBox(height: 20),
+
+                // E-Mail Field
+                _buildTextField(
                   controller: _emailController,
-                  decoration: InputDecoration(
-                    labelText: 'E-Mail',
-                    prefixIcon: const Icon(Icons.email),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                  label: 'E-Mail',
+                  icon: Icons.email_rounded,
+                  isDark: isDark,
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -308,79 +642,227 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
 
-                // Telefon
-                TextFormField(
+                const SizedBox(height: 20),
+
+                // Telefon Field
+                _buildTextField(
                   controller: _phoneController,
-                  decoration: InputDecoration(
-                    labelText: 'Telefon (optional)',
-                    prefixIcon: const Icon(Icons.phone),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                  label: 'Telefon (optional)',
+                  icon: Icons.phone_rounded,
+                  isDark: isDark,
                   keyboardType: TextInputType.phone,
                 ),
-                const SizedBox(height: 16),
 
-                // Bio
-                TextFormField(
+                const SizedBox(height: 20),
+
+                // Bio Field
+                _buildTextField(
                   controller: _bioController,
-                  decoration: InputDecoration(
-                    labelText: 'Über mich (optional)',
-                    prefixIcon: const Icon(Icons.info_outline),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    alignLabelWithHint: true,
-                  ),
+                  label: 'Über mich (optional)',
+                  icon: Icons.info_outline_rounded,
+                  isDark: isDark,
                   maxLines: 4,
                   maxLength: 200,
                 ),
 
                 const SizedBox(height: 32),
 
-                // ✅ Speichern Button
-                SizedBox(
-                  height: 54,
+                // Speichern Button
+                Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: state.isLoading
+                          ? [Colors.grey.shade400, Colors.grey.shade500]
+                          : (isDark
+                              ? [
+                                  AppColors.primaryLight,
+                                  AppColors.primaryLight.withOpacity(0.8),
+                                ]
+                              : [
+                                  AppColors.primary,
+                                  AppColors.primary.withOpacity(0.9),
+                                ]),
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: state.isLoading
+                        ? []
+                        : [
+                            BoxShadow(
+                              color: isDark
+                                  ? AppColors.primaryLight.withOpacity(0.3)
+                                  : AppColors.primary.withOpacity(0.4),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                  ),
                   child: ElevatedButton(
                     onPressed: state.isLoading ? null : _saveProfile,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
                       foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.grey,
+                      disabledBackgroundColor: Colors.transparent,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      elevation: 2,
                     ),
                     child: state.isLoading
                         ? const SizedBox(
-                            height: 20,
-                            width: 20,
+                            height: 24,
+                            width: 24,
                             child: CircularProgressIndicator(
-                              strokeWidth: 2,
+                              strokeWidth: 2.5,
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 Colors.white,
                               ),
                             ),
                           )
-                        : const Text(
-                            'Änderungen speichern',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.save_rounded,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Änderungen speichern',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 0.5,
+                                    ),
+                              ),
+                            ],
                           ),
                   ),
                 ),
-                const SizedBox(height: 16),
+
+                const SizedBox(height: 20),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required bool isDark,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    int maxLines = 1,
+    int? maxLength,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withOpacity(0.2)
+                : Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+        maxLength: maxLength,
+        style: TextStyle(
+          color: isDark ? AppColors.textLight : AppColors.textPrimary,
+          fontSize: 16,
+        ),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(
+            color: isDark ? const Color(0xFF909090) : AppColors.textSecondary,
+          ),
+          prefixIcon: Container(
+            margin: const EdgeInsets.only(right: 12, left: 12),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? [
+                        AppColors.primaryLight.withOpacity(0.2),
+                        AppColors.primaryLight.withOpacity(0.1),
+                      ]
+                    : [
+                        AppColors.primary.withOpacity(0.12),
+                        AppColors.primary.withOpacity(0.06),
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              color: isDark ? AppColors.primaryLight : AppColors.primary,
+              size: 22,
+            ),
+          ),
+          filled: true,
+          fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 18,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300,
+              width: 1.5,
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300,
+              width: 1.5,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: isDark ? AppColors.primaryLight : AppColors.primary,
+              width: 2,
+            ),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(
+              color: AppColors.error,
+              width: 1.5,
+            ),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(
+              color: AppColors.error,
+              width: 2,
+            ),
+          ),
+          alignLabelWithHint: maxLines > 1,
+        ),
+        validator: validator,
+      ),
     );
   }
 }

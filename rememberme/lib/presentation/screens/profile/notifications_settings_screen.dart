@@ -18,121 +18,172 @@ class _NotificationsSettingsScreenState
     extends State<NotificationsSettingsScreen> {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF121212) : null,
       appBar: AppBar(
         title: const Text('Benachrichtigungen'),
+        elevation: 0,
+        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
+        foregroundColor: AppColors.textLight,
       ),
       body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {
           return ListView(
+            padding: const EdgeInsets.symmetric(vertical: 16),
             children: [
-              _buildSectionHeader('Push-Benachrichtigungen'),
-              SwitchListTile(
-                title: const Text('Push-Benachrichtigungen'),
-                subtitle: const Text('Benachrichtigungen auf diesem Gerät'),
-                value: state.settings.pushNotifications,
-                onChanged: (value) => _updateNotifications(
-                  context,
-                  pushEnabled: value,
-                  emailEnabled: state.settings.emailNotifications,
-                  memorialUpdates: state.settings.memorialUpdates,
-                  groupInvites: state.settings.groupInvites,
-                ),
-                secondary: const Icon(Icons.notifications_active),
-                activeColor: AppColors.primary,
-              ),
-              const Divider(),
-              _buildSectionHeader('E-Mail-Benachrichtigungen'),
-              SwitchListTile(
-                title: const Text('E-Mail-Benachrichtigungen'),
-                subtitle: const Text('Benachrichtigungen per E-Mail'),
-                value: state.settings.emailNotifications,
-                onChanged: (value) => _updateNotifications(
-                  context,
-                  pushEnabled: state.settings.pushNotifications,
-                  emailEnabled: value,
-                  memorialUpdates: state.settings.memorialUpdates,
-                  groupInvites: state.settings.groupInvites,
-                ),
-                secondary: const Icon(Icons.email),
-                activeColor: AppColors.primary,
-              ),
-              const Divider(),
-              _buildSectionHeader('Benachrichtigungstypen'),
-              SwitchListTile(
-                title: const Text('Gedenkseiten-Updates'),
-                subtitle: const Text(
-                  'Neue Beiträge und Änderungen',
-                ),
-                value: state.settings.memorialUpdates,
-                onChanged: (value) => _updateNotifications(
-                  context,
-                  pushEnabled: state.settings.pushNotifications,
-                  emailEnabled: state.settings.emailNotifications,
-                  memorialUpdates: value,
-                  groupInvites: state.settings.groupInvites,
-                ),
-                secondary: const Icon(Icons.favorite),
-              ),
-              SwitchListTile(
-                title: const Text('Gruppen-Einladungen'),
-                subtitle: const Text(
-                  'Einladungen zu gemeinsamen Gedenkseiten',
-                ),
-                value: state.settings.groupInvites,
-                onChanged: (value) => _updateNotifications(
-                  context,
-                  pushEnabled: state.settings.pushNotifications,
-                  emailEnabled: state.settings.emailNotifications,
-                  memorialUpdates: state.settings.memorialUpdates,
-                  groupInvites: value,
-                ),
-                secondary: const Icon(Icons.group_add),
-              ),
-              const Divider(),
-              _buildSectionHeader('Nicht stören'),
-              ListTile(
-                leading: const Icon(Icons.bedtime),
-                title: const Text('Ruhezeiten'),
-                subtitle: const Text('Keine Benachrichtigungen in der Nacht'),
-                trailing: Switch(
-                  value: false,
-                  onChanged: (value) {},
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.schedule),
-                title: const Text('Zeitplan'),
-                subtitle: const Text('22:00 - 08:00'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {},
-              ),
-              const SizedBox(height: 24),
+              // Push-Benachrichtigungen Section
+              _buildSectionHeader('Push-Benachrichtigungen', isDark),
+              const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Card(
-                  color: AppColors.info.withOpacity(0.1),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: AppColors.info,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Sie können Benachrichtigungen jederzeit in den Systemeinstellungen Ihres Geräts anpassen.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        ),
-                      ],
+                child: _buildSettingCard(
+                  isDark: isDark,
+                  children: [
+                    _buildSwitchTile(
+                      context: context,
+                      icon: Icons.notifications_active_rounded,
+                      title: 'Push-Benachrichtigungen',
+                      subtitle: 'Benachrichtigungen auf diesem Gerät',
+                      value: state.settings.pushNotifications,
+                      isDark: isDark,
+                      onChanged: (value) => _updateNotifications(
+                        context,
+                        pushEnabled: value,
+                        emailEnabled: state.settings.emailNotifications,
+                        memorialUpdates: state.settings.memorialUpdates,
+                        groupInvites: state.settings.groupInvites,
+                      ),
                     ),
-                  ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // E-Mail-Benachrichtigungen Section
+              _buildSectionHeader('E-Mail-Benachrichtigungen', isDark),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildSettingCard(
+                  isDark: isDark,
+                  children: [
+                    _buildSwitchTile(
+                      context: context,
+                      icon: Icons.email_rounded,
+                      title: 'E-Mail-Benachrichtigungen',
+                      subtitle: 'Benachrichtigungen per E-Mail',
+                      value: state.settings.emailNotifications,
+                      isDark: isDark,
+                      onChanged: (value) => _updateNotifications(
+                        context,
+                        pushEnabled: state.settings.pushNotifications,
+                        emailEnabled: value,
+                        memorialUpdates: state.settings.memorialUpdates,
+                        groupInvites: state.settings.groupInvites,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Benachrichtigungstypen Section
+              _buildSectionHeader('Benachrichtigungstypen', isDark),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildSettingCard(
+                  isDark: isDark,
+                  children: [
+                    _buildSwitchTile(
+                      context: context,
+                      icon: Icons.favorite_rounded,
+                      title: 'Gedenkseiten-Updates',
+                      subtitle: 'Neue Beiträge und Änderungen',
+                      value: state.settings.memorialUpdates,
+                      isDark: isDark,
+                      onChanged: (value) => _updateNotifications(
+                        context,
+                        pushEnabled: state.settings.pushNotifications,
+                        emailEnabled: state.settings.emailNotifications,
+                        memorialUpdates: value,
+                        groupInvites: state.settings.groupInvites,
+                      ),
+                    ),
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      indent: 84,
+                      endIndent: 20,
+                      color: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : Colors.grey.shade200,
+                    ),
+                    _buildSwitchTile(
+                      context: context,
+                      icon: Icons.group_add_rounded,
+                      title: 'Gruppen-Einladungen',
+                      subtitle: 'Einladungen zu gemeinsamen Gedenkseiten',
+                      value: state.settings.groupInvites,
+                      isDark: isDark,
+                      onChanged: (value) => _updateNotifications(
+                        context,
+                        pushEnabled: state.settings.pushNotifications,
+                        emailEnabled: state.settings.emailNotifications,
+                        memorialUpdates: state.settings.memorialUpdates,
+                        groupInvites: value,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Nicht stören Section
+              _buildSectionHeader('Nicht stören', isDark),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildSettingCard(
+                  isDark: isDark,
+                  children: [
+                    _buildSwitchTile(
+                      context: context,
+                      icon: Icons.bedtime_rounded,
+                      title: 'Ruhezeiten',
+                      subtitle: 'Keine Benachrichtigungen in der Nacht',
+                      value: false,
+                      isDark: isDark,
+                      onChanged: (value) {
+                        // TODO: Implementieren
+                      },
+                    ),
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      indent: 84,
+                      endIndent: 20,
+                      color: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : Colors.grey.shade200,
+                    ),
+                    _buildActionTile(
+                      context: context,
+                      icon: Icons.schedule_rounded,
+                      title: 'Zeitplan',
+                      subtitle: '22:00 - 08:00',
+                      isDark: isDark,
+                      onTap: () {
+                        // TODO: Zeitplan-Picker öffnen
+                      },
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -142,16 +193,271 @@ class _NotificationsSettingsScreenState
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, bool isDark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.bold,
-          color: Colors.grey[600],
-          letterSpacing: 1.2,
+          color: isDark ? const Color(0xFF808080) : Colors.grey.shade600,
+          letterSpacing: 1.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingCard({
+    required bool isDark,
+    required List<Widget> children,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withOpacity(0.2)
+                : Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: children,
+      ),
+    );
+  }
+
+  Widget _buildSwitchTile({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required bool isDark,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        children: [
+          // Icon Container
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? [
+                        AppColors.primaryLight.withOpacity(0.25),
+                        AppColors.primaryLight.withOpacity(0.15),
+                      ]
+                    : [
+                        AppColors.primary.withOpacity(0.15),
+                        AppColors.primary.withOpacity(0.08),
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark
+                    ? AppColors.primaryLight.withOpacity(0.3)
+                    : AppColors.primary.withOpacity(0.2),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? AppColors.primaryLight.withOpacity(0.1)
+                      : AppColors.primary.withOpacity(0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
+              icon,
+              color: isDark ? AppColors.primaryLight : AppColors.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+
+          // Text Content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                    letterSpacing: 0.15,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: isDark
+                        ? const Color(0xFFA0A0A0)
+                        : AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Custom Switch
+          Transform.scale(
+            scale: 0.9,
+            child: Switch(
+              value: value,
+              onChanged: onChanged,
+              activeColor: isDark ? AppColors.primaryLight : AppColors.primary,
+              activeTrackColor: isDark
+                  ? AppColors.primaryLight.withOpacity(0.5)
+                  : AppColors.primary.withOpacity(0.5),
+              inactiveThumbColor:
+                  isDark ? const Color(0xFF404040) : Colors.grey.shade400,
+              inactiveTrackColor:
+                  isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionTile({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        splashColor: isDark
+            ? AppColors.primaryLight.withOpacity(0.1)
+            : AppColors.primary.withOpacity(0.08),
+        highlightColor: isDark
+            ? AppColors.primaryLight.withOpacity(0.05)
+            : AppColors.primary.withOpacity(0.04),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            children: [
+              // Icon Container
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            AppColors.primaryLight.withOpacity(0.25),
+                            AppColors.primaryLight.withOpacity(0.15),
+                          ]
+                        : [
+                            AppColors.primary.withOpacity(0.15),
+                            AppColors.primary.withOpacity(0.08),
+                          ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.primaryLight.withOpacity(0.3)
+                        : AppColors.primary.withOpacity(0.2),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isDark
+                          ? AppColors.primaryLight.withOpacity(0.1)
+                          : AppColors.primary.withOpacity(0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  icon,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // Text Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.textLight
+                            : AppColors.textPrimary,
+                        letterSpacing: 0.15,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: isDark
+                            ? const Color(0xFFA0A0A0)
+                            : AppColors.textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Arrow Icon
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color:
+                      isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color:
+                      isDark ? const Color(0xFF909090) : Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -86,24 +86,52 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
         ),
       );
     } else {
+      final theme = Theme.of(context);
+      final isDark = theme.brightness == Brightness.dark;
+
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('PIN eingeben'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.lock_outline_rounded,
+                color: isDark ? AppColors.primaryLight : AppColors.primary,
+              ),
+              const SizedBox(width: 12),
+              const Text('PIN eingeben'),
+            ],
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Dieses Profil ist mit einer PIN geschützt'),
-              const SizedBox(height: 16),
-              TextField(
+              Text(
+                'Dieses Profil ist mit einer PIN geschützt',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: isDark
+                      ? const Color(0xFFB0B0B0)
+                      : AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
                 controller: _pinController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'PIN',
-                  border: OutlineInputBorder(),
+                  hintText: '4-stellige PIN',
+                  prefixIcon: Icon(
+                    Icons.pin_outlined,
+                    color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  ),
                 ),
                 keyboardType: TextInputType.number,
                 obscureText: true,
                 maxLength: 4,
+                autofocus: true,
               ),
             ],
           ),
@@ -112,15 +140,21 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
               onPressed: () {
                 Navigator.of(ctx).pop();
                 setState(() => _selectedUserId = null);
+                _pinController.clear();
               },
               child: const Text('Abbrechen'),
             ),
-            ElevatedButton(
+            FilledButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
                 _proceedWithLogin(userId, _pinController.text);
+                _pinController.clear();
               },
-              child: const Text('OK'),
+              style: FilledButton.styleFrom(
+                backgroundColor:
+                    isDark ? AppColors.primaryLight : AppColors.primary,
+              ),
+              child: const Text('Anmelden'),
             ),
           ],
         ),
@@ -169,7 +203,11 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: AppColors.error,
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
       );
     }
@@ -178,7 +216,6 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
   void _createNewProfile() {
     print('➕ UserSelectionScreen - Navigiere zu ProfileCreationScreen');
 
-    // ✅ Named Route Navigation
     Navigator.of(context).pushNamed(
       AppRoutes.profileCreation,
       arguments: widget.organization,
@@ -194,6 +231,9 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
   }
 
   Widget _buildAndroidView() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state.isAuthenticated) {
@@ -210,85 +250,183 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
         appBar: AppBar(
           title: const Text('Profil auswählen'),
           elevation: 0,
+          backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
+          foregroundColor: AppColors.textLight,
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
+                  // Header mit Organisation
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 32,
+                    ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [
-                          AppColors.primary.withOpacity(0.1),
-                          Colors.transparent,
-                        ],
+                        colors: isDark
+                            ? [
+                                AppColors.primaryLight.withOpacity(0.15),
+                                Colors.transparent,
+                              ]
+                            : [
+                                AppColors.primary.withOpacity(0.1),
+                                Colors.transparent,
+                              ],
                       ),
                     ),
                     child: Column(
                       children: [
-                        const Icon(
-                          Icons.people_outline,
-                          size: 60,
-                          color: AppColors.primary,
+                        // Organisation Icon
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.primaryLight.withOpacity(0.2)
+                                : AppColors.primary.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.business_rounded,
+                            size: 48,
+                            color: isDark
+                                ? AppColors.primaryLight
+                                : AppColors.primary,
+                          ),
                         ),
                         const SizedBox(height: 16),
+                        // Organisation Name
                         Text(
                           widget.organization.name,
-                          style: const TextStyle(
-                            fontSize: 24,
+                          style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
-                            inherit: true,
+                            color: isDark
+                                ? AppColors.textLight
+                                : AppColors.textPrimary,
                           ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
+                        // Untertitel
                         Text(
                           'Wähle dein Profil oder erstelle ein neues',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: isDark
+                                ? const Color(0xFFB0B0B0)
+                                : AppColors.textSecondary,
                           ),
                           textAlign: TextAlign.center,
                         ),
                       ],
                     ),
                   ),
+
+                  // User Liste
                   Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: widget.membersWithData.length,
-                      itemBuilder: (context, index) {
-                        final data = widget.membersWithData[index];
-                        final user = data['user'] as UserModel;
-                        final member =
-                            data['member'] as OrganizationMemberModel;
-                        return _buildUserCard(user, member);
-                      },
-                    ),
+                    child: widget.membersWithData.isEmpty
+                        ? _buildEmptyState(isDark)
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: widget.membersWithData.length,
+                            itemBuilder: (context, index) {
+                              final data = widget.membersWithData[index];
+                              final user = data['user'] as UserModel;
+                              final member =
+                                  data['member'] as OrganizationMemberModel;
+                              return _buildUserCard(user, member, isDark);
+                            },
+                          ),
                   ),
-                  Padding(
+
+                  // Neues Profil Button
+                  Container(
                     padding: const EdgeInsets.all(16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: _createNewProfile,
-                        icon: const Icon(Icons.add),
-                        label: const Text(
-                          'Neues Profil erstellen',
-                          style: TextStyle(fontSize: 16),
+                    decoration: BoxDecoration(
+                      color:
+                          isDark ? const Color(0xFF2A2A2A) : AppColors.surface,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, -2),
                         ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                      ],
+                    ),
+                    child: SafeArea(
+                      top: false,
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _createNewProfile,
+                          icon: const Icon(Icons.add_rounded),
+                          label: const Text(
+                            'Neues Profil erstellen',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(
+                              color: isDark
+                                  ? AppColors.primaryLight
+                                  : AppColors.primary,
+                              width: 2,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ],
               ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(bool isDark) {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.person_add_rounded,
+              size: 80,
+              color: isDark
+                  ? AppColors.primaryLight.withOpacity(0.5)
+                  : AppColors.primary.withOpacity(0.3),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Noch keine Profile',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Erstelle dein erstes Profil, um zu beginnen',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color:
+                    isDark ? const Color(0xFFB0B0B0) : AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -356,7 +494,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                           final user = data['user'] as UserModel;
                           final member =
                               data['member'] as OrganizationMemberModel;
-                          return _buildUserCard(user, member);
+                          return _buildUserCard(user, member, false);
                         },
                       ),
                     ),
@@ -397,91 +535,142 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
     );
   }
 
-  Widget _buildUserCard(UserModel user, OrganizationMemberModel member) {
+  Widget _buildUserCard(
+      UserModel user, OrganizationMemberModel member, bool isDark) {
+    final theme = Theme.of(context);
     final bool isSelected = _selectedUserId == user.id;
 
     return GestureDetector(
       onTap: () => _handleUserSelection(user.id, member.hasPin),
-      child: Container(
+      child: Card(
+        elevation: isSelected ? 4 : (isDark ? 2 : 1),
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withOpacity(0.1)
-              : Platform.isIOS
-                  ? CupertinoColors.systemBackground.resolveFrom(context)
-                  : Colors.white,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
+          side: BorderSide(
             color: isSelected
-                ? AppColors.primary
-                : Platform.isIOS
-                    ? CupertinoColors.separator.resolveFrom(context)
-                    : Colors.grey[300]!,
+                ? (isDark ? AppColors.primaryLight : AppColors.primary)
+                : (isDark ? const Color(0xFF404040) : AppColors.border),
             width: isSelected ? 2 : 1,
           ),
         ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: AppColors.primary.withOpacity(0.2),
-              backgroundImage: user.profileImageUrl != null
-                  ? NetworkImage(user.profileImageUrl!)
-                  : null,
-              child: user.profileImageUrl == null
-                  ? Text(
-                      user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user.name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        member.hasPin
-                            ? Icons.lock_outline
-                            : Icons.lock_open_outlined,
-                        size: 16,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        member.roleText,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: isSelected
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            AppColors.primaryLight.withOpacity(0.15),
+                            AppColors.primaryLight.withOpacity(0.05),
+                          ]
+                        : [
+                            AppColors.primary.withOpacity(0.1),
+                            AppColors.primary.withOpacity(0.05),
+                          ],
+                  )
+                : null,
+          ),
+          child: Row(
+            children: [
+              // Avatar
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: isDark
+                                ? AppColors.primaryLight.withOpacity(0.3)
+                                : AppColors.primary.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: CircleAvatar(
+                  radius: 32,
+                  backgroundColor: isDark
+                      ? AppColors.primaryLight.withOpacity(0.2)
+                      : AppColors.primary.withOpacity(0.2),
+                  backgroundImage: user.profileImageUrl != null
+                      ? NetworkImage(user.profileImageUrl!)
+                      : null,
+                  child: user.profileImageUrl == null
+                      ? Text(
+                          user.name.isNotEmpty
+                              ? user.name[0].toUpperCase()
+                              : '?',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? AppColors.primaryLight
+                                : AppColors.primary,
+                          ),
+                        )
+                      : null,
+                ),
               ),
-            ),
-            Icon(
-              Platform.isIOS
-                  ? CupertinoIcons.chevron_right
-                  : Icons.chevron_right,
-              color: isSelected ? AppColors.primary : Colors.grey[400],
-            ),
-          ],
+              const SizedBox(width: 16),
+
+              // User Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.textLight
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          member.hasPin
+                              ? Icons.lock_rounded
+                              : Icons.lock_open_rounded,
+                          size: 16,
+                          color: isDark
+                              ? const Color(0xFFB0B0B0)
+                              : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          member.roleText,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: isDark
+                                ? const Color(0xFFB0B0B0)
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Arrow Icon
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 20,
+                color: isSelected
+                    ? (isDark ? AppColors.primaryLight : AppColors.primary)
+                    : (isDark
+                        ? const Color(0xFF707070)
+                        : AppColors.textSecondary),
+              ),
+            ],
+          ),
         ),
       ),
     );

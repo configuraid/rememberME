@@ -100,7 +100,11 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: AppColors.error,
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
       );
     }
@@ -116,6 +120,12 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
 
   // ===== ANDROID VIEW =====
   Widget _buildAndroidView() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final mediaQuery = MediaQuery.of(context);
+    final screenHeight = mediaQuery.size.height;
+    final keyboardVisible = mediaQuery.viewInsets.bottom > 0;
+
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         print('👂 ProfileCreationScreen Listener - Status: ${state.status}');
@@ -136,125 +146,384 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
         appBar: AppBar(
           title: const Text('Profil erstellen'),
           elevation: 0,
+          backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
+          foregroundColor: AppColors.textLight,
         ),
         body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Icon(
-                    Icons.person_add_outlined,
-                    size: 80,
-                    color: AppColors.primary,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: keyboardVisible ? 12 : 16,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Neues Profil',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Erstelle dein persönliches Profil für\n${widget.organization.name}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 48),
-                  CustomTextField(
-                    controller: _nameController,
-                    label: 'Name',
-                    hint: 'Dein vollständiger Name',
-                    validator: Validators.validateName,
-                    prefixIcon: Icons.person_outline,
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    controller: _emailController,
-                    label: 'E-Mail (optional)',
-                    hint: 'beispiel@email.de',
-                    prefixIcon: Icons.email_outlined,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: 24),
-                  SwitchListTile(
-                    title: const Text('PIN-Schutz aktivieren'),
-                    subtitle: const Text(
-                      'Schütze dein Profil mit einer 4-stelligen PIN',
-                    ),
-                    value: _usePin,
-                    onChanged: (value) => setState(() => _usePin = value),
-                    activeColor: AppColors.primary,
-                  ),
-                  if (_usePin) ...[
-                    const SizedBox(height: 16),
-                    CustomTextField(
-                      controller: _pinController,
-                      label: 'PIN',
-                      hint: '4-stellige PIN',
-                      validator: _usePin ? Validators.validatePin : null,
-                      prefixIcon: Icons.lock_outline,
-                      obscureText: true,
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 16),
-                    CustomTextField(
-                      controller: _confirmPinController,
-                      label: 'PIN bestätigen',
-                      hint: 'PIN erneut eingeben',
-                      validator: _usePin ? Validators.validatePin : null,
-                      prefixIcon: Icons.lock_outline,
-                      obscureText: true,
-                      keyboardType: TextInputType.number,
-                    ),
-                  ],
-                  const SizedBox(height: 32),
-                  CustomButton(
-                    text: 'Profil erstellen',
-                    onPressed: _isLoading ? null : _handleCreateProfile,
-                    isLoading: _isLoading,
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.info.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: AppColors.info.withOpacity(0.3),
-                      ),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: AppColors.info,
-                          size: 20,
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Du kannst dein Profil später jederzeit bearbeiten',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.info,
+                  child: IntrinsicHeight(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Header - kompakter wenn Keyboard offen
+                          if (!keyboardVisible) ...[
+                            SizedBox(height: screenHeight > 700 ? 16 : 8),
+
+                            // Icon mit Background
+                            Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? AppColors.primaryLight.withOpacity(0.2)
+                                      : AppColors.primary.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.person_add_rounded,
+                                  size: 48,
+                                  color: isDark
+                                      ? AppColors.primaryLight
+                                      : AppColors.primary,
+                                ),
+                              ),
+                            ),
+
+                            SizedBox(height: screenHeight > 700 ? 16 : 12),
+
+                            // Titel
+                            Text(
+                              'Neues Profil',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: isDark
+                                    ? AppColors.textLight
+                                    : AppColors.textPrimary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+
+                            const SizedBox(height: 4),
+
+                            // Untertitel
+                            Text(
+                              widget.organization.name,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: isDark
+                                    ? const Color(0xFFB0B0B0)
+                                    : AppColors.textSecondary,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+
+                            SizedBox(height: screenHeight > 700 ? 20 : 16),
+                          ] else ...[
+                            const SizedBox(height: 8),
+                          ],
+
+                          // Formular Card
+                          Card(
+                            elevation: isDark ? 2 : 1,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // Name Field
+                                  TextFormField(
+                                    controller: _nameController,
+                                    validator: Validators.validateName,
+                                    style: theme.textTheme.bodyLarge,
+                                    decoration: InputDecoration(
+                                      labelText: 'Name',
+                                      hintText: 'Dein vollständiger Name',
+                                      prefixIcon: Icon(
+                                        Icons.person_outline_rounded,
+                                        color: isDark
+                                            ? AppColors.primaryLight
+                                            : AppColors.primary,
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 16),
+
+                                  // Email Field
+                                  TextFormField(
+                                    controller: _emailController,
+                                    keyboardType: TextInputType.emailAddress,
+                                    style: theme.textTheme.bodyLarge,
+                                    decoration: InputDecoration(
+                                      labelText: 'E-Mail (optional)',
+                                      hintText: 'beispiel@email.de',
+                                      prefixIcon: Icon(
+                                        Icons.email_outlined,
+                                        color: isDark
+                                            ? AppColors.primaryLight
+                                            : AppColors.primary,
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 16),
+
+                                  // PIN Switch - kompakt
+                                  InkWell(
+                                    onTap: () =>
+                                        setState(() => _usePin = !_usePin),
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 12,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? const Color(0xFF1E1E1E)
+                                            : AppColors.primary
+                                                .withOpacity(0.05),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isDark
+                                              ? const Color(0xFF404040)
+                                              : AppColors.primary
+                                                  .withOpacity(0.2),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.shield_outlined,
+                                            size: 20,
+                                            color: isDark
+                                                ? AppColors.primaryLight
+                                                : AppColors.primary,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'PIN-Schutz',
+                                                  style: theme
+                                                      .textTheme.bodyMedium
+                                                      ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                    color: isDark
+                                                        ? AppColors.textLight
+                                                        : AppColors.textPrimary,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  '4-stellige PIN',
+                                                  style: theme
+                                                      .textTheme.bodySmall
+                                                      ?.copyWith(
+                                                    color: isDark
+                                                        ? const Color(
+                                                            0xFFB0B0B0)
+                                                        : AppColors
+                                                            .textSecondary,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Switch(
+                                            value: _usePin,
+                                            onChanged: (value) =>
+                                                setState(() => _usePin = value),
+                                            activeColor: isDark
+                                                ? AppColors.primaryLight
+                                                : AppColors.primary,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+
+                                  // PIN Fields (conditional)
+                                  if (_usePin) ...[
+                                    const SizedBox(height: 16),
+
+                                    // PIN Row - zwei Felder nebeneinander
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextFormField(
+                                            controller: _pinController,
+                                            validator: _usePin
+                                                ? Validators.validatePin
+                                                : null,
+                                            obscureText: true,
+                                            keyboardType: TextInputType.number,
+                                            maxLength: 4,
+                                            style: theme.textTheme.bodyLarge,
+                                            decoration: InputDecoration(
+                                              labelText: 'PIN',
+                                              hintText: '••••',
+                                              prefixIcon: Icon(
+                                                Icons.lock_outline_rounded,
+                                                size: 20,
+                                                color: isDark
+                                                    ? AppColors.primaryLight
+                                                    : AppColors.primary,
+                                              ),
+                                              counterText: '',
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 12,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: TextFormField(
+                                            controller: _confirmPinController,
+                                            validator: _usePin
+                                                ? Validators.validatePin
+                                                : null,
+                                            obscureText: true,
+                                            keyboardType: TextInputType.number,
+                                            maxLength: 4,
+                                            style: theme.textTheme.bodyLarge,
+                                            decoration: InputDecoration(
+                                              labelText: 'Bestätigen',
+                                              hintText: '••••',
+                                              prefixIcon: Icon(
+                                                Icons.lock_outline_rounded,
+                                                size: 20,
+                                                color: isDark
+                                                    ? AppColors.primaryLight
+                                                    : AppColors.primary,
+                                              ),
+                                              counterText: '',
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 12,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+
+                                  const SizedBox(height: 20),
+
+                                  // Create Button
+                                  FilledButton(
+                                    onPressed: _isLoading
+                                        ? null
+                                        : _handleCreateProfile,
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: isDark
+                                          ? AppColors.primaryLight
+                                          : AppColors.primary,
+                                      foregroundColor: AppColors.textLight,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      elevation: 2,
+                                    ),
+                                    child: _isLoading
+                                        ? const SizedBox(
+                                            height: 20,
+                                            width: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                AppColors.textLight,
+                                              ),
+                                            ),
+                                          )
+                                        : Text(
+                                            'Profil erstellen',
+                                            style: theme.textTheme.titleMedium
+                                                ?.copyWith(
+                                              color: AppColors.textLight,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+
+                          const SizedBox(height: 16),
+
+                          // Info Box - kompakt
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.info
+                                  .withOpacity(isDark ? 0.15 : 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.info
+                                    .withOpacity(isDark ? 0.4 : 0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline_rounded,
+                                  color: AppColors.info,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Profil später bearbeitbar',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: isDark
+                                          ? AppColors.info.withOpacity(0.9)
+                                          : AppColors.info,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+                        ],
+                      ),
                     ),
                   ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -281,7 +550,6 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
         }
       },
       child: CupertinoPageScaffold(
-        // ✅ KRITISCH: Keine benutzerdefinierten Styles in NavigationBar
         navigationBar: const CupertinoNavigationBar(
           middle: Text('Profil erstellen'),
         ),

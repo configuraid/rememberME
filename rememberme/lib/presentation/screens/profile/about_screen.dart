@@ -28,125 +28,265 @@ class _AboutScreenState extends State<AboutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF121212) : null,
       appBar: AppBar(
         title: const Text('Über die App'),
+        elevation: 0,
+        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
+        foregroundColor: AppColors.textLight,
       ),
       body: ListView(
+        padding: const EdgeInsets.only(bottom: 32),
         children: [
-          // App Logo & Name
+          // App Logo & Name Header
           Container(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 32),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: isDark
+                    ? [
+                        AppColors.primaryLight.withOpacity(0.2),
+                        const Color(0xFF121212),
+                      ]
+                    : [
+                        AppColors.primary.withOpacity(0.1),
+                        Colors.transparent,
+                      ],
+              ),
+            ),
             child: Column(
               children: [
+                // Logo mit Gradient und Glow
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isDark
+                          ? [
+                              AppColors.primaryLight.withOpacity(0.4),
+                              AppColors.accent.withOpacity(0.3),
+                            ]
+                          : [
+                              AppColors.primary.withOpacity(0.15),
+                              AppColors.accent.withOpacity(0.1),
+                            ],
+                    ),
                     shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDark
+                            ? AppColors.primaryLight.withOpacity(0.4)
+                            : AppColors.primary.withOpacity(0.2),
+                        blurRadius: 30,
+                        spreadRadius: 5,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
-                  child: const Icon(
-                    Icons.favorite,
+                  child: Icon(
+                    Icons.favorite_rounded,
                     size: 64,
-                    color: AppColors.primary,
+                    color: isDark ? AppColors.primaryLight : AppColors.primary,
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Digital Memorial',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 20),
                 Text(
-                  'Version $_version',
-                  style: TextStyle(color: Colors.grey[600]),
+                  'rememberME',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.primaryLight.withOpacity(0.3)
+                          : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: Text(
+                    'Version $_version',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: isDark
+                          ? AppColors.primaryLight.withOpacity(0.9)
+                          : AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
 
-          const Divider(),
+          const SizedBox(height: 16),
 
-          // Info Sections
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text('Was ist Digital Memorial?'),
-            subtitle: const Text(
-              'Eine würdevolle Plattform für digitale Gedenkseiten',
-            ),
-            onTap: () => _showInfoDialog(
-              context,
-              'Über Digital Memorial',
-              'Digital Memorial ermöglicht es Ihnen, würdevolle digitale Gedenkseiten für verstorbene Angehörige und Freunde zu erstellen und zu teilen. Bewahren Sie Erinnerungen, teilen Sie Geschichten und ermöglichen Sie anderen, Beileid auszudrücken.',
-            ),
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.article),
-            title: const Text('Nutzungsbedingungen'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () => _launchUrl('https://example.com/terms'),
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.privacy_tip),
-            title: const Text('Datenschutzerklärung'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () => _launchUrl('https://example.com/privacy'),
-          ),
-
-          const Divider(),
-
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: const Text('Website'),
-            subtitle: const Text('www.digital-memorial.com'),
-            trailing: const Icon(Icons.open_in_new, size: 16),
-            onTap: () => _launchUrl('https://www.digital-memorial.com'),
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.email),
-            title: const Text('Kontakt'),
-            subtitle: const Text('support@digital-memorial.com'),
-            trailing: const Icon(Icons.open_in_new, size: 16),
-            onTap: () => _launchUrl('mailto:support@digital-memorial.com'),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Social Media
+          // Info Card
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Card(
+              elevation: 0,
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color:
+                      isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  _buildListTile(
+                    context,
+                    icon: Icons.info_outline_rounded,
+                    title: 'Was ist rememberME?',
+                    subtitle:
+                        'Eine würdevolle Plattform für digitale Gedenkseiten',
+                    isDark: isDark,
+                    onTap: () => _showInfoDialog(
+                      context,
+                      'Über rememberME',
+                      'rememberME ermöglicht es Ihnen, würdevolle digitale Gedenkseiten für verstorbene Angehörige und Freunde zu erstellen und zu teilen. Bewahren Sie Erinnerungen, teilen Sie Geschichten und ermöglichen Sie anderen, Beileid auszudrücken.',
+                      isDark,
+                    ),
+                  ),
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    indent: 84,
+                    endIndent: 20,
+                    color:
+                        isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+                  ),
+                  _buildListTile(
+                    context,
+                    icon: Icons.article_outlined,
+                    title: 'Nutzungsbedingungen',
+                    trailing: Icons.open_in_new_rounded,
+                    isDark: isDark,
+                    onTap: () => _launchUrl('https://example.com/terms'),
+                  ),
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    indent: 84,
+                    endIndent: 20,
+                    color:
+                        isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+                  ),
+                  _buildListTile(
+                    context,
+                    icon: Icons.privacy_tip_outlined,
+                    title: 'Datenschutzerklärung',
+                    trailing: Icons.open_in_new_rounded,
+                    isDark: isDark,
+                    onTap: () => _launchUrl('https://example.com/privacy'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Kontakt Card
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Card(
+              elevation: 0,
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color:
+                      isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  _buildListTile(
+                    context,
+                    icon: Icons.language_rounded,
+                    title: 'Website',
+                    subtitle: 'www.digital-memorial.com',
+                    trailing: Icons.open_in_new_rounded,
+                    isDark: isDark,
+                    onTap: () => _launchUrl('https://www.digital-memorial.com'),
+                  ),
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    indent: 84,
+                    endIndent: 20,
+                    color:
+                        isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+                  ),
+                  _buildListTile(
+                    context,
+                    icon: Icons.email_outlined,
+                    title: 'Kontakt',
+                    subtitle: 'support@digital-memorial.com',
+                    trailing: Icons.open_in_new_rounded,
+                    isDark: isDark,
+                    onTap: () =>
+                        _launchUrl('mailto:support@digital-memorial.com'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 40),
+
+          // Social Media Section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Column(
               children: [
                 Text(
                   'Folgen Sie uns',
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey[600],
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _buildSocialButton(
-                      Icons.facebook,
+                      Icons.facebook_rounded,
+                      isDark,
                       () => _launchUrl('https://facebook.com'),
                     ),
                     const SizedBox(width: 16),
                     _buildSocialButton(
-                      Icons.wordpress,
+                      Icons.public_rounded,
+                      isDark,
                       () => _launchUrl('https://twitter.com'),
                     ),
                     const SizedBox(width: 16),
                     _buildSocialButton(
-                      Icons.camera_alt,
+                      Icons.camera_alt_rounded,
+                      isDark,
                       () => _launchUrl('https://instagram.com'),
                     ),
                   ],
@@ -159,49 +299,373 @@ class _AboutScreenState extends State<AboutScreen> {
 
           // Copyright
           Center(
-            child: Text(
-              '© 2024 Digital Memorial\nMade with ❤️',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+            child: Column(
+              children: [
+                Text(
+                  '© 2025 rememberME',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color:
+                        isDark ? const Color(0xFF808080) : Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Made with',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: isDark
+                            ? const Color(0xFF808080)
+                            : Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      Icons.favorite_rounded,
+                      size: 16,
+                      color: isDark
+                          ? AppColors.accent.withOpacity(0.9)
+                          : AppColors.error,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'in Germany',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: isDark
+                            ? const Color(0xFF808080)
+                            : Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-
-          const SizedBox(height: 32),
         ],
       ),
     );
   }
 
-  Widget _buildSocialButton(IconData icon, VoidCallback onTap) {
+  Widget _buildListTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    IconData? trailing,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        splashColor: isDark
+            ? AppColors.primaryLight.withOpacity(0.1)
+            : AppColors.primary.withOpacity(0.08),
+        highlightColor: isDark
+            ? AppColors.primaryLight.withOpacity(0.05)
+            : AppColors.primary.withOpacity(0.04),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            children: [
+              // Icon Container mit Gradient
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            AppColors.primaryLight.withOpacity(0.25),
+                            AppColors.primaryLight.withOpacity(0.15),
+                          ]
+                        : [
+                            AppColors.primary.withOpacity(0.15),
+                            AppColors.primary.withOpacity(0.08),
+                          ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.primaryLight.withOpacity(0.3)
+                        : AppColors.primary.withOpacity(0.2),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isDark
+                          ? AppColors.primaryLight.withOpacity(0.1)
+                          : AppColors.primary.withOpacity(0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  icon,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Text Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.textLight
+                            : AppColors.textPrimary,
+                        letterSpacing: 0.15,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: isDark
+                              ? const Color(0xFFA0A0A0)
+                              : AppColors.textSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color:
+                        isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    trailing,
+                    size: 16,
+                    color:
+                        isDark ? const Color(0xFF909090) : Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSocialButton(
+    IconData icon,
+    bool isDark,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(30),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
-          shape: BoxShape.circle,
+          color: isDark
+              ? const Color(0xFF1E1E1E)
+              : AppColors.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark
+                ? AppColors.primaryLight.withOpacity(0.3)
+                : AppColors.primary.withOpacity(0.2),
+            width: 1.5,
+          ),
         ),
-        child: Icon(icon, color: AppColors.primary),
+        child: Icon(
+          icon,
+          color: isDark ? AppColors.primaryLight : AppColors.primary,
+          size: 28,
+        ),
       ),
     );
   }
 
-  void _showInfoDialog(BuildContext context, String title, String content) {
+  void _showInfoDialog(
+    BuildContext context,
+    String title,
+    String content,
+    bool isDark,
+  ) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Schließen'),
+      barrierDismissible: true,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark
+                  ? AppColors.primaryLight.withOpacity(0.2)
+                  : Colors.grey.shade200,
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withOpacity(0.5)
+                    : Colors.black.withOpacity(0.15),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header mit Icon und Titel
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            AppColors.primaryLight.withOpacity(0.15),
+                            AppColors.primaryLight.withOpacity(0.08),
+                          ]
+                        : [
+                            AppColors.primary.withOpacity(0.08),
+                            AppColors.primary.withOpacity(0.04),
+                          ],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: isDark
+                              ? [
+                                  AppColors.primaryLight.withOpacity(0.3),
+                                  AppColors.primaryLight.withOpacity(0.2),
+                                ]
+                              : [
+                                  AppColors.primary.withOpacity(0.15),
+                                  AppColors.primary.withOpacity(0.1),
+                                ],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.primaryLight.withOpacity(0.4)
+                              : AppColors.primary.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: isDark
+                                ? AppColors.primaryLight.withOpacity(0.15)
+                                : AppColors.primary.withOpacity(0.12),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.info_outline_rounded,
+                        color:
+                            isDark ? AppColors.primaryLight : AppColors.primary,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? AppColors.textLight
+                                  : AppColors.textPrimary,
+                              letterSpacing: 0.15,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  content,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        height: 1.6,
+                        color: isDark
+                            ? const Color(0xFFB0B0B0)
+                            : AppColors.textSecondary,
+                        letterSpacing: 0.25,
+                      ),
+                ),
+              ),
+
+              // Action Button
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          isDark ? AppColors.primaryLight : AppColors.primary,
+                      foregroundColor: AppColors.textLight,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Schließen',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textLight,
+                            letterSpacing: 0.5,
+                          ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -213,7 +677,11 @@ class _AboutScreenState extends State<AboutScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Konnte $urlString nicht öffnen'),
-            backgroundColor: AppColors.error,
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }

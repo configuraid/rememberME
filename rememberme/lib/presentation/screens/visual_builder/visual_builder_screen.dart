@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:io';
 import 'package:rememberme/data/models/content_block_model.dart';
 import 'package:rememberme/data/models/memorial_page_model.dart';
 import 'package:rememberme/business_logic/memorial/memorial_bloc.dart';
 import 'package:rememberme/business_logic/memorial/memorial_event.dart';
+import 'package:rememberme/core/constants/app_colors.dart';
 import '../../widgets/page_builder/content_block_widget.dart';
 import '../../widgets/page_builder/add_block_bottom_sheet.dart';
 import '../../widgets/page_builder/block_settings_bottom_sheet.dart';
@@ -35,7 +37,6 @@ class _IntuitivePageBuilderScreenState
   }
 
   void _loadMemorialContent() {
-    // ✅ Lade die ECHTEN Blöcke aus dem Memorial
     _blocks = List.from(widget.memorial.contentBlocks);
     print('📦 Geladene Blöcke: ${_blocks.length}');
   }
@@ -49,19 +50,94 @@ class _IntuitivePageBuilderScreenState
   }
 
   void _showSuccessMessage(String message) {
-    showCupertinoDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => CupertinoAlertDialog(
-        content: Text(message),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('OK'),
-            onPressed: () => Navigator.pop(context),
+    if (Platform.isIOS) {
+      // iOS: CupertinoAlertDialog
+      showCupertinoDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => CupertinoAlertDialog(
+          content: Text(message),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Android: Material Design Dialog
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (ctx) => Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 300),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.success.withOpacity(0.3),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withOpacity(0.5)
+                      : Colors.black.withOpacity(0.15),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.success.withOpacity(0.2),
+                        AppColors.success.withOpacity(0.1),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.success.withOpacity(0.4),
+                      width: 2,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    size: 48,
+                    color: AppColors.success,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  message,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.textLight
+                            : AppColors.textPrimary,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
-    );
+        ),
+      );
+    }
 
     // Auto-dismiss after 1 second
     Future.delayed(const Duration(seconds: 1), () {
@@ -73,126 +149,411 @@ class _IntuitivePageBuilderScreenState
 
   Future<bool> _onWillPop() async {
     if (!_hasUnsavedChanges) {
-      return true; // Keine Änderungen, kann zurück
+      return true;
     }
 
-    // Zeige Warnung bei ungespeicherten Änderungen
-    final shouldPop = await showCupertinoDialog<bool>(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Ungespeicherte Änderungen'),
-        content: const Text(
-          'Du hast ungespeicherte Änderungen. Möchtest du wirklich zurück?',
+    if (Platform.isIOS) {
+      // iOS: CupertinoAlertDialog
+      final shouldPop = await showCupertinoDialog<bool>(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Ungespeicherte Änderungen'),
+          content: const Text(
+            'Du hast ungespeicherte Änderungen. Möchtest du wirklich zurück?',
+          ),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('Abbrechen'),
+              onPressed: () => Navigator.pop(context, false),
+            ),
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              child: const Text('Verwerfen'),
+              onPressed: () => Navigator.pop(context, true),
+            ),
+          ],
         ),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('Abbrechen'),
-            onPressed: () => Navigator.pop(context, false),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            child: const Text('Verwerfen'),
-            onPressed: () => Navigator.pop(context, true),
-          ),
-        ],
-      ),
-    );
+      );
+      return shouldPop ?? false;
+    } else {
+      // Android: Material Design Dialog
+      final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return shouldPop ?? false;
+      final shouldPop = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 340),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark
+                    ? AppColors.error.withOpacity(0.3)
+                    : Colors.grey.shade200,
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withOpacity(0.5)
+                      : Colors.black.withOpacity(0.15),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.error.withOpacity(0.2),
+                        AppColors.error.withOpacity(0.1),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.error.withOpacity(0.4),
+                      width: 2,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.warning_rounded,
+                    size: 56,
+                    color: AppColors.error,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Ungespeicherte Änderungen',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? AppColors.textLight
+                              : AppColors.textPrimary,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Du hast ungespeicherte Änderungen. Möchtest du wirklich zurück?',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: isDark
+                              ? const Color(0xFFB0B0B0)
+                              : AppColors.textSecondary,
+                          height: 1.5,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(
+                              color: isDark
+                                  ? const Color(0xFF404040)
+                                  : Colors.grey.shade300,
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Abbrechen',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? AppColors.textLight
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.error,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Verwerfen',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      return shouldPop ?? false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        backgroundColor: Colors.grey[50],
+        backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey.shade50,
         appBar: AppBar(
           title: Text(widget.memorial.name),
           centerTitle: true,
+          elevation: 0,
+          backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
+          foregroundColor: AppColors.textLight,
           actions: [
             // Unsaved changes indicator
             if (_hasUnsavedChanges)
-              const Center(
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.only(right: 8),
-                  child: Icon(Icons.circle, color: Colors.orange, size: 12),
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.orange.withOpacity(0.5),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.circle, color: Colors.orange, size: 8),
+                        SizedBox(width: 6),
+                        Text(
+                          'Nicht gespeichert',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             // Preview
-            IconButton(
-              icon: const Icon(Icons.visibility),
-              onPressed: _showPreview,
-              tooltip: 'Vorschau',
+            Container(
+              margin: const EdgeInsets.only(right: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.visibility_rounded),
+                onPressed: _showPreview,
+                tooltip: 'Vorschau',
+              ),
             ),
             // Save
-            IconButton(
-              icon: const Icon(Icons.check),
-              onPressed: _save,
-              tooltip: 'Speichern',
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.success,
+                    AppColors.success.withOpacity(0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.check_rounded),
+                onPressed: _save,
+                tooltip: 'Speichern',
+                color: Colors.white,
+              ),
             ),
           ],
         ),
-        body: _blocks.isEmpty ? _buildEmptyState() : _buildBlockList(),
+        body: _blocks.isEmpty
+            ? _buildEmptyState(isDark)
+            : _buildBlockList(isDark),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _showAddBlockSheet,
-          icon: const Icon(Icons.add),
+          icon: const Icon(Icons.add_rounded),
           label: const Text('Block hinzufügen'),
+          backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 4,
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool isDark) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.article_outlined,
-            size: 80,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Noch keine Inhalte',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[700],
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [
+                          AppColors.primaryLight.withOpacity(0.2),
+                          AppColors.primaryLight.withOpacity(0.1),
+                        ]
+                      : [
+                          AppColors.primary.withOpacity(0.15),
+                          AppColors.primary.withOpacity(0.08),
+                        ],
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.primaryLight.withOpacity(0.3)
+                      : AppColors.primary.withOpacity(0.2),
+                  width: 2,
+                ),
+              ),
+              child: Icon(
+                Icons.article_outlined,
+                size: 80,
+                color: isDark ? AppColors.primaryLight : AppColors.primary,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Füge deinen ersten Block hinzu',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
+            const SizedBox(height: 32),
+            Text(
+              'Noch keine Inhalte',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                  ),
             ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: _showAddBlockSheet,
-            icon: const Icon(Icons.add),
-            label: const Text('Block hinzufügen'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            const SizedBox(height: 12),
+            Text(
+              'Füge deinen ersten Block hinzu,\num deine Gedenkseite zu gestalten',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: isDark
+                        ? const Color(0xFFB0B0B0)
+                        : AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+              textAlign: TextAlign.center,
             ),
-          ),
-        ],
+            const SizedBox(height: 40),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [
+                          AppColors.primaryLight,
+                          AppColors.primaryLight.withOpacity(0.8),
+                        ]
+                      : [
+                          AppColors.primary,
+                          AppColors.primary.withOpacity(0.9),
+                        ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark
+                        ? AppColors.primaryLight.withOpacity(0.3)
+                        : AppColors.primary.withOpacity(0.4),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: _showAddBlockSheet,
+                icon: const Icon(Icons.add_rounded, size: 24),
+                label: const Text(
+                  'Block hinzufügen',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildBlockList() {
+  Widget _buildBlockList(bool isDark) {
     return ReorderableListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _blocks.length + 1, // +1 for add button at bottom
+      itemCount: _blocks.length + 1,
       onReorder: _reorderBlocks,
       itemBuilder: (context, index) {
-        // Add button at bottom
         if (index == _blocks.length) {
-          return _buildAddBlockButton(key: const ValueKey('add-button'));
+          return _buildAddBlockButton(
+              key: const ValueKey('add-button'), isDark: isDark);
         }
 
         final block = _blocks[index];
@@ -213,17 +574,91 @@ class _IntuitivePageBuilderScreenState
     );
   }
 
-  Widget _buildAddBlockButton({required Key key}) {
+  Widget _buildAddBlockButton({required Key key, required bool isDark}) {
     return Container(
       key: key,
       margin: const EdgeInsets.only(top: 16),
       child: Center(
-        child: OutlinedButton.icon(
-          onPressed: _showAddBlockSheet,
-          icon: const Icon(Icons.add),
-          label: const Text('Weiteren Block hinzufügen'),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark
+                  ? AppColors.primaryLight.withOpacity(0.3)
+                  : AppColors.primary.withOpacity(0.3),
+              width: 2,
+              style: BorderStyle.solid,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withOpacity(0.2)
+                    : Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _showAddBlockSheet,
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: isDark
+                              ? [
+                                  AppColors.primaryLight.withOpacity(0.25),
+                                  AppColors.primaryLight.withOpacity(0.15),
+                                ]
+                              : [
+                                  AppColors.primary.withOpacity(0.15),
+                                  AppColors.primary.withOpacity(0.08),
+                                ],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.primaryLight.withOpacity(0.3)
+                              : AppColors.primary.withOpacity(0.2),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.add_rounded,
+                        color:
+                            isDark ? AppColors.primaryLight : AppColors.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Weiteren Block hinzufügen',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.textLight
+                                : AppColors.textPrimary,
+                            letterSpacing: 0.15,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -260,9 +695,7 @@ class _IntuitivePageBuilderScreenState
       _markAsChanged();
     });
 
-    // Scroll to new block
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Show settings immediately for text/header blocks
       if (type == ContentBlockType.text || type == ContentBlockType.header) {
         _showBlockSettings(_blocks.last);
       }
@@ -283,34 +716,195 @@ class _IntuitivePageBuilderScreenState
   }
 
   void _deleteBlock(String blockId) {
-    // Confirm deletion
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Block löschen?'),
-        content: const Text('Möchtest du diesen Block wirklich löschen?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen'),
+    if (Platform.isIOS) {
+      // iOS: CupertinoAlertDialog
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Block löschen?'),
+          content: const Text('Möchtest du diesen Block wirklich löschen?'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('Abbrechen'),
+              onPressed: () => Navigator.pop(context),
+            ),
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              child: const Text('Löschen'),
+              onPressed: () {
+                setState(() {
+                  _blocks.removeWhere((b) => b.id == blockId);
+                  if (_selectedBlockId == blockId) {
+                    _selectedBlockId = null;
+                  }
+                  _markAsChanged();
+                });
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Android: Material Design Dialog
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+
+      showDialog(
+        context: context,
+        builder: (ctx) => Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 340),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark
+                    ? AppColors.error.withOpacity(0.3)
+                    : Colors.grey.shade200,
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withOpacity(0.5)
+                      : Colors.black.withOpacity(0.15),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.error.withOpacity(0.2),
+                        AppColors.error.withOpacity(0.1),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.error.withOpacity(0.4),
+                      width: 2,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.delete_forever_rounded,
+                    size: 56,
+                    color: AppColors.error,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Block löschen?',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? AppColors.textLight
+                              : AppColors.textPrimary,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Möchtest du diesen Block wirklich löschen?',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: isDark
+                              ? const Color(0xFFB0B0B0)
+                              : AppColors.textSecondary,
+                          height: 1.5,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(
+                              color: isDark
+                                  ? const Color(0xFF404040)
+                                  : Colors.grey.shade300,
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Abbrechen',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? AppColors.textLight
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _blocks.removeWhere((b) => b.id == blockId);
+                              if (_selectedBlockId == blockId) {
+                                _selectedBlockId = null;
+                              }
+                              _markAsChanged();
+                            });
+                            Navigator.pop(ctx);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.error,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Löschen',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _blocks.removeWhere((b) => b.id == blockId);
-                if (_selectedBlockId == blockId) {
-                  _selectedBlockId = null;
-                }
-                _markAsChanged();
-              });
-              Navigator.pop(context);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Löschen'),
-          ),
-        ],
-      ),
-    );
+        ),
+      );
+    }
   }
 
   void _reorderBlocks(int oldIndex, int newIndex) {
@@ -341,8 +935,7 @@ class _IntuitivePageBuilderScreenState
       backgroundColor: Colors.transparent,
       builder: (context) => BlockSettingsBottomSheet(
         block: block,
-        memorialId:
-            widget.memorial.id, // ✅ NEU: Für Image Upload zu Firebase Storage
+        memorialId: widget.memorial.id,
         onUpdate: (key, value) => _updateBlockContent(block.id, key, value),
       ),
     );
@@ -365,12 +958,10 @@ class _IntuitivePageBuilderScreenState
   void _save() {
     print('💾 Speichere ${_blocks.length} Blöcke...');
 
-    // Erstelle aktualisiertes Memorial mit neuen Blöcken
     final updatedMemorial = widget.memorial.copyWith(
       contentBlocks: _blocks,
     );
 
-    // ✅ Sende Update-Event ans BLoC
     context.read<MemorialBloc>().add(
           MemorialUpdateRequested(memorial: updatedMemorial),
         );
@@ -381,7 +972,6 @@ class _IntuitivePageBuilderScreenState
 
     _showSuccessMessage('✓ Seite gespeichert');
 
-    // Optional: Nach 1.5 Sekunden zurück
     Future.delayed(const Duration(milliseconds: 1500), () {
       if (mounted) {
         Navigator.pop(context);
@@ -403,28 +993,57 @@ class _PreviewScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
       appBar: AppBar(
         title: Text('Vorschau - ${memorial.name}'),
         centerTitle: true,
+        elevation: 0,
+        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
+        foregroundColor: AppColors.textLight,
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: blocks.length,
-        itemBuilder: (context, index) {
-          return ContentBlockWidget(
-            block: blocks[index],
-            isSelected: false,
-            isPreview: true,
-            onTap: () {},
-            onEdit: () {},
-            onDuplicate: () {},
-            onDelete: () {},
-            onContentChanged: (_, __) {},
-          );
-        },
-      ),
+      body: blocks.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.preview_rounded,
+                    size: 64,
+                    color:
+                        isDark ? const Color(0xFF404040) : Colors.grey.shade400,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Keine Blöcke vorhanden',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: isDark
+                          ? const Color(0xFF808080)
+                          : Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: blocks.length,
+              itemBuilder: (context, index) {
+                return ContentBlockWidget(
+                  block: blocks[index],
+                  isSelected: false,
+                  isPreview: true,
+                  onTap: () {},
+                  onEdit: () {},
+                  onDuplicate: () {},
+                  onDelete: () {},
+                  onContentChanged: (_, __) {},
+                );
+              },
+            ),
     );
   }
 }

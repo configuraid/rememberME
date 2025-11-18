@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:io';
+import '../../../core/constants/app_colors.dart';
 
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
@@ -13,11 +14,12 @@ class CustomTextField extends StatelessWidget {
   final bool obscureText;
   final TextInputType? keyboardType;
   final int? maxLines;
-  final TextInputAction? textInputAction; // ✅ Hinzugefügt
-  final void Function(String)? onFieldSubmitted; // ✅ Hinzugefügt
+  final TextInputAction? textInputAction;
+  final void Function(String)? onFieldSubmitted;
   final bool enabled;
   final FocusNode? focusNode;
   final void Function(String)? onChanged;
+  final int? maxLength;
 
   const CustomTextField({
     super.key,
@@ -31,11 +33,12 @@ class CustomTextField extends StatelessWidget {
     this.obscureText = false,
     this.keyboardType,
     this.maxLines = 1,
-    this.textInputAction, // ✅ Hinzugefügt
-    this.onFieldSubmitted, // ✅ Hinzugefügt
+    this.textInputAction,
+    this.onFieldSubmitted,
     this.enabled = true,
     this.focusNode,
     this.onChanged,
+    this.maxLength,
   });
 
   @override
@@ -47,28 +50,152 @@ class CustomTextField extends StatelessWidget {
   }
 
   Widget _buildMaterialTextField(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
-        suffixIcon: suffixIcon != null
-            ? IconButton(
-                icon: Icon(suffixIcon),
-                onPressed: onSuffixIconPressed,
-              )
-            : null,
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withOpacity(0.2)
+                : Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      validator: validator,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      textInputAction: textInputAction, // ✅ Hinzugefügt
-      onFieldSubmitted: onFieldSubmitted, // ✅ Hinzugefügt
-      enabled: enabled,
-      focusNode: focusNode,
-      onChanged: onChanged,
+      child: TextFormField(
+        controller: controller,
+        validator: validator,
+        obscureText: obscureText,
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+        maxLength: maxLength,
+        textInputAction: textInputAction,
+        onFieldSubmitted: onFieldSubmitted,
+        enabled: enabled,
+        focusNode: focusNode,
+        onChanged: onChanged,
+        style: TextStyle(
+          color: enabled
+              ? (isDark ? AppColors.textLight : AppColors.textPrimary)
+              : (isDark ? const Color(0xFF808080) : Colors.grey.shade400),
+          fontSize: 16,
+        ),
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          labelStyle: TextStyle(
+            color: isDark ? const Color(0xFF909090) : AppColors.textSecondary,
+          ),
+          hintStyle: TextStyle(
+            color: isDark ? const Color(0xFF707070) : Colors.grey.shade400,
+          ),
+          prefixIcon: prefixIcon != null
+              ? Container(
+                  margin: const EdgeInsets.only(right: 12, left: 12),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isDark
+                          ? [
+                              AppColors.primaryLight.withOpacity(0.2),
+                              AppColors.primaryLight.withOpacity(0.1),
+                            ]
+                          : [
+                              AppColors.primary.withOpacity(0.12),
+                              AppColors.primary.withOpacity(0.06),
+                            ],
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    prefixIcon,
+                    color: enabled
+                        ? (isDark ? AppColors.primaryLight : AppColors.primary)
+                        : (isDark
+                            ? const Color(0xFF404040)
+                            : Colors.grey.shade400),
+                    size: 22,
+                  ),
+                )
+              : null,
+          suffixIcon: suffixIcon != null
+              ? IconButton(
+                  icon: Icon(
+                    suffixIcon,
+                    color: enabled
+                        ? (isDark ? AppColors.primaryLight : AppColors.primary)
+                        : (isDark
+                            ? const Color(0xFF404040)
+                            : Colors.grey.shade400),
+                    size: 22,
+                  ),
+                  onPressed: enabled ? onSuffixIconPressed : null,
+                )
+              : null,
+          filled: true,
+          fillColor: enabled
+              ? (isDark ? const Color(0xFF1E1E1E) : Colors.white)
+              : (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 18,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300,
+              width: 1.5,
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300,
+              width: 1.5,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: isDark ? AppColors.primaryLight : AppColors.primary,
+              width: 2,
+            ),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(
+              color: AppColors.error,
+              width: 1.5,
+            ),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(
+              color: AppColors.error,
+              width: 2,
+            ),
+          ),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300,
+              width: 1.5,
+            ),
+          ),
+          errorStyle: const TextStyle(
+            color: AppColors.error,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+          alignLabelWithHint: maxLines != null && maxLines! > 1,
+        ),
+      ),
     );
   }
 
@@ -118,10 +245,10 @@ class CustomTextField extends StatelessWidget {
           obscureText: obscureText,
           keyboardType: keyboardType,
           maxLines: maxLines,
+          maxLength: maxLength,
           padding: const EdgeInsets.all(12),
-          textInputAction: textInputAction, // ✅ Hinzugefügt
-          onSubmitted:
-              onFieldSubmitted, // ✅ Hinzugefügt (CupertinoTextField verwendet onSubmitted statt onFieldSubmitted)
+          textInputAction: textInputAction,
+          onSubmitted: onFieldSubmitted,
           enabled: enabled,
           focusNode: focusNode,
           onChanged: onChanged,

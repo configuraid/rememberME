@@ -6,7 +6,6 @@ import 'package:rememberme/business_logic/auth/auth_bloc.dart';
 import 'package:rememberme/business_logic/memorial/memorial_bloc.dart';
 import 'package:rememberme/business_logic/memorial/memorial_event.dart';
 import 'package:rememberme/business_logic/memorial/memorial_state.dart';
-import '../../../presentation/widgets/memorial/template_detail_bottom_sheet.dart';
 import '../../../core/constants/app_colors.dart';
 
 enum CreateTab { details, design }
@@ -64,9 +63,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
       }
     });
 
-    // Listener für Name-Input um Button-State zu aktualisieren
     _nameController.addListener(() {
-      setState(() {}); // Trigger rebuild für Button-Validierung
+      setState(() {});
     });
   }
 
@@ -91,6 +89,18 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         initialDate: _birthDate ?? DateTime(1950),
         firstDate: DateTime(1900),
         lastDate: DateTime.now(),
+        builder: (context, child) {
+          final theme = Theme.of(context);
+          final isDark = theme.brightness == Brightness.dark;
+          return Theme(
+            data: theme.copyWith(
+              colorScheme: theme.colorScheme.copyWith(
+                primary: isDark ? AppColors.primaryLight : AppColors.primary,
+              ),
+            ),
+            child: child!,
+          );
+        },
       );
       if (picked != null) {
         setState(() => _birthDate = picked);
@@ -112,6 +122,18 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         initialDate: _deathDate ?? DateTime.now(),
         firstDate: DateTime(1900),
         lastDate: DateTime.now(),
+        builder: (context, child) {
+          final theme = Theme.of(context);
+          final isDark = theme.brightness == Brightness.dark;
+          return Theme(
+            data: theme.copyWith(
+              colorScheme: theme.colorScheme.copyWith(
+                primary: isDark ? AppColors.primaryLight : AppColors.primary,
+              ),
+            ),
+            child: child!,
+          );
+        },
       );
       if (picked != null) {
         setState(() => _deathDate = picked);
@@ -175,7 +197,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         return;
       }
 
-      // ✅ Prüfe ob primaryOrganizationId vorhanden ist
       if (user.primaryOrganizationId == null) {
         _showError('Keine Organisation gefunden');
         return;
@@ -187,10 +208,9 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
       print('📋 Name: ${_nameController.text.trim()}');
       print('🎨 Template: $_selectedTemplate');
 
-      // ✅ Sende Event mit organizationId
       context.read<MemorialBloc>().add(
             MemorialCreateRequested(
-              organizationId: user.primaryOrganizationId!, // ✅ WICHTIG!
+              organizationId: user.primaryOrganizationId!,
               ownerId: user.id,
               name: _nameController.text.trim(),
               templateId: _selectedTemplate,
@@ -201,7 +221,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     }
   }
 
-  // Validierung: Prüft ob alle Pflichtfelder ausgefüllt sind
   bool _isFormValid() {
     final hasName = _nameController.text.trim().isNotEmpty;
     final hasBirthDate = _birthDate != null;
@@ -227,7 +246,14 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
       );
     }
   }
@@ -252,66 +278,126 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
 
   // ===== ANDROID VIEW =====
   Widget _buildAndroidView() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gedenkseite erstellen'),
         elevation: 0,
+        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
+        foregroundColor: AppColors.textLight,
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: _buildMaterialTabBar(),
+          preferredSize: const Size.fromHeight(56),
+          child: _buildMaterialTabBar(isDark),
         ),
       ),
       body: BlocBuilder<MemorialBloc, MemorialState>(
         builder: (context, state) {
           if (state.status == MemorialStatus.creating) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isDark ? AppColors.primaryLight : AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Erstelle Gedenkseite...',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: isDark
+                          ? const Color(0xFFB0B0B0)
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
 
           return TabBarView(
             controller: _tabController,
             children: [
-              _buildDetailsContent(),
-              _buildDesignContent(),
+              _buildDetailsContent(isDark),
+              _buildDesignContent(isDark),
             ],
           );
         },
       ),
-      floatingActionButton: _isFormValid()
-          ? FloatingActionButton.extended(
-              onPressed: _createMemorial,
-              backgroundColor: AppColors.primary,
-              icon: const Icon(Icons.check),
-              label: const Text('Erstellen'),
-            )
-          : FloatingActionButton.extended(
-              onPressed: null,
-              backgroundColor: Colors.grey[300],
-              icon: Icon(Icons.check, color: Colors.grey[500]),
-              label: Text(
-                'Erstellen',
-                style: TextStyle(color: Colors.grey[500]),
-              ),
-            ),
+      floatingActionButton: _buildFAB(isDark),
     );
   }
 
-  Widget _buildMaterialTabBar() {
+  Widget _buildMaterialTabBar(bool isDark) {
     return Container(
-      color: Theme.of(context).appBarTheme.backgroundColor,
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.primary,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: TabBar(
         controller: _tabController,
-        indicatorColor: AppColors.primary,
+        indicatorColor: AppColors.textLight,
         indicatorWeight: 3,
-        labelColor: AppColors.primary,
-        unselectedLabelColor: Colors.grey[600],
+        labelColor: AppColors.textLight,
+        unselectedLabelColor: AppColors.textLight.withOpacity(0.6),
         labelStyle: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
         ),
         tabs: const [
-          Tab(text: 'Angaben'),
-          Tab(text: 'Design'),
+          Tab(
+            icon: Icon(Icons.person_outline_rounded, size: 20),
+            text: 'Angaben',
+          ),
+          Tab(
+            icon: Icon(Icons.palette_outlined, size: 20),
+            text: 'Design',
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFAB(bool isDark) {
+    if (!_isFormValid()) {
+      return FloatingActionButton.extended(
+        onPressed: null,
+        backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+        icon: Icon(
+          Icons.check_rounded,
+          color: Colors.grey.shade600,
+        ),
+        label: Text(
+          'Erstellen',
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    }
+
+    return FloatingActionButton.extended(
+      onPressed: _createMemorial,
+      backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
+      elevation: 4,
+      icon: const Icon(Icons.check_rounded, color: AppColors.textLight),
+      label: const Text(
+        'Erstellen',
+        style: TextStyle(
+          color: AppColors.textLight,
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+        ),
       ),
     );
   }
@@ -334,20 +420,15 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
 
             return Column(
               children: [
-                // iOS Segmented Control
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: _buildIOSSegmentedControl(),
                 ),
-
-                // Content
                 Expanded(
                   child: _currentTab == CreateTab.details
-                      ? _buildDetailsContent()
-                      : _buildDesignContent(),
+                      ? _buildDetailsContent(false)
+                      : _buildDesignContent(false),
                 ),
-
-                // Create Button
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: SizedBox(
@@ -420,21 +501,20 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
 
   // ===== CONTENT SECTIONS =====
 
-  Widget _buildDetailsContent() {
+  Widget _buildDetailsContent(bool isDark) {
+    final theme = Theme.of(context);
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header
-            _buildHeader(),
+            _buildHeader(isDark),
             const SizedBox(height: 32),
 
-            // Platform-specific input fields
             if (Platform.isIOS) ...[
-              // iOS Name Input
               CupertinoTextField(
                 controller: _nameController,
                 placeholder: 'Name der Person *',
@@ -451,8 +531,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                 ),
               ),
               const SizedBox(height: 20),
-
-              // iOS Date Fields
               _buildIOSDateField(
                 label: 'Geburtsdatum',
                 date: _birthDate,
@@ -460,7 +538,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                 icon: CupertinoIcons.calendar,
               ),
               const SizedBox(height: 16),
-
               _buildIOSDateField(
                 label: 'Sterbedatum',
                 date: _deathDate,
@@ -471,11 +548,14 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               // Android Name Input
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
+                style: theme.textTheme.bodyLarge,
+                decoration: InputDecoration(
                   labelText: 'Name der Person *',
                   hintText: 'z.B. Max Mustermann',
-                  prefixIcon: Icon(Icons.person_outline),
-                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(
+                    Icons.person_outline_rounded,
+                    color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -488,20 +568,59 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
 
               // Android Date Fields
               _buildDateField(
-                label: 'Geburtsdatum',
+                label: 'Geburtsdatum *',
                 date: _birthDate,
                 onTap: _selectBirthDate,
                 icon: Icons.cake_outlined,
+                isDark: isDark,
               ),
               const SizedBox(height: 16),
 
               _buildDateField(
-                label: 'Sterbedatum',
+                label: 'Sterbedatum *',
                 date: _deathDate,
                 onTap: _selectDeathDate,
                 icon: Icons.event_outlined,
+                isDark: isDark,
               ),
             ],
+            const SizedBox(height: 32),
+
+            // Info Box
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.primaryLight.withOpacity(0.1)
+                    : AppColors.primary.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.primaryLight.withOpacity(0.3)
+                      : AppColors.primary.withOpacity(0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: isDark ? AppColors.primaryLight : AppColors.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Alle Felder können später bearbeitet werden',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color:
+                            isDark ? AppColors.primaryLight : AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             const SizedBox(height: 80),
           ],
         ),
@@ -509,34 +628,31 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     );
   }
 
-  Widget _buildDesignContent() {
+  Widget _buildDesignContent(bool isDark) {
+    final theme = Theme.of(context);
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             'Wähle ein Design',
-            style: Platform.isIOS
-                ? CupertinoTheme.of(context)
-                    .textTheme
-                    .navLargeTitleTextStyle
-                    .copyWith(fontSize: 24)
-                : Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Du kannst das Design später jederzeit ändern',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: isDark ? const Color(0xFFB0B0B0) : AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 24),
           ..._templates.map((template) {
-            return _buildTemplateCard(template);
+            return _buildTemplateCard(template, isDark);
           }),
           const SizedBox(height: 80),
         ],
@@ -546,36 +662,58 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
 
   // ===== GEMEINSAME WIDGETS =====
 
-  Widget _buildHeader() {
+  Widget _buildHeader(bool isDark) {
+    final theme = Theme.of(context);
+
     return Column(
       children: [
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? [
+                      AppColors.primaryLight.withOpacity(0.2),
+                      AppColors.accent.withOpacity(0.2),
+                    ]
+                  : [
+                      AppColors.primary.withOpacity(0.1),
+                      AppColors.accent.withOpacity(0.1),
+                    ],
+            ),
             shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? AppColors.primaryLight.withOpacity(0.2)
+                    : AppColors.primary.withOpacity(0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: Icon(
-            Icons.favorite,
+            Icons.favorite_rounded,
             size: 48,
-            color: AppColors.primary,
+            color: isDark ? AppColors.primaryLight : AppColors.primary,
           ),
         ),
-        const SizedBox(height: 16),
-        const Text(
+        const SizedBox(height: 20),
+        Text(
           'Erstelle eine Gedenkseite',
-          style: TextStyle(
-            fontSize: 24,
+          style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
         Text(
           'Bewahre die Erinnerungen für immer',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey[600],
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: isDark ? const Color(0xFFB0B0B0) : AppColors.textSecondary,
           ),
           textAlign: TextAlign.center,
         ),
@@ -588,22 +726,33 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     required DateTime? date,
     required VoidCallback onTap,
     required IconData icon,
+    required bool isDark,
   }) {
+    final theme = Theme.of(context);
+
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon),
-          border: const OutlineInputBorder(),
-          suffixIcon: const Icon(Icons.calendar_today),
+          prefixIcon: Icon(
+            icon,
+            color: isDark ? AppColors.primaryLight : AppColors.primary,
+          ),
+          suffixIcon: Icon(
+            Icons.calendar_today_rounded,
+            color: isDark ? AppColors.primaryLight : AppColors.primary,
+          ),
         ),
         child: Text(
           date != null
               ? '${date.day}.${date.month}.${date.year}'
               : 'Datum wählen',
-          style: TextStyle(
-            color: date != null ? Colors.black : Colors.grey[600],
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: date != null
+                ? (isDark ? AppColors.textLight : AppColors.textPrimary)
+                : (isDark ? const Color(0xFFB0B0B0) : AppColors.textSecondary),
           ),
         ),
       ),
@@ -667,7 +816,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     );
   }
 
-  Widget _buildTemplateCard(Map<String, dynamic> template) {
+  Widget _buildTemplateCard(Map<String, dynamic> template, bool isDark) {
     final isSelected = _selectedTemplate == template['id'];
 
     return GestureDetector(
@@ -680,16 +829,24 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         margin: const EdgeInsets.only(bottom: 16),
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: isSelected ? Colors.black : Colors.white,
+          color: isSelected
+              ? (isDark
+                  ? AppColors.primaryLight.withOpacity(0.1)
+                  : Colors.black)
+              : (isDark ? const Color(0xFF2A2A2A) : Colors.white),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? Colors.black : Colors.grey[300]!,
+            color: isSelected
+                ? (isDark ? AppColors.primaryLight : Colors.black)
+                : (isDark ? const Color(0xFF404040) : Colors.grey.shade300),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: [
             if (isSelected)
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: isDark
+                    ? AppColors.primaryLight.withOpacity(0.3)
+                    : Colors.black.withOpacity(0.3),
                 blurRadius: 24,
                 offset: const Offset(0, 8),
                 spreadRadius: 0,
@@ -711,14 +868,24 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isSelected
-                      ? [
-                          Colors.black,
-                          Colors.grey[900]!,
-                        ]
-                      : [
-                          Colors.grey[100]!,
-                          Colors.grey[200]!,
-                        ],
+                      ? (isDark
+                          ? [
+                              AppColors.primaryLight.withOpacity(0.3),
+                              AppColors.primaryLight.withOpacity(0.1),
+                            ]
+                          : [
+                              Colors.black,
+                              Colors.grey.shade900,
+                            ])
+                      : (isDark
+                          ? [
+                              const Color(0xFF1E1E1E),
+                              const Color(0xFF2A2A2A),
+                            ]
+                          : [
+                              Colors.grey.shade100,
+                              Colors.grey.shade200,
+                            ]),
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -728,7 +895,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               ),
               child: Stack(
                 children: [
-                  // Mockup-Elemente mit Animation
                   Center(
                     child: AnimatedScale(
                       duration: const Duration(milliseconds: 300),
@@ -737,68 +903,15 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                         template['icon'],
                         size: 56,
                         color: isSelected
-                            ? Colors.white.withOpacity(0.2)
-                            : Colors.grey[400],
-                      ),
-                    ),
-                  ),
-
-                  // Decorative Pattern (nur bei selected)
-                  if (isSelected)
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: _PatternPainter(),
-                      ),
-                    ),
-
-                  // Info Button
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: GestureDetector(
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => DraggableScrollableSheet(
-                            initialChildSize: 0.85,
-                            minChildSize: 0.5,
-                            maxChildSize: 0.95,
-                            builder: (context, scrollController) =>
-                                TemplateDetailBottomSheet(
-                              template: template,
-                              onSelect: () {
-                                setState(
-                                    () => _selectedTemplate = template['id']);
-                              },
-                            ),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? Colors.white.withOpacity(0.15)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: isSelected
+                            ? (isDark
                                 ? Colors.white.withOpacity(0.3)
-                                : Colors.grey[300]!,
-                          ),
-                        ),
-                        child: Icon(
-                          Icons.info_outline,
-                          size: 18,
-                          color: isSelected ? Colors.white : Colors.grey[700],
-                        ),
+                                : Colors.white.withOpacity(0.2))
+                            : (isDark
+                                ? Colors.white.withOpacity(0.1)
+                                : Colors.grey.shade400),
                       ),
                     ),
                   ),
-
-                  // Selected Badge
                   if (isSelected)
                     Positioned(
                       top: 12,
@@ -819,7 +932,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color:
+                                isDark ? AppColors.primaryLight : Colors.white,
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
@@ -833,15 +947,15 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.check_circle,
-                                color: Colors.black,
+                                Icons.check_circle_rounded,
+                                color: isDark ? Colors.black : Colors.black,
                                 size: 16,
                               ),
                               const SizedBox(width: 6),
-                              const Text(
+                              Text(
                                 'Ausgewählt',
                                 style: TextStyle(
-                                  color: Colors.black,
+                                  color: isDark ? Colors.black : Colors.black,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
@@ -860,7 +974,11 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               duration: const Duration(milliseconds: 300),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.black : Colors.white,
+                color: isSelected
+                    ? (isDark
+                        ? AppColors.primaryLight.withOpacity(0.1)
+                        : Colors.black)
+                    : (isDark ? const Color(0xFF2A2A2A) : Colors.white),
                 borderRadius: const BorderRadius.vertical(
                   bottom: Radius.circular(14),
                 ),
@@ -879,8 +997,13 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color:
-                                    isSelected ? Colors.white : Colors.black87,
+                                color: isSelected
+                                    ? (isDark
+                                        ? AppColors.textLight
+                                        : Colors.white)
+                                    : (isDark
+                                        ? AppColors.textLight
+                                        : Colors.black87),
                               ),
                               child: Text(template['name']),
                             ),
@@ -890,8 +1013,12 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                               style: TextStyle(
                                 fontSize: 14,
                                 color: isSelected
-                                    ? Colors.grey[400]
-                                    : Colors.grey[600],
+                                    ? (isDark
+                                        ? const Color(0xFFB0B0B0)
+                                        : Colors.grey.shade400)
+                                    : (isDark
+                                        ? const Color(0xFFB0B0B0)
+                                        : Colors.grey.shade600),
                               ),
                               child: Text(template['description']),
                             ),
@@ -915,12 +1042,20 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                               ),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? Colors.white.withOpacity(0.15)
-                                    : Colors.grey[100],
+                                    ? (isDark
+                                        ? AppColors.primaryLight
+                                            .withOpacity(0.2)
+                                        : Colors.white.withOpacity(0.15))
+                                    : (isDark
+                                        ? const Color(0xFF1E1E1E)
+                                        : Colors.grey.shade100),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: isSelected
-                                      ? Colors.white.withOpacity(0.3)
+                                      ? (isDark
+                                          ? AppColors.primaryLight
+                                              .withOpacity(0.3)
+                                          : Colors.white.withOpacity(0.3))
                                       : Colors.transparent,
                                 ),
                               ),
@@ -930,37 +1065,17 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: isSelected
-                                      ? Colors.white
-                                      : Colors.grey[700],
+                                      ? (isDark
+                                          ? AppColors.textLight
+                                          : Colors.white)
+                                      : (isDark
+                                          ? AppColors.textLight
+                                          : Colors.grey.shade700),
                                 ),
                               ),
                             ))
                         .toList(),
                   ),
-
-                  // "Details ansehen" nur wenn nicht selected
-                  if (!isSelected) ...[
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Details ansehen',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[700],
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.arrow_forward,
-                          size: 14,
-                          color: Colors.grey[700],
-                        ),
-                      ],
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -970,7 +1085,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     );
   }
 
-  // Helper-Methoden
   List<String> _getTemplateFeatureTags(String templateId) {
     switch (templateId) {
       case 'classic':
@@ -985,25 +1099,4 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
   }
 }
 
-// Custom Painter für dezentes Pattern (nur bei selected)
-class _PatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.05)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
-    // Diagonale Linien
-    for (double i = -size.height; i < size.width; i += 20) {
-      canvas.drawLine(
-        Offset(i, 0),
-        Offset(i + size.height, size.height),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
+// Custom Painter für dezentes Pattern (optional, removed from this version)

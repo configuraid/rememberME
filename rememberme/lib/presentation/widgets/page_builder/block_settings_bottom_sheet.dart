@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rememberme/data/models/content_block_model.dart';
 import 'package:rememberme/data/services/firebase_storage_service.dart';
+import 'package:rememberme/core/constants/app_colors.dart';
 
 class BlockSettingsBottomSheet extends StatefulWidget {
   final ContentBlock block;
@@ -124,12 +125,10 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     if (_isUploading) return;
 
     try {
-      // Get current images
       final List<String> currentImages = List<String>.from(
         _getContent<List>('images', []),
       );
 
-      // Calculate how many more images can be added
       final int remaining = 6 - currentImages.length;
 
       if (remaining <= 0) {
@@ -140,7 +139,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         return;
       }
 
-      // Pick multiple images
       final List<XFile> images = await _imagePicker.pickMultiImage(
         maxWidth: 1920,
         maxHeight: 1920,
@@ -152,7 +150,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         return;
       }
 
-      // Limit to remaining slots
       final imagesToUpload = images.take(remaining).toList();
 
       if (images.length > remaining) {
@@ -164,11 +161,9 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
       setState(() => _isUploading = true);
 
-      // Convert XFile to File
       final List<File> imageFiles =
           imagesToUpload.map((xfile) => File(xfile.path)).toList();
 
-      // Upload to Firebase Storage
       final List<String> downloadUrls =
           await _storageService.uploadGalleryImages(
         memorialId: widget.memorialId,
@@ -176,7 +171,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         imageFiles: imageFiles,
       );
 
-      // Add new URLs to existing images
       final updatedImages = [...currentImages, ...downloadUrls];
       _updateValue('images', updatedImages);
 
@@ -197,7 +191,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     }
   }
 
-  // Remove image from gallery
   void _removeGalleryImage(int index) {
     final List<String> currentImages = List<String>.from(
       _getContent<List>('images', []),
@@ -210,19 +203,94 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
   }
 
   void _showSuccessSnackBar(String message) {
-    showCupertinoDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => CupertinoAlertDialog(
-        content: Text(message),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('OK'),
-            onPressed: () => Navigator.pop(context),
+    if (Platform.isIOS) {
+      // iOS: CupertinoAlertDialog
+      showCupertinoDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => CupertinoAlertDialog(
+          content: Text(message),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Android: Material Design Dialog
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (ctx) => Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 300),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.success.withOpacity(0.3),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withOpacity(0.5)
+                      : Colors.black.withOpacity(0.15),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.success.withOpacity(0.2),
+                        AppColors.success.withOpacity(0.1),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.success.withOpacity(0.4),
+                      width: 2,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    size: 48,
+                    color: AppColors.success,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  message,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.textLight
+                            : AppColors.textPrimary,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
-    );
+        ),
+      );
+    }
 
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted && Navigator.canPop(context)) {
@@ -232,89 +300,254 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
   }
 
   void _showErrorDialog(String title, String message) {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('OK'),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
-      ),
-    );
-  }
+    if (Platform.isIOS) {
+      // iOS: CupertinoAlertDialog
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Android: Material Design Dialog
+      final isDark = Theme.of(context).brightness == Brightness.dark;
 
-  void _showComingSoonDialog(BuildContext context, String message) {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Hinweis'),
-        content: Text(message),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('OK'),
-            onPressed: () => Navigator.pop(context),
+      showDialog(
+        context: context,
+        builder: (ctx) => Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 340),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark
+                    ? AppColors.error.withOpacity(0.3)
+                    : Colors.grey.shade200,
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withOpacity(0.5)
+                      : Colors.black.withOpacity(0.15),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.error.withOpacity(0.2),
+                        AppColors.error.withOpacity(0.1),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.error.withOpacity(0.4),
+                      width: 2,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.error_rounded,
+                    size: 56,
+                    color: AppColors.error,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? AppColors.textLight
+                              : AppColors.textPrimary,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    message,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: isDark
+                              ? const Color(0xFFB0B0B0)
+                              : AppColors.textSecondary,
+                          height: 1.5,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'OK',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
-    );
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
       minChildSize: 0.5,
       maxChildSize: 0.95,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(
+              color: isDark
+                  ? AppColors.primaryLight.withOpacity(0.2)
+                  : Colors.grey.shade200,
+              width: 1,
+            ),
           ),
           child: Column(
             children: [
+              // Handle
               Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                margin: const EdgeInsets.symmetric(vertical: 12),
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color:
+                      isDark ? const Color(0xFF404040) : Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
+
+              // Title
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(24, 8, 16, 16),
                 child: Row(
                   children: [
-                    Text(
-                      BlockTypeInfo.getIcon(widget.block.type),
-                      style: const TextStyle(fontSize: 24),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      '${BlockTypeInfo.getTitle(widget.block.type)} bearbeiten',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: isDark
+                              ? [
+                                  AppColors.primaryLight.withOpacity(0.25),
+                                  AppColors.primaryLight.withOpacity(0.15),
+                                ]
+                              : [
+                                  AppColors.primary.withOpacity(0.15),
+                                  AppColors.primary.withOpacity(0.08),
+                                ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.primaryLight.withOpacity(0.3)
+                              : AppColors.primary.withOpacity(0.2),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        BlockTypeInfo.getIcon(widget.block.type),
+                        style: const TextStyle(fontSize: 24),
                       ),
                     ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        '${BlockTypeInfo.getTitle(widget.block.type)} bearbeiten',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? AppColors.textLight
+                              : AppColors.textPrimary,
+                          letterSpacing: 0.15,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF2A2A2A)
+                            : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: isDark
+                              ? const Color(0xFF909090)
+                              : Colors.grey.shade600,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 1),
+
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+              ),
+
               Expanded(
                 child: ListView(
                   controller: scrollController,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   children: _buildSettings(),
                 ),
               ),
@@ -354,7 +587,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         defaultValue: 'Überschrift eingeben',
         maxLines: 2,
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
       _buildDropdown(
         label: 'Größe',
         key: 'level',
@@ -365,9 +598,9 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           3: 'Klein (H3)',
         },
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
       _buildAlignmentPicker('align'),
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
       _buildColorPicker('color', 'Textfarbe'),
     ];
   }
@@ -380,7 +613,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         defaultValue: 'Text eingeben...',
         maxLines: 10,
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
       _buildSlider(
         label: 'Schriftgröße',
         key: 'fontSize',
@@ -388,20 +621,21 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         max: 24,
         value: _getContent('fontSize', 16.0),
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
       _buildAlignmentPicker('align'),
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
       _buildColorPicker('color', 'Textfarbe'),
     ];
   }
 
   List<Widget> _buildImageSettings() {
     final currentUrl = _getContent('url', '');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return [
       if (currentUrl.isNotEmpty) ...[
         ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: Image.network(
             currentUrl,
             height: 200,
@@ -409,33 +643,87 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(
               height: 200,
-              color: Colors.grey[200],
-              child: const Icon(Icons.broken_image, size: 64),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                Icons.broken_image_rounded,
+                size: 64,
+                color: isDark ? const Color(0xFF404040) : Colors.grey.shade400,
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
       ],
-      ElevatedButton.icon(
-        onPressed: _isUploading ? null : _handleImageUpload,
-        icon: _isUploading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
+      Container(
+        height: 56,
+        decoration: BoxDecoration(
+          gradient: _isUploading
+              ? null
+              : LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [
+                          AppColors.primaryLight,
+                          AppColors.primaryLight.withOpacity(0.85),
+                        ]
+                      : [
+                          AppColors.primary,
+                          AppColors.primary.withOpacity(0.9),
+                        ],
                 ),
-              )
-            : const Icon(Icons.upload),
-        label: Text(_isUploading ? 'Lädt hoch...' : 'Bild hochladen'),
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(double.infinity, 48),
-          backgroundColor: Colors.blue,
-          foregroundColor: Colors.white,
+          color: _isUploading
+              ? (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300)
+              : null,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: _isUploading
+              ? []
+              : [
+                  BoxShadow(
+                    color: isDark
+                        ? AppColors.primaryLight.withOpacity(0.3)
+                        : AppColors.primary.withOpacity(0.4),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+        ),
+        child: ElevatedButton.icon(
+          onPressed: _isUploading ? null : _handleImageUpload,
+          icon: _isUploading
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Icon(Icons.upload_rounded, size: 22),
+          label: Text(
+            _isUploading ? 'Lädt hoch...' : 'Bild hochladen',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: Colors.transparent,
+            minimumSize: const Size(double.infinity, 56),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
         ),
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
       _buildTextField(
         label: 'Bildunterschrift',
         key: 'caption',
@@ -449,40 +737,58 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     final List<String> images = List<String>.from(
       _getContent<List>('images', []),
     );
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return [
-      // Aktuell Bilder anzeigen
       if (images.isNotEmpty) ...[
         Text(
           'Galerie (${images.length}/6)',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
           ),
           itemCount: images.length,
           itemBuilder: (context, index) {
             return Stack(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    images[index],
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.broken_image),
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : Colors.grey.shade200,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      images[index],
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: isDark
+                            ? const Color(0xFF2A2A2A)
+                            : Colors.grey.shade200,
+                        child: Icon(
+                          Icons.broken_image_rounded,
+                          color: isDark
+                              ? const Color(0xFF404040)
+                              : Colors.grey.shade400,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -492,13 +798,27 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   child: GestureDetector(
                     onTap: () => _removeGalleryImage(index),
                     child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.error,
+                            Color(0xFFD32F2F),
+                          ],
+                        ),
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: const Icon(
-                        Icons.close,
+                        Icons.close_rounded,
                         size: 16,
                         color: Colors.white,
                       ),
@@ -509,39 +829,86 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
             );
           },
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
       ],
 
       // Upload Button
-      ElevatedButton.icon(
-        onPressed: _isUploading
-            ? null
-            : (images.length < 6 ? _handleGalleryImagesUpload : null),
-        icon: _isUploading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
+      Container(
+        height: 56,
+        decoration: BoxDecoration(
+          gradient: _isUploading || images.length >= 6
+              ? null
+              : LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [
+                          AppColors.primaryLight,
+                          AppColors.primaryLight.withOpacity(0.85),
+                        ]
+                      : [
+                          AppColors.primary,
+                          AppColors.primary.withOpacity(0.9),
+                        ],
                 ),
-              )
-            : const Icon(Icons.add_photo_alternate),
-        label: Text(
-          _isUploading
-              ? 'Lädt hoch...'
-              : images.length < 6
-                  ? 'Bilder hinzufügen (${6 - images.length} übrig)'
-                  : 'Maximum erreicht (6/6)',
+          color: _isUploading || images.length >= 6
+              ? (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300)
+              : null,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: _isUploading || images.length >= 6
+              ? []
+              : [
+                  BoxShadow(
+                    color: isDark
+                        ? AppColors.primaryLight.withOpacity(0.3)
+                        : AppColors.primary.withOpacity(0.4),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
         ),
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(double.infinity, 48),
-          backgroundColor: images.length < 6 ? Colors.blue : Colors.grey[400],
-          foregroundColor: Colors.white,
+        child: ElevatedButton.icon(
+          onPressed: _isUploading
+              ? null
+              : (images.length < 6 ? _handleGalleryImagesUpload : null),
+          icon: _isUploading
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Icon(Icons.add_photo_alternate_rounded, size: 22),
+          label: Text(
+            _isUploading
+                ? 'Lädt hoch...'
+                : images.length < 6
+                    ? 'Bilder hinzufügen (${6 - images.length} übrig)'
+                    : 'Maximum erreicht (6/6)',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: Colors.transparent,
+            disabledForegroundColor:
+                isDark ? const Color(0xFF808080) : Colors.grey.shade500,
+            minimumSize: const Size(double.infinity, 56),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
         ),
       ),
 
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
 
       _buildDropdown(
         label: 'Spalten',
@@ -564,13 +931,13 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         defaultValue: 'Zitat eingeben...',
         maxLines: 4,
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
       _buildTextField(
         label: 'Autor',
         key: 'author',
         defaultValue: '',
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
       _buildColorPicker('color', 'Farbe'),
     ];
   }
@@ -584,7 +951,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         max: 5,
         value: _getContent('thickness', 1.0),
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
       _buildColorPicker('color', 'Farbe'),
     ];
   }
@@ -597,7 +964,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         defaultValue: '',
         hint: 'YouTube oder Vimeo Link',
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
       _buildTextField(
         label: 'Beschreibung',
         key: 'caption',
@@ -615,7 +982,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         defaultValue: '',
         hint: 'TT.MM.JJJJ',
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
       _buildTextField(
         label: 'Sterbedatum',
         key: 'deathDate',
@@ -632,31 +999,77 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     int maxLines = 1,
     String? hint,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                letterSpacing: 0.15,
+              ),
         ),
         const SizedBox(height: 8),
-        TextField(
-          controller: _getController(key, defaultValue),
-          decoration: InputDecoration(
-            hintText: hint,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withOpacity(0.2)
+                    : Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          maxLines: maxLines,
-          onChanged: (value) => _updateValue(key, value),
+          child: TextField(
+            controller: _getController(key, defaultValue),
+            style: TextStyle(
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              fontSize: 15,
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(
+                color: isDark ? const Color(0xFF707070) : Colors.grey.shade400,
+              ),
+              filled: true,
+              fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color:
+                      isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300,
+                  width: 1.5,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color:
+                      isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300,
+                  width: 1.5,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
+            maxLines: maxLines,
+            onChanged: (value) => _updateValue(key, value),
+          ),
         ),
       ],
     );
@@ -668,39 +1081,83 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     required dynamic value,
     required Map<dynamic, String> items,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                letterSpacing: 0.15,
+              ),
         ),
         const SizedBox(height: 8),
-        DropdownButtonFormField(
-          value: value,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withOpacity(0.2)
+                    : Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          items: items.entries.map((entry) {
-            return DropdownMenuItem(
-              value: entry.key,
-              child: Text(entry.value),
-            );
-          }).toList(),
-          onChanged: (newValue) {
-            if (newValue != null) {
-              _updateValue(key, newValue);
-            }
-          },
+          child: DropdownButtonFormField(
+            value: value,
+            dropdownColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+            style: TextStyle(
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              fontSize: 15,
+            ),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color:
+                      isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300,
+                  width: 1.5,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color:
+                      isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300,
+                  width: 1.5,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
+            items: items.entries.map((entry) {
+              return DropdownMenuItem(
+                value: entry.key,
+                child: Text(entry.value),
+              );
+            }).toList(),
+            onChanged: (newValue) {
+              if (newValue != null) {
+                _updateValue(key, newValue);
+              }
+            },
+          ),
         ),
       ],
     );
@@ -713,6 +1170,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     required double max,
     required double value,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -721,28 +1180,70 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           children: [
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                    letterSpacing: 0.15,
+                  ),
             ),
-            Text(
-              value.round().toString(),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [
+                          AppColors.primaryLight.withOpacity(0.2),
+                          AppColors.primaryLight.withOpacity(0.1),
+                        ]
+                      : [
+                          AppColors.primary.withOpacity(0.12),
+                          AppColors.primary.withOpacity(0.06),
+                        ],
+                ),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.primaryLight.withOpacity(0.3)
+                      : AppColors.primary.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                value.round().toString(),
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color:
+                          isDark ? AppColors.primaryLight : AppColors.primary,
+                    ),
               ),
             ),
           ],
         ),
-        Slider(
-          value: value,
-          min: min,
-          max: max,
-          divisions: (max - min).round(),
-          onChanged: (newValue) {
-            _updateValue(key, newValue);
-          },
+        const SizedBox(height: 4),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor:
+                isDark ? AppColors.primaryLight : AppColors.primary,
+            inactiveTrackColor: isDark
+                ? AppColors.primaryLight.withOpacity(0.3)
+                : AppColors.primary.withOpacity(0.3),
+            thumbColor: isDark ? AppColors.primaryLight : AppColors.primary,
+            overlayColor: isDark
+                ? AppColors.primaryLight.withOpacity(0.2)
+                : AppColors.primary.withOpacity(0.2),
+            trackHeight: 4,
+          ),
+          child: Slider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: (max - min).round(),
+            onChanged: (newValue) {
+              _updateValue(key, newValue);
+            },
+          ),
         ),
       ],
     );
@@ -750,28 +1251,30 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
   Widget _buildAlignmentPicker(String key) {
     final currentAlign = _getContent(key, 'left');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Ausrichtung',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                letterSpacing: 0.15,
+              ),
         ),
         const SizedBox(height: 8),
         Row(
           children: [
-            _buildAlignButton(
-                'left', Icons.format_align_left, currentAlign, key),
-            const SizedBox(width: 8),
-            _buildAlignButton(
-                'center', Icons.format_align_center, currentAlign, key),
-            const SizedBox(width: 8),
-            _buildAlignButton(
-                'right', Icons.format_align_right, currentAlign, key),
+            _buildAlignButton('left', Icons.format_align_left_rounded,
+                currentAlign, key, isDark),
+            const SizedBox(width: 12),
+            _buildAlignButton('center', Icons.format_align_center_rounded,
+                currentAlign, key, isDark),
+            const SizedBox(width: 12),
+            _buildAlignButton('right', Icons.format_align_right_rounded,
+                currentAlign, key, isDark),
           ],
         ),
       ],
@@ -783,24 +1286,55 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     IconData icon,
     String currentAlign,
     String key,
+    bool isDark,
   ) {
     final isSelected = currentAlign == value;
 
     return Expanded(
-      child: OutlinedButton(
-        onPressed: () {
-          _updateValue(key, value);
-        },
-        style: OutlinedButton.styleFrom(
-          backgroundColor: isSelected ? Colors.blue.withOpacity(0.1) : null,
-          side: BorderSide(
-            color: isSelected ? Colors.blue : Colors.grey[300]!,
-            width: isSelected ? 2 : 1,
+      child: Container(
+        height: 52,
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [
+                          AppColors.primaryLight.withOpacity(0.25),
+                          AppColors.primaryLight.withOpacity(0.15),
+                        ]
+                      : [
+                          AppColors.primary.withOpacity(0.15),
+                          AppColors.primary.withOpacity(0.08),
+                        ],
+                )
+              : null,
+          color: !isSelected
+              ? (isDark ? const Color(0xFF1E1E1E) : Colors.white)
+              : null,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? (isDark ? AppColors.primaryLight : AppColors.primary)
+                : (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300),
+            width: isSelected ? 2 : 1.5,
           ),
         ),
-        child: Icon(
-          icon,
-          color: isSelected ? Colors.blue : Colors.grey[600],
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _updateValue(key, value),
+            borderRadius: BorderRadius.circular(12),
+            child: Center(
+              child: Icon(
+                icon,
+                color: isSelected
+                    ? (isDark ? AppColors.primaryLight : AppColors.primary)
+                    : (isDark ? const Color(0xFF808080) : Colors.grey.shade600),
+                size: 24,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -808,21 +1342,23 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
   Widget _buildColorPicker(String key, String label) {
     final currentColor = _getContent(key, '#000000');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                letterSpacing: 0.15,
+              ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: 12,
+          runSpacing: 12,
           children: [
             '#000000',
             '#333333',
@@ -833,34 +1369,61 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
             '#2ECC71',
             '#F39C12',
           ].map((color) {
-            return _buildColorOption(color, currentColor, key);
+            return _buildColorOption(color, currentColor, key, isDark);
           }).toList(),
         ),
       ],
     );
   }
 
-  Widget _buildColorOption(String color, String currentColor, String key) {
+  Widget _buildColorOption(
+      String color, String currentColor, String key, bool isDark) {
     final isSelected = color == currentColor;
 
-    return InkWell(
-      onTap: () {
-        _updateValue(key, color);
-      },
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: _hexToColor(color),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? Colors.blue : Colors.grey[300]!,
-            width: isSelected ? 3 : 1,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: _hexToColor(color).withOpacity(0.4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withOpacity(0.2)
+                      : Colors.black.withOpacity(0.04),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _updateValue(key, color),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: _hexToColor(color),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected
+                    ? (isDark ? AppColors.primaryLight : AppColors.primary)
+                    : (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300),
+                width: isSelected ? 3 : 1.5,
+              ),
+            ),
+            child: isSelected
+                ? const Icon(Icons.check_rounded, color: Colors.white, size: 24)
+                : null,
           ),
         ),
-        child: isSelected
-            ? const Icon(Icons.check, color: Colors.white, size: 20)
-            : null,
       ),
     );
   }
