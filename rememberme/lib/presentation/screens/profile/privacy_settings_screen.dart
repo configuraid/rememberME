@@ -5,6 +5,7 @@ import '../../../business_logic/profile/profile_bloc.dart';
 import '../../../business_logic/profile/profile_event.dart';
 import '../../../business_logic/profile/profile_state.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 
 class PrivacySettingsScreen extends StatelessWidget {
   const PrivacySettingsScreen({super.key});
@@ -17,7 +18,7 @@ class PrivacySettingsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : null,
       appBar: AppBar(
-        title: const Text('Datenschutz & Sicherheit'),
+        title: const Text(AppStrings.privacyAndSecurity),
         elevation: 0,
         backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
         foregroundColor: AppColors.textLight,
@@ -28,7 +29,7 @@ class PrivacySettingsScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 16),
             children: [
               // Profil-Sichtbarkeit Section
-              _buildSectionHeader('Profil-Sichtbarkeit', isDark),
+              _buildSectionHeader(AppStrings.profileVisibility, isDark),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -38,9 +39,8 @@ class PrivacySettingsScreen extends StatelessWidget {
                     _buildSwitchTile(
                       context: context,
                       icon: Icons.public_rounded,
-                      title: 'Öffentliches Profil',
-                      subtitle:
-                          'Ihr Profil kann von anderen Nutzern gefunden werden',
+                      title: AppStrings.publicProfile,
+                      subtitle: AppStrings.publicProfileSubtitle,
                       value: state.settings.profilePublic,
                       isDark: isDark,
                       onChanged: (value) => _updatePrivacy(
@@ -62,8 +62,8 @@ class PrivacySettingsScreen extends StatelessWidget {
                     _buildSwitchTile(
                       context: context,
                       icon: Icons.email_rounded,
-                      title: 'E-Mail-Adresse anzeigen',
-                      subtitle: 'Andere können Ihre E-Mail-Adresse sehen',
+                      title: AppStrings.showEmailAddress,
+                      subtitle: AppStrings.showEmailSubtitle,
                       value: state.settings.showEmail,
                       isDark: isDark,
                       onChanged: (value) => _updatePrivacy(
@@ -80,7 +80,7 @@ class PrivacySettingsScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Suchmaschinen Section
-              _buildSectionHeader('Suchmaschinen', isDark),
+              _buildSectionHeader(AppStrings.searchEngines, isDark),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -90,9 +90,8 @@ class PrivacySettingsScreen extends StatelessWidget {
                     _buildSwitchTile(
                       context: context,
                       icon: Icons.search_rounded,
-                      title: 'In Suchmaschinen auffindbar',
-                      subtitle:
-                          'Ihre Gedenkseiten können über Google gefunden werden',
+                      title: AppStrings.searchableInEngines,
+                      subtitle: AppStrings.searchableSubtitle,
                       value: state.settings.allowSearchEngines,
                       isDark: isDark,
                       onChanged: (value) => _updatePrivacy(
@@ -109,7 +108,7 @@ class PrivacySettingsScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Daten & Downloads Section
-              _buildSectionHeader('Daten & Downloads', isDark),
+              _buildSectionHeader(AppStrings.dataAndDownloads, isDark),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -119,8 +118,8 @@ class PrivacySettingsScreen extends StatelessWidget {
                     _buildActionTile(
                       context: context,
                       icon: Icons.download_rounded,
-                      title: 'Meine Daten herunterladen',
-                      subtitle: 'Export aller Ihrer Daten',
+                      title: AppStrings.downloadMyData,
+                      subtitle: AppStrings.downloadDataSubtitle,
                       isDark: isDark,
                       onTap: () => _showDownloadDataDialog(context, isDark),
                     ),
@@ -136,8 +135,8 @@ class PrivacySettingsScreen extends StatelessWidget {
                     _buildActionTile(
                       context: context,
                       icon: Icons.history_rounded,
-                      title: 'Aktivitätsprotokoll',
-                      subtitle: 'Ihre letzten Aktivitäten ansehen',
+                      title: AppStrings.activityLog,
+                      subtitle: AppStrings.activityLogSubtitle,
                       isDark: isDark,
                       onTap: () {
                         // TODO: Implementieren
@@ -150,7 +149,7 @@ class PrivacySettingsScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Sicherheit Section
-              _buildSectionHeader('Sicherheit', isDark),
+              _buildSectionHeader(AppStrings.security, isDark),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -160,8 +159,8 @@ class PrivacySettingsScreen extends StatelessWidget {
                     _buildActionTile(
                       context: context,
                       icon: Icons.security_rounded,
-                      title: 'Zwei-Faktor-Authentifizierung',
-                      subtitle: 'Nicht aktiviert',
+                      title: AppStrings.twoFactorAuth,
+                      subtitle: AppStrings.notActivated,
                       isDark: isDark,
                       onTap: () {
                         // TODO: Implementieren
@@ -179,8 +178,8 @@ class PrivacySettingsScreen extends StatelessWidget {
                     _buildActionTile(
                       context: context,
                       icon: Icons.devices_rounded,
-                      title: 'Aktive Geräte',
-                      subtitle: 'Geräte verwalten',
+                      title: AppStrings.activeDevices,
+                      subtitle: AppStrings.manageDevices,
                       isDark: isDark,
                       onTap: () {
                         // TODO: Implementieren
@@ -198,8 +197,8 @@ class PrivacySettingsScreen extends StatelessWidget {
                     _buildActionTile(
                       context: context,
                       icon: Icons.vpn_key_rounded,
-                      title: 'App-Berechtigungen',
-                      subtitle: 'Kamera, Speicher, etc.',
+                      title: AppStrings.appPermissions,
+                      subtitle: AppStrings.permissionsSubtitle,
                       isDark: isDark,
                       onTap: () {
                         // TODO: Implementieren
@@ -574,7 +573,7 @@ class PrivacySettingsScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
-                  'Daten herunterladen',
+                  AppStrings.downloadData,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: isDark
@@ -591,7 +590,7 @@ class PrivacySettingsScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
-                  'Wir erstellen ein Archiv mit all Ihren Daten. Sie erhalten eine E-Mail, sobald der Download bereit ist.',
+                  AppStrings.downloadDataMessage,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: isDark
                             ? const Color(0xFFB0B0B0)
@@ -625,7 +624,7 @@ class PrivacySettingsScreen extends StatelessWidget {
                           ),
                         ),
                         child: Text(
-                          'Abbrechen',
+                          AppStrings.cancel,
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: isDark
@@ -643,8 +642,7 @@ class PrivacySettingsScreen extends StatelessWidget {
                           Navigator.of(ctx).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content:
-                                  const Text('Daten-Export wurde gestartet'),
+                              content: Text(AppStrings.dataExportStarted),
                               backgroundColor: AppColors.success,
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
@@ -665,7 +663,7 @@ class PrivacySettingsScreen extends StatelessWidget {
                           ),
                         ),
                         child: Text(
-                          'Herunterladen',
+                          AppStrings.download,
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.w600,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rememberme/data/models/content_block_model.dart';
+import 'package:rememberme/core/constants/app_strings.dart';
 import 'dart:io';
 
 class ContentBlockWidget extends StatelessWidget {
@@ -192,7 +193,7 @@ class ContentBlockWidget extends StatelessWidget {
             context,
             icon: Icons.edit_outlined,
             onPressed: onEdit,
-            tooltip: 'Bearbeiten',
+            tooltip: AppStrings.edit,
             color: isDark ? const Color(0xFF90CAF9) : colorScheme.primary,
           ),
           const SizedBox(width: 4),
@@ -200,7 +201,7 @@ class ContentBlockWidget extends StatelessWidget {
             context,
             icon: Icons.content_copy_rounded,
             onPressed: onDuplicate,
-            tooltip: 'Duplizieren',
+            tooltip: AppStrings.duplicate,
             color: isDark ? const Color(0xFFA5D6A7) : const Color(0xFF4CAF50),
           ),
           const SizedBox(width: 4),
@@ -208,7 +209,7 @@ class ContentBlockWidget extends StatelessWidget {
             context,
             icon: Icons.delete_outline_rounded,
             onPressed: onDelete,
-            tooltip: 'Löschen',
+            tooltip: AppStrings.delete,
             color: isDark ? const Color(0xFFEF5350) : const Color(0xFFE53935),
           ),
         ],
@@ -271,7 +272,7 @@ class ContentBlockWidget extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.settings, size: 18, color: Colors.grey[600]),
             onPressed: onEdit,
-            tooltip: 'Bearbeiten',
+            tooltip: AppStrings.edit,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
@@ -279,7 +280,7 @@ class ContentBlockWidget extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.content_copy, size: 18, color: Colors.grey[600]),
             onPressed: onDuplicate,
-            tooltip: 'Duplizieren',
+            tooltip: AppStrings.duplicate,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
@@ -287,7 +288,7 @@ class ContentBlockWidget extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.delete_outline, size: 18, color: Colors.red[400]),
             onPressed: onDelete,
-            tooltip: 'Löschen',
+            tooltip: AppStrings.delete,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
@@ -330,7 +331,7 @@ class ContentBlockWidget extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final text = block.getContent('text', 'Überschrift');
+    final text = block.getContent('text', AppStrings.headerPlaceholder);
     final level = block.getContent('level', 1);
     final align = block.getContent('align', 'center');
     final colorHex = block.getContent('color', '#000000');
@@ -367,7 +368,7 @@ class ContentBlockWidget extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final text = block.getContent('text', 'Text eingeben...');
+    final text = block.getContent('text', AppStrings.textPlaceholder);
     final align = block.getContent('align', 'left');
     final fontSize = block.getContent('fontSize', 16.0);
     final colorHex = block.getContent('color', '#333333');
@@ -421,7 +422,7 @@ class ContentBlockWidget extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Bild hochladen',
+              AppStrings.uploadImage,
               style: TextStyle(
                 color:
                     isDark ? const Color(0xFF909090) : const Color(0xFF757575),
@@ -502,7 +503,7 @@ class ContentBlockWidget extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Bildergalerie (${images.length} Bilder)',
+              '${AppStrings.galleryLabel} (${images.length}${AppStrings.imagesCount})',
               style: TextStyle(
                 color:
                     isDark ? const Color(0xFF909090) : const Color(0xFF757575),
@@ -552,7 +553,7 @@ class ContentBlockWidget extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final text = block.getContent('text', 'Zitat eingeben...');
+    final text = block.getContent('text', AppStrings.quotePlaceholder);
     final author = block.getContent('author', '');
     final colorHex = block.getContent('color', '#666666');
 
@@ -648,7 +649,7 @@ class ContentBlockWidget extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Video hinzufügen',
+              AppStrings.addVideo,
               style: TextStyle(
                 color:
                     isDark ? const Color(0xFF909090) : const Color(0xFF757575),

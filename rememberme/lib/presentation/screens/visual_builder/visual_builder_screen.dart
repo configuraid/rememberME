@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:io';
 import 'package:rememberme/data/models/content_block_model.dart';
@@ -7,6 +8,7 @@ import 'package:rememberme/data/models/memorial_page_model.dart';
 import 'package:rememberme/business_logic/memorial/memorial_bloc.dart';
 import 'package:rememberme/business_logic/memorial/memorial_event.dart';
 import 'package:rememberme/core/constants/app_colors.dart';
+import 'package:rememberme/core/constants/app_strings.dart';
 import '../../widgets/page_builder/content_block_widget.dart';
 import '../../widgets/page_builder/add_block_bottom_sheet.dart';
 import '../../widgets/page_builder/block_settings_bottom_sheet.dart';
@@ -24,21 +26,64 @@ class IntuitivePageBuilderScreen extends StatefulWidget {
       _IntuitivePageBuilderScreenState();
 }
 
-class _IntuitivePageBuilderScreenState
-    extends State<IntuitivePageBuilderScreen> {
+class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
+    with TickerProviderStateMixin {
   List<ContentBlock> _blocks = [];
   String? _selectedBlockId;
   bool _hasUnsavedChanges = false;
+
+  // Scroll Controller für automatisches Scrollen
+  final ScrollController _scrollController = ScrollController();
+
+  // Animation für Wackel-Effekt
+  String? _shakingBlockId;
+  AnimationController? _shakeController;
+  Animation<double>? _shakeAnimation;
 
   @override
   void initState() {
     super.initState();
     _loadMemorialContent();
+    _setupShakeAnimation();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _shakeController?.dispose();
+    super.dispose();
+  }
+
+  void _setupShakeAnimation() {
+    _shakeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+
+    _shakeAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 10.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 10.0, end: -10.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -10.0, end: 10.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 10.0, end: -10.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -10.0, end: 5.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 5.0, end: -5.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -5.0, end: 0.0), weight: 1),
+    ]).animate(CurvedAnimation(
+      parent: _shakeController!,
+      curve: Curves.elasticInOut,
+    ));
+
+    _shakeController!.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        setState(() {
+          _shakingBlockId = null;
+        });
+      }
+    });
   }
 
   void _loadMemorialContent() {
     _blocks = List.from(widget.memorial.contentBlocks);
-    print('📦 Geladene Blöcke: ${_blocks.length}');
   }
 
   void _markAsChanged() {
@@ -49,9 +94,24 @@ class _IntuitivePageBuilderScreenState
     }
   }
 
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      final duration = Platform.isIOS
+          ? const Duration(milliseconds: 400)
+          : const Duration(milliseconds: 300);
+
+      final curve = Platform.isIOS ? Curves.easeOut : Curves.easeInOut;
+
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: duration,
+        curve: curve,
+      );
+    }
+  }
+
   void _showSuccessMessage(String message) {
     if (Platform.isIOS) {
-      // iOS: CupertinoAlertDialog
       showCupertinoDialog(
         context: context,
         barrierDismissible: true,
@@ -59,14 +119,13 @@ class _IntuitivePageBuilderScreenState
           content: Text(message),
           actions: [
             CupertinoDialogAction(
-              child: const Text('OK'),
+              child: Text(AppStrings.ok),
               onPressed: () => Navigator.pop(context),
             ),
           ],
         ),
       );
     } else {
-      // Android: Material Design Dialog
       final isDark = Theme.of(context).brightness == Brightness.dark;
 
       showDialog(
@@ -139,7 +198,6 @@ class _IntuitivePageBuilderScreenState
       );
     }
 
-    // Auto-dismiss after 1 second
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted && Navigator.canPop(context)) {
         Navigator.pop(context);
@@ -153,22 +211,19 @@ class _IntuitivePageBuilderScreenState
     }
 
     if (Platform.isIOS) {
-      // iOS: CupertinoAlertDialog
       final shouldPop = await showCupertinoDialog<bool>(
         context: context,
         builder: (context) => CupertinoAlertDialog(
-          title: const Text('Ungespeicherte Änderungen'),
-          content: const Text(
-            'Du hast ungespeicherte Änderungen. Möchtest du wirklich zurück?',
-          ),
+          title: Text(AppStrings.unsavedChanges),
+          content: Text(AppStrings.unsavedChangesMessage),
           actions: [
             CupertinoDialogAction(
-              child: const Text('Abbrechen'),
+              child: Text(AppStrings.cancel),
               onPressed: () => Navigator.pop(context, false),
             ),
             CupertinoDialogAction(
               isDestructiveAction: true,
-              child: const Text('Verwerfen'),
+              child: Text(AppStrings.discardChanges),
               onPressed: () => Navigator.pop(context, true),
             ),
           ],
@@ -176,7 +231,6 @@ class _IntuitivePageBuilderScreenState
       );
       return shouldPop ?? false;
     } else {
-      // Android: Material Design Dialog
       final isDark = Theme.of(context).brightness == Brightness.dark;
 
       final shouldPop = await showDialog<bool>(
@@ -236,7 +290,7 @@ class _IntuitivePageBuilderScreenState
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
-                    'Ungespeicherte Änderungen',
+                    AppStrings.unsavedChanges,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: isDark
@@ -250,7 +304,7 @@ class _IntuitivePageBuilderScreenState
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
-                    'Du hast ungespeicherte Änderungen. Möchtest du wirklich zurück?',
+                    AppStrings.unsavedChangesMessage,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: isDark
                               ? const Color(0xFFB0B0B0)
@@ -281,7 +335,7 @@ class _IntuitivePageBuilderScreenState
                             ),
                           ),
                           child: Text(
-                            'Abbrechen',
+                            AppStrings.cancel,
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               color: isDark
@@ -305,7 +359,7 @@ class _IntuitivePageBuilderScreenState
                             ),
                           ),
                           child: Text(
-                            'Verwerfen',
+                            AppStrings.discardChanges,
                             style: Theme.of(context)
                                 .textTheme
                                 .titleMedium
@@ -346,7 +400,6 @@ class _IntuitivePageBuilderScreenState
           backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
           foregroundColor: AppColors.textLight,
           actions: [
-            // Unsaved changes indicator
             if (_hasUnsavedChanges)
               Center(
                 child: Padding(
@@ -366,12 +419,18 @@ class _IntuitivePageBuilderScreenState
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.circle, color: Colors.orange, size: 8),
-                        SizedBox(width: 6),
+                      children: [
+                        Icon(
+                          Platform.isIOS
+                              ? CupertinoIcons.circle_fill
+                              : Icons.circle,
+                          color: Colors.orange,
+                          size: Platform.isIOS ? 6 : 8,
+                        ),
+                        const SizedBox(width: 6),
                         Text(
-                          'Nicht gespeichert',
-                          style: TextStyle(
+                          AppStrings.notSaved,
+                          style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: Colors.orange,
@@ -382,51 +441,111 @@ class _IntuitivePageBuilderScreenState
                   ),
                 ),
               ),
-            // Preview
-            Container(
-              margin: const EdgeInsets.only(right: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.visibility_rounded),
+            if (Platform.isIOS)
+              CupertinoButton(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minSize: 0,
                 onPressed: _showPreview,
-                tooltip: 'Vorschau',
-              ),
-            ),
-            // Save
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.success,
-                    AppColors.success.withOpacity(0.8),
-                  ],
+                child: Icon(
+                  CupertinoIcons.eye,
+                  color: AppColors.textLight,
+                  size: 24,
                 ),
-                borderRadius: BorderRadius.circular(12),
+              )
+            else
+              Container(
+                margin: const EdgeInsets.only(right: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.visibility_rounded),
+                  onPressed: _showPreview,
+                  tooltip: AppStrings.preview,
+                ),
               ),
-              child: IconButton(
-                icon: const Icon(Icons.check_rounded),
+            if (Platform.isIOS)
+              CupertinoButton(
+                padding: const EdgeInsets.only(right: 12),
+                minSize: 0,
                 onPressed: _save,
-                tooltip: 'Speichern',
-                color: Colors.white,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        CupertinoIcons.checkmark_alt,
+                        color: CupertinoColors.white,
+                        size: 24,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Container(
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.success,
+                      AppColors.success.withOpacity(0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.check_rounded),
+                  onPressed: _save,
+                  tooltip: AppStrings.save,
+                  color: Colors.white,
+                ),
               ),
-            ),
           ],
         ),
         body: _blocks.isEmpty
             ? _buildEmptyState(isDark)
             : _buildBlockList(isDark),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: _showAddBlockSheet,
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('Block hinzufügen'),
-          backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
-          foregroundColor: Colors.white,
-          elevation: 4,
-        ),
+        floatingActionButton: Platform.isIOS
+            ? Padding(
+                padding: const EdgeInsets.only(right: 8, bottom: 8),
+                child: CupertinoButton.filled(
+                  onPressed: _showAddBlockSheet,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  borderRadius: BorderRadius.circular(25),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(CupertinoIcons.add, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        AppStrings.addBlock,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : FloatingActionButton.extended(
+                onPressed: _showAddBlockSheet,
+                icon: const Icon(Icons.add_rounded),
+                label: Text(AppStrings.addBlock),
+                backgroundColor:
+                    isDark ? AppColors.primaryLight : AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 4,
+              ),
       ),
     );
   }
@@ -470,7 +589,7 @@ class _IntuitivePageBuilderScreenState
             ),
             const SizedBox(height: 32),
             Text(
-              'Noch keine Inhalte',
+              AppStrings.noContentYet,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: isDark ? AppColors.textLight : AppColors.textPrimary,
@@ -478,7 +597,7 @@ class _IntuitivePageBuilderScreenState
             ),
             const SizedBox(height: 12),
             Text(
-              'Füge deinen ersten Block hinzu,\num deine Gedenkseite zu gestalten',
+              AppStrings.noContentMessage,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: isDark
                         ? const Color(0xFFB0B0B0)
@@ -488,57 +607,81 @@ class _IntuitivePageBuilderScreenState
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          AppColors.primaryLight,
-                          AppColors.primaryLight.withOpacity(0.8),
-                        ]
-                      : [
-                          AppColors.primary,
-                          AppColors.primary.withOpacity(0.9),
-                        ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: isDark
-                        ? AppColors.primaryLight.withOpacity(0.3)
-                        : AppColors.primary.withOpacity(0.4),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ElevatedButton.icon(
-                onPressed: _showAddBlockSheet,
-                icon: const Icon(Icons.add_rounded, size: 24),
-                label: const Text(
-                  'Block hinzufügen',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
+            Platform.isIOS
+                ? CupertinoButton.filled(
+                    onPressed: _showAddBlockSheet,
                     borderRadius: BorderRadius.circular(16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(CupertinoIcons.add, size: 24),
+                        const SizedBox(width: 12),
+                        Text(
+                          AppStrings.addBlock,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: isDark
+                            ? [
+                                AppColors.primaryLight,
+                                AppColors.primaryLight.withOpacity(0.8),
+                              ]
+                            : [
+                                AppColors.primary,
+                                AppColors.primary.withOpacity(0.9),
+                              ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark
+                              ? AppColors.primaryLight.withOpacity(0.3)
+                              : AppColors.primary.withOpacity(0.4),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: _showAddBlockSheet,
+                      icon: const Icon(Icons.add_rounded, size: 24),
+                      label: Text(
+                        AppStrings.addBlock,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -546,126 +689,128 @@ class _IntuitivePageBuilderScreenState
   }
 
   Widget _buildBlockList(bool isDark) {
-    return ReorderableListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _blocks.length + 1,
-      onReorder: _reorderBlocks,
-      itemBuilder: (context, index) {
-        if (index == _blocks.length) {
-          return _buildAddBlockButton(
-              key: const ValueKey('add-button'), isDark: isDark);
-        }
+    return CustomScrollView(
+      controller: _scrollController,
+      physics: Platform.isIOS
+          ? const BouncingScrollPhysics()
+          : const ClampingScrollPhysics(),
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverReorderableList(
+            itemCount: _blocks.length,
+            onReorder: _reorderBlocks,
+            proxyDecorator: _proxyDecorator,
+            onReorderStart: (index) {
+              if (Platform.isIOS) {
+                HapticFeedback.mediumImpact();
+              }
+            },
+            onReorderEnd: (index) {
+              if (Platform.isIOS) {
+                HapticFeedback.lightImpact();
+              }
+            },
+            itemBuilder: (context, index) {
+              final block = _blocks[index];
+              final isSelected = block.id == _selectedBlockId;
+              final isShaking = block.id == _shakingBlockId;
 
-        final block = _blocks[index];
-        final isSelected = block.id == _selectedBlockId;
-
-        return ContentBlockWidget(
-          key: ValueKey(block.id),
-          block: block,
-          isSelected: isSelected,
-          onTap: () => _selectBlock(block.id),
-          onEdit: () => _showBlockSettings(block),
-          onDuplicate: () => _duplicateBlock(block),
-          onDelete: () => _deleteBlock(block.id),
-          onContentChanged: (key, value) =>
-              _updateBlockContent(block.id, key, value),
-        );
-      },
+              return ReorderableDelayedDragStartListener(
+                key: ValueKey(block.id),
+                index: index,
+                child: AnimatedBuilder(
+                  animation: _shakeAnimation ?? const AlwaysStoppedAnimation(0),
+                  builder: (context, child) {
+                    return Transform.translate(
+                      offset: isShaking
+                          ? Offset(_shakeAnimation?.value ?? 0, 0)
+                          : Offset.zero,
+                      child: child,
+                    );
+                  },
+                  child: ContentBlockWidget(
+                    block: block,
+                    isSelected: isSelected,
+                    onTap: () => _selectBlock(block.id),
+                    onEdit: () => _showBlockSettings(block),
+                    onDuplicate: () => _duplicateBlock(block),
+                    onDelete: () => _deleteBlock(block.id),
+                    onContentChanged: (key, value) =>
+                        _updateBlockContent(block.id, key, value),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildAddBlockButton({required Key key, required bool isDark}) {
-    return Container(
-      key: key,
-      margin: const EdgeInsets.only(top: 16),
-      child: Center(
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark
-                  ? AppColors.primaryLight.withOpacity(0.3)
-                  : AppColors.primary.withOpacity(0.3),
-              width: 2,
-              style: BorderStyle.solid,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: isDark
-                    ? Colors.black.withOpacity(0.2)
-                    : Colors.black.withOpacity(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _showAddBlockSheet,
-              borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: isDark
-                              ? [
-                                  AppColors.primaryLight.withOpacity(0.25),
-                                  AppColors.primaryLight.withOpacity(0.15),
-                                ]
-                              : [
-                                  AppColors.primary.withOpacity(0.15),
-                                  AppColors.primary.withOpacity(0.08),
-                                ],
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isDark
-                              ? AppColors.primaryLight.withOpacity(0.3)
-                              : AppColors.primary.withOpacity(0.2),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.add_rounded,
-                        color:
-                            isDark ? AppColors.primaryLight : AppColors.primary,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Weiteren Block hinzufügen',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: isDark
-                                ? AppColors.textLight
-                                : AppColors.textPrimary,
-                            letterSpacing: 0.15,
-                          ),
+  Widget _proxyDecorator(Widget child, int index, Animation<double> animation) {
+    if (Platform.isIOS) {
+      return AnimatedBuilder(
+        animation: animation,
+        builder: (context, child) {
+          final double scale = Tween<double>(
+            begin: 1.0,
+            end: 1.008,
+          ).evaluate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOut,
+          ));
+
+          return Transform.scale(
+            scale: scale,
+            child: Opacity(
+              opacity: 0.95,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.12),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
+                child: child,
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
+          );
+        },
+        child: child,
+      );
+    } else {
+      return AnimatedBuilder(
+        animation: animation,
+        builder: (context, child) {
+          final double scale = Tween<double>(
+            begin: 1.0,
+            end: 1.05,
+          ).evaluate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ));
 
-  // ===== BLOCK MANAGEMENT =====
+          return Transform.scale(
+            scale: scale,
+            child: Material(
+              elevation: 8,
+              borderRadius: BorderRadius.circular(16),
+              child: Opacity(
+                opacity: 0.9,
+                child: child,
+              ),
+            ),
+          );
+        },
+        child: child,
+      );
+    }
+  }
 
   void _selectBlock(String blockId) {
     setState(() {
@@ -692,13 +837,35 @@ class _IntuitivePageBuilderScreenState
       final newBlock = ContentBlock(type: type);
       _blocks.add(newBlock);
       _selectedBlockId = newBlock.id;
+      _shakingBlockId = newBlock.id;
       _markAsChanged();
     });
 
+    if (Platform.isIOS) {
+      HapticFeedback.lightImpact();
+    } else {
+      HapticFeedback.mediumImpact();
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (type == ContentBlockType.text || type == ContentBlockType.header) {
-        _showBlockSettings(_blocks.last);
+      _scrollToBottom();
+
+      _shakeController?.forward(from: 0.0);
+
+      if (Platform.isIOS) {
+        Future.delayed(const Duration(milliseconds: 100), () {
+          HapticFeedback.selectionClick();
+        });
+        Future.delayed(const Duration(milliseconds: 200), () {
+          HapticFeedback.selectionClick();
+        });
       }
+
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (type == ContentBlockType.text || type == ContentBlockType.header) {
+          _showBlockSettings(_blocks.last);
+        }
+      });
     });
   }
 
@@ -711,27 +878,57 @@ class _IntuitivePageBuilderScreenState
       final index = _blocks.indexWhere((b) => b.id == block.id);
       _blocks.insert(index + 1, duplicate);
       _selectedBlockId = duplicate.id;
+      _shakingBlockId = duplicate.id;
       _markAsChanged();
+    });
+
+    if (Platform.isIOS) {
+      HapticFeedback.lightImpact();
+    } else {
+      HapticFeedback.mediumImpact();
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _shakeController?.forward(from: 0.0);
+
+      final duplicateIndex = _blocks.indexWhere((b) => b.id == _shakingBlockId);
+      if (_scrollController.hasClients && duplicateIndex > 0) {
+        final estimatedPosition = duplicateIndex * 200.0;
+        _scrollController.animateTo(
+          estimatedPosition,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+
+      if (Platform.isIOS) {
+        Future.delayed(const Duration(milliseconds: 100), () {
+          HapticFeedback.selectionClick();
+        });
+        Future.delayed(const Duration(milliseconds: 200), () {
+          HapticFeedback.selectionClick();
+        });
+      }
     });
   }
 
   void _deleteBlock(String blockId) {
     if (Platform.isIOS) {
-      // iOS: CupertinoAlertDialog
       showCupertinoDialog(
         context: context,
         builder: (context) => CupertinoAlertDialog(
-          title: const Text('Block löschen?'),
-          content: const Text('Möchtest du diesen Block wirklich löschen?'),
+          title: Text(AppStrings.deleteBlockTitle),
+          content: Text(AppStrings.deleteBlockMessage),
           actions: [
             CupertinoDialogAction(
-              child: const Text('Abbrechen'),
+              child: Text(AppStrings.cancel),
               onPressed: () => Navigator.pop(context),
             ),
             CupertinoDialogAction(
               isDestructiveAction: true,
-              child: const Text('Löschen'),
+              child: Text(AppStrings.delete),
               onPressed: () {
+                HapticFeedback.mediumImpact();
                 setState(() {
                   _blocks.removeWhere((b) => b.id == blockId);
                   if (_selectedBlockId == blockId) {
@@ -746,7 +943,6 @@ class _IntuitivePageBuilderScreenState
         ),
       );
     } else {
-      // Android: Material Design Dialog
       final isDark = Theme.of(context).brightness == Brightness.dark;
 
       showDialog(
@@ -806,7 +1002,7 @@ class _IntuitivePageBuilderScreenState
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
-                    'Block löschen?',
+                    AppStrings.deleteBlockTitle,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: isDark
@@ -820,7 +1016,7 @@ class _IntuitivePageBuilderScreenState
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
-                    'Möchtest du diesen Block wirklich löschen?',
+                    AppStrings.deleteBlockMessage,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: isDark
                               ? const Color(0xFFB0B0B0)
@@ -851,7 +1047,7 @@ class _IntuitivePageBuilderScreenState
                             ),
                           ),
                           child: Text(
-                            'Abbrechen',
+                            AppStrings.cancel,
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               color: isDark
@@ -884,7 +1080,7 @@ class _IntuitivePageBuilderScreenState
                             ),
                           ),
                           child: Text(
-                            'Löschen',
+                            AppStrings.delete,
                             style: Theme.of(context)
                                 .textTheme
                                 .titleMedium
@@ -908,14 +1104,40 @@ class _IntuitivePageBuilderScreenState
   }
 
   void _reorderBlocks(int oldIndex, int newIndex) {
-    setState(() {
-      if (newIndex > oldIndex) {
-        newIndex -= 1;
+    if (oldIndex >= _blocks.length || newIndex > _blocks.length) {
+      if (Platform.isIOS) {
+        HapticFeedback.heavyImpact();
       }
-      final block = _blocks.removeAt(oldIndex);
-      _blocks.insert(newIndex, block);
-      _markAsChanged();
-    });
+      return;
+    }
+
+    if (Platform.isIOS) {
+      HapticFeedback.selectionClick();
+    }
+
+    try {
+      setState(() {
+        if (newIndex > oldIndex) {
+          newIndex -= 1;
+        }
+
+        if (newIndex < 0 ||
+            newIndex >= _blocks.length ||
+            oldIndex < 0 ||
+            oldIndex >= _blocks.length) {
+          throw RangeError('Invalid index');
+        }
+
+        final block = _blocks.removeAt(oldIndex);
+        _blocks.insert(newIndex, block);
+        _markAsChanged();
+      });
+    } catch (e) {
+      print('❌ Reorder failed: $e');
+      if (Platform.isIOS) {
+        HapticFeedback.heavyImpact();
+      }
+    }
   }
 
   void _updateBlockContent(String blockId, String key, dynamic value) {
@@ -941,8 +1163,6 @@ class _IntuitivePageBuilderScreenState
     );
   }
 
-  // ===== ACTIONS =====
-
   void _showPreview() {
     Navigator.push(
       context,
@@ -956,8 +1176,6 @@ class _IntuitivePageBuilderScreenState
   }
 
   void _save() {
-    print('💾 Speichere ${_blocks.length} Blöcke...');
-
     final updatedMemorial = widget.memorial.copyWith(
       contentBlocks: _blocks,
     );
@@ -970,7 +1188,7 @@ class _IntuitivePageBuilderScreenState
       _hasUnsavedChanges = false;
     });
 
-    _showSuccessMessage('✓ Seite gespeichert');
+    _showSuccessMessage(AppStrings.pageSaved);
 
     Future.delayed(const Duration(milliseconds: 1500), () {
       if (mounted) {
@@ -979,8 +1197,6 @@ class _IntuitivePageBuilderScreenState
     });
   }
 }
-
-// ===== PREVIEW SCREEN =====
 
 class _PreviewScreen extends StatelessWidget {
   final MemorialPageModel memorial;
@@ -999,7 +1215,7 @@ class _PreviewScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
       appBar: AppBar(
-        title: Text('Vorschau - ${memorial.name}'),
+        title: Text('${AppStrings.previewPrefix}${memorial.name}'),
         centerTitle: true,
         elevation: 0,
         backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
@@ -1011,14 +1227,16 @@ class _PreviewScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.preview_rounded,
+                    Platform.isIOS
+                        ? CupertinoIcons.eye_slash
+                        : Icons.preview_rounded,
                     size: 64,
                     color:
                         isDark ? const Color(0xFF404040) : Colors.grey.shade400,
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Keine Blöcke vorhanden',
+                    AppStrings.noBlocksAvailable,
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: isDark
                           ? const Color(0xFF808080)

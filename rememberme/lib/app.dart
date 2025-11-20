@@ -11,7 +11,6 @@ import 'core/theme/app_theme.dart';
 import 'core/constants/app_routes.dart';
 import 'presentation/screens/splash_screen.dart';
 import 'presentation/screens/auth/login_screen.dart';
-import 'presentation/screens/auth/qr_scanner_screen.dart';
 import 'presentation/screens/dashboard/dashboard_screen.dart';
 import 'presentation/screens/memorial/memorial_screen.dart';
 import 'presentation/screens/profile/profile_screen.dart';
@@ -27,6 +26,7 @@ class MemorialApp extends StatelessWidget {
         theme: AppTheme.cupertinoTheme,
         initialRoute: AppRoutes.splash,
         onGenerateRoute: _onGenerateRoute,
+        debugShowCheckedModeBanner: false,
         localizationsDelegates: const [
           DefaultMaterialLocalizations.delegate,
           DefaultCupertinoLocalizations.delegate,
@@ -58,10 +58,6 @@ class MemorialApp extends StatelessWidget {
 
       case AppRoutes.login:
         page = const LoginScreen();
-        break;
-
-      case AppRoutes.qrScanner:
-        page = const QRScannerScreen();
         break;
 
       // ✅ NEU: User Selection Route

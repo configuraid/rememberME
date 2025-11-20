@@ -9,6 +9,7 @@ import '../../../business_logic/profile/profile_bloc.dart';
 import '../../../business_logic/profile/profile_event.dart';
 import '../../../business_logic/profile/profile_state.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -143,7 +144,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
                 child: Text(
-                  'Profilbild ändern',
+                  AppStrings.changeProfileImage,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: isDark
@@ -157,7 +158,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _buildBottomSheetOption(
                 context: ctx,
                 icon: Icons.photo_library_rounded,
-                title: 'Aus Galerie wählen',
+                title: AppStrings.chooseFromGallery,
                 isDark: isDark,
                 onTap: () {
                   Navigator.of(ctx).pop();
@@ -169,7 +170,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _buildBottomSheetOption(
                 context: ctx,
                 icon: Icons.camera_alt_rounded,
-                title: 'Foto aufnehmen',
+                title: AppStrings.takePhoto,
                 isDark: isDark,
                 onTap: () {
                   Navigator.of(ctx).pop();
@@ -193,7 +194,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                     ),
                     child: Text(
-                      'Abbrechen',
+                      AppStrings.cancel,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -277,7 +278,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (_formKey.currentState!.validate()) {
       final userId = context.read<AuthBloc>().state.user?.id;
       if (userId != null) {
-        print('💾 Speichere Profil für User: $userId');
         context.read<ProfileBloc>().add(
               ProfileUpdateRequested(
                 userId: userId,
@@ -368,7 +368,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
-                  isSuccess ? 'Erfolgreich!' : 'Fehler',
+                  isSuccess ? AppStrings.successTitle : AppStrings.errorTitle,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: isDark
@@ -421,7 +421,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                     ),
                     child: Text(
-                      'OK',
+                      AppStrings.ok,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
@@ -464,7 +464,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         return Scaffold(
           backgroundColor: isDark ? const Color(0xFF121212) : null,
           appBar: AppBar(
-            title: const Text('Profil bearbeiten'),
+            title: const Text(AppStrings.editProfile),
             elevation: 0,
             backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
             foregroundColor: AppColors.textLight,
@@ -612,12 +612,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 // Name Field
                 _buildTextField(
                   controller: _nameController,
-                  label: 'Name',
+                  label: AppStrings.name,
                   icon: Icons.person_rounded,
                   isDark: isDark,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Bitte geben Sie einen Namen ein';
+                      return AppStrings.enterName;
                     }
                     return null;
                   },
@@ -628,16 +628,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 // E-Mail Field
                 _buildTextField(
                   controller: _emailController,
-                  label: 'E-Mail',
+                  label: AppStrings.email,
                   icon: Icons.email_rounded,
                   isDark: isDark,
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Bitte geben Sie eine E-Mail-Adresse ein';
+                      return AppStrings.enterEmail;
                     }
                     if (!value.contains('@')) {
-                      return 'Bitte geben Sie eine gültige E-Mail-Adresse ein';
+                      return AppStrings.enterValidEmail;
                     }
                     return null;
                   },
@@ -648,7 +648,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 // Telefon Field
                 _buildTextField(
                   controller: _phoneController,
-                  label: 'Telefon (optional)',
+                  label: AppStrings.phoneOptional,
                   icon: Icons.phone_rounded,
                   isDark: isDark,
                   keyboardType: TextInputType.phone,
@@ -659,7 +659,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 // Bio Field
                 _buildTextField(
                   controller: _bioController,
-                  label: 'Über mich (optional)',
+                  label: AppStrings.aboutMeOptional,
                   icon: Icons.info_outline_rounded,
                   isDark: isDark,
                   maxLines: 4,
@@ -731,7 +731,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                'Änderungen speichern',
+                                AppStrings.saveChanges,
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleMedium

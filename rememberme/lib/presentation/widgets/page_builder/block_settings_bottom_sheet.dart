@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:rememberme/data/models/content_block_model.dart';
 import 'package:rememberme/data/services/firebase_storage_service.dart';
 import 'package:rememberme/core/constants/app_colors.dart';
+import 'package:rememberme/core/constants/app_strings.dart';
 
 class BlockSettingsBottomSheet extends StatefulWidget {
   final ContentBlock block;
@@ -91,10 +92,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         imageQuality: 85,
       );
 
-      if (image == null) {
-        print('📷 Kein Bild ausgewählt');
-        return;
-      }
+      if (image == null) return;
 
       setState(() => _isUploading = true);
 
@@ -107,12 +105,11 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       _updateValue('url', downloadUrl);
 
       if (mounted) {
-        _showSuccessSnackBar('Bild erfolgreich hochgeladen!');
+        _showSuccessSnackBar(AppStrings.imageUploadSuccess);
       }
     } catch (e) {
-      print('Image Upload Error: $e');
       if (mounted) {
-        _showErrorDialog('Fehler beim Hochladen', e.toString());
+        _showErrorDialog(AppStrings.uploadError, e.toString());
       }
     } finally {
       if (mounted) {
@@ -133,8 +130,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
       if (remaining <= 0) {
         _showErrorDialog(
-          'Maximum erreicht',
-          'Du kannst maximal 6 Bilder in einer Galerie haben.',
+          AppStrings.maxReached,
+          AppStrings.maxGalleryImages,
         );
         return;
       }
@@ -145,17 +142,14 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         imageQuality: 85,
       );
 
-      if (images.isEmpty) {
-        print('📷 Keine Bilder ausgewählt');
-        return;
-      }
+      if (images.isEmpty) return;
 
       final imagesToUpload = images.take(remaining).toList();
 
       if (images.length > remaining) {
         _showErrorDialog(
-          'Zu viele Bilder',
-          'Du kannst nur noch $remaining ${remaining == 1 ? "Bild" : "Bilder"} hinzufügen. Die ersten $remaining werden hochgeladen.',
+          AppStrings.tooManyImages,
+          'Du kannst nur noch $remaining ${remaining == 1 ? AppStrings.image : AppStrings.images} hinzufügen. Die ersten $remaining werden hochgeladen.',
         );
       }
 
@@ -176,13 +170,12 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
       if (mounted) {
         _showSuccessSnackBar(
-          '${downloadUrls.length} ${downloadUrls.length == 1 ? "Bild" : "Bilder"} erfolgreich hochgeladen! ✅',
+          '${downloadUrls.length} ${downloadUrls.length == 1 ? AppStrings.image : AppStrings.images}${AppStrings.uploadedSuccessfully}',
         );
       }
     } catch (e) {
-      print('Gallery Upload Error: $e');
       if (mounted) {
-        _showErrorDialog('Fehler beim Hochladen', e.toString());
+        _showErrorDialog(AppStrings.uploadError, e.toString());
       }
     } finally {
       if (mounted) {
@@ -212,7 +205,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           content: Text(message),
           actions: [
             CupertinoDialogAction(
-              child: const Text('OK'),
+              child: Text(AppStrings.ok),
               onPressed: () => Navigator.pop(context),
             ),
           ],
@@ -309,7 +302,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           content: Text(message),
           actions: [
             CupertinoDialogAction(
-              child: const Text('OK'),
+              child: Text(AppStrings.ok),
               onPressed: () => Navigator.pop(context),
             ),
           ],
@@ -417,7 +410,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                         ),
                       ),
                       child: Text(
-                        'OK',
+                        AppStrings.ok,
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
@@ -507,7 +500,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        '${BlockTypeInfo.getTitle(widget.block.type)} bearbeiten',
+                        '${BlockTypeInfo.getTitle(widget.block.type)}${AppStrings.editBlock}',
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: isDark
@@ -582,40 +575,40 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
   List<Widget> _buildHeaderSettings() {
     return [
       _buildTextField(
-        label: 'Überschrift',
+        label: AppStrings.headerPlaceholder,
         key: 'text',
-        defaultValue: 'Überschrift eingeben',
+        defaultValue: AppStrings.headerInput,
         maxLines: 2,
       ),
       const SizedBox(height: 20),
       _buildDropdown(
-        label: 'Größe',
+        label: AppStrings.size,
         key: 'level',
         value: _getContent('level', 1),
         items: {
-          1: 'Groß (H1)',
-          2: 'Mittel (H2)',
-          3: 'Klein (H3)',
+          1: AppStrings.sizeH1,
+          2: AppStrings.sizeH2,
+          3: AppStrings.sizeH3,
         },
       ),
       const SizedBox(height: 20),
       _buildAlignmentPicker('align'),
       const SizedBox(height: 20),
-      _buildColorPicker('color', 'Textfarbe'),
+      _buildColorPicker('color', AppStrings.textColor),
     ];
   }
 
   List<Widget> _buildTextSettings() {
     return [
       _buildTextField(
-        label: 'Text',
+        label: AppStrings.text,
         key: 'text',
-        defaultValue: 'Text eingeben...',
+        defaultValue: AppStrings.textPlaceholder,
         maxLines: 10,
       ),
       const SizedBox(height: 20),
       _buildSlider(
-        label: 'Schriftgröße',
+        label: AppStrings.fontSize,
         key: 'fontSize',
         min: 12,
         max: 24,
@@ -624,7 +617,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       const SizedBox(height: 20),
       _buildAlignmentPicker('align'),
       const SizedBox(height: 20),
-      _buildColorPicker('color', 'Textfarbe'),
+      _buildColorPicker('color', AppStrings.textColor),
     ];
   }
 
@@ -704,7 +697,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                 )
               : const Icon(Icons.upload_rounded, size: 22),
           label: Text(
-            _isUploading ? 'Lädt hoch...' : 'Bild hochladen',
+            _isUploading ? AppStrings.uploading : AppStrings.uploadImage,
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -725,7 +718,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       ),
       const SizedBox(height: 20),
       _buildTextField(
-        label: 'Bildunterschrift',
+        label: AppStrings.imageCaption,
         key: 'caption',
         defaultValue: '',
         maxLines: 2,
@@ -742,7 +735,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     return [
       if (images.isNotEmpty) ...[
         Text(
-          'Galerie (${images.length}/6)',
+          '${AppStrings.galleryLabel} (${images.length}/6)',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: isDark ? AppColors.textLight : AppColors.textPrimary,
@@ -883,10 +876,10 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
               : const Icon(Icons.add_photo_alternate_rounded, size: 22),
           label: Text(
             _isUploading
-                ? 'Lädt hoch...'
+                ? AppStrings.uploading
                 : images.length < 6
-                    ? 'Bilder hinzufügen (${6 - images.length} übrig)'
-                    : 'Maximum erreicht (6/6)',
+                    ? '${AppStrings.addImages} (${6 - images.length}${AppStrings.remaining})'
+                    : AppStrings.maxReachedGallery,
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -911,13 +904,13 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       const SizedBox(height: 20),
 
       _buildDropdown(
-        label: 'Spalten',
+        label: AppStrings.columns,
         key: 'columns',
         value: _getContent('columns', 3),
         items: {
-          2: '2 Spalten',
-          3: '3 Spalten',
-          4: '4 Spalten',
+          2: AppStrings.columns2,
+          3: AppStrings.columns3,
+          4: AppStrings.columns4,
         },
       ),
     ];
@@ -926,47 +919,47 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
   List<Widget> _buildQuoteSettings() {
     return [
       _buildTextField(
-        label: 'Zitat',
+        label: AppStrings.quote,
         key: 'text',
-        defaultValue: 'Zitat eingeben...',
+        defaultValue: AppStrings.quotePlaceholder,
         maxLines: 4,
       ),
       const SizedBox(height: 20),
       _buildTextField(
-        label: 'Autor',
+        label: AppStrings.author,
         key: 'author',
         defaultValue: '',
       ),
       const SizedBox(height: 20),
-      _buildColorPicker('color', 'Farbe'),
+      _buildColorPicker('color', AppStrings.color),
     ];
   }
 
   List<Widget> _buildDividerSettings() {
     return [
       _buildSlider(
-        label: 'Dicke',
+        label: AppStrings.thickness,
         key: 'thickness',
         min: 1,
         max: 5,
         value: _getContent('thickness', 1.0),
       ),
       const SizedBox(height: 20),
-      _buildColorPicker('color', 'Farbe'),
+      _buildColorPicker('color', AppStrings.color),
     ];
   }
 
   List<Widget> _buildVideoSettings() {
     return [
       _buildTextField(
-        label: 'Video-URL',
+        label: AppStrings.videoUrl,
         key: 'url',
         defaultValue: '',
-        hint: 'YouTube oder Vimeo Link',
+        hint: AppStrings.videoUrlHint,
       ),
       const SizedBox(height: 20),
       _buildTextField(
-        label: 'Beschreibung',
+        label: AppStrings.description,
         key: 'caption',
         defaultValue: '',
         maxLines: 2,
@@ -977,17 +970,17 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
   List<Widget> _buildDateSettings() {
     return [
       _buildTextField(
-        label: 'Geburtsdatum',
+        label: AppStrings.birthDate,
         key: 'birthDate',
         defaultValue: '',
-        hint: 'TT.MM.JJJJ',
+        hint: AppStrings.dateFormat,
       ),
       const SizedBox(height: 20),
       _buildTextField(
-        label: 'Sterbedatum',
+        label: AppStrings.deathDate,
         key: 'deathDate',
         defaultValue: '',
-        hint: 'TT.MM.JJJJ',
+        hint: AppStrings.dateFormat,
       ),
     ];
   }
@@ -1257,7 +1250,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Ausrichtung',
+          AppStrings.alignment,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: isDark ? AppColors.textLight : AppColors.textPrimary,

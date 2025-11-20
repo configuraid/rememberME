@@ -7,6 +7,7 @@ import 'package:rememberme/business_logic/memorial/memorial_bloc.dart';
 import 'package:rememberme/business_logic/memorial/memorial_event.dart';
 import 'package:rememberme/business_logic/memorial/memorial_state.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 
 enum CreateTab { details, design }
 
@@ -32,20 +33,20 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
   final List<Map<String, dynamic>> _templates = [
     {
       'id': 'classic',
-      'name': 'Klassisch',
-      'description': 'Zeitloses, elegantes Design',
+      'name': AppStrings.templateClassic,
+      'description': AppStrings.templateClassicDescription,
       'icon': Icons.auto_awesome,
     },
     {
       'id': 'modern',
-      'name': 'Modern',
-      'description': 'Minimalistisch und zeitgemäß',
+      'name': AppStrings.templateModern,
+      'description': AppStrings.templateModernDescription,
       'icon': Icons.light_mode,
     },
     {
       'id': 'nature',
-      'name': 'Natur',
-      'description': 'Mit natürlichen Elementen',
+      'name': AppStrings.templateNature,
+      'description': AppStrings.templateNatureDescription,
       'icon': Icons.nature,
     },
   ];
@@ -158,11 +159,11 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 CupertinoButton(
-                  child: const Text('Abbrechen'),
+                  child: Text(AppStrings.cancel),
                   onPressed: () => Navigator.pop(context),
                 ),
                 CupertinoButton(
-                  child: const Text('Fertig'),
+                  child: Text(AppStrings.done),
                   onPressed: () {
                     onDateChanged(tempDate);
                     Navigator.pop(context);
@@ -193,20 +194,14 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
       final user = authState.user;
 
       if (user == null) {
-        _showError('Benutzer nicht gefunden');
+        _showError(AppStrings.userNotFound);
         return;
       }
 
       if (user.primaryOrganizationId == null) {
-        _showError('Keine Organisation gefunden');
+        _showError(AppStrings.organizationNotFound);
         return;
       }
-
-      print('📝 MemorialCreateScreen - Erstelle Memorial');
-      print('👤 User: ${user.name} (${user.id})');
-      print('🏢 Organisation: ${user.primaryOrganizationId}');
-      print('📋 Name: ${_nameController.text.trim()}');
-      print('🎨 Template: $_selectedTemplate');
 
       context.read<MemorialBloc>().add(
             MemorialCreateRequested(
@@ -234,11 +229,11 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
       showCupertinoDialog(
         context: context,
         builder: (context) => CupertinoAlertDialog(
-          title: const Text('Fehler'),
+          title: Text(AppStrings.errorTitle),
           content: Text(message),
           actions: [
             CupertinoDialogAction(
-              child: const Text('OK'),
+              child: Text(AppStrings.ok),
               onPressed: () => Navigator.pop(context),
             ),
           ],
@@ -262,14 +257,10 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
   Widget build(BuildContext context) {
     return BlocListener<MemorialBloc, MemorialState>(
       listener: (context, state) {
-        print('🎧 MemorialCreateScreen Listener - Status: ${state.status}');
-
         if (state.status == MemorialStatus.success) {
-          print('✅ Memorial erfolgreich erstellt - navigiere zurück');
           Navigator.of(context).pop();
         } else if (state.hasError) {
-          print('❌ Fehler: ${state.errorMessage}');
-          _showError(state.errorMessage ?? 'Ein Fehler ist aufgetreten');
+          _showError(state.errorMessage ?? AppStrings.errorOccurred);
         }
       },
       child: Platform.isIOS ? _buildIOSView() : _buildAndroidView(),
@@ -283,7 +274,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gedenkseite erstellen'),
+        title: Text(AppStrings.createMemorialPage),
         elevation: 0,
         backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
         foregroundColor: AppColors.textLight,
@@ -306,7 +297,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Erstelle Gedenkseite...',
+                    AppStrings.creatingMemorial,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: isDark
                           ? const Color(0xFFB0B0B0)
@@ -353,14 +344,14 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           fontSize: 16,
           fontWeight: FontWeight.w600,
         ),
-        tabs: const [
+        tabs: [
           Tab(
-            icon: Icon(Icons.person_outline_rounded, size: 20),
-            text: 'Angaben',
+            icon: const Icon(Icons.person_outline_rounded, size: 20),
+            text: AppStrings.details,
           ),
           Tab(
-            icon: Icon(Icons.palette_outlined, size: 20),
-            text: 'Design',
+            icon: const Icon(Icons.palette_outlined, size: 20),
+            text: AppStrings.design,
           ),
         ],
       ),
@@ -377,7 +368,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           color: Colors.grey.shade600,
         ),
         label: Text(
-          'Erstellen',
+          AppStrings.create,
           style: TextStyle(
             color: Colors.grey.shade600,
             fontWeight: FontWeight.w600,
@@ -391,9 +382,9 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
       backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
       elevation: 4,
       icon: const Icon(Icons.check_rounded, color: AppColors.textLight),
-      label: const Text(
-        'Erstellen',
-        style: TextStyle(
+      label: Text(
+        AppStrings.create,
+        style: const TextStyle(
           color: AppColors.textLight,
           fontWeight: FontWeight.w600,
           fontSize: 16,
@@ -406,7 +397,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
   Widget _buildIOSView() {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        middle: const Text('Gedenkseite erstellen'),
+        middle: Text(AppStrings.createMemorialPage),
         backgroundColor: CupertinoColors.systemBackground.resolveFrom(context),
       ),
       child: SafeArea(
@@ -438,7 +429,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                       disabledColor: CupertinoColors.quaternarySystemFill
                           .resolveFrom(context),
                       child: Text(
-                        'Gedenkseite erstellen',
+                        AppStrings.createMemorialPage,
                         style: TextStyle(
                           fontSize: 16,
                           color: _isFormValid()
@@ -470,8 +461,9 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         thumbColor: CupertinoColors.white,
         padding: const EdgeInsets.all(0),
         children: {
-          CreateTab.details: _buildSegment('Angaben', CreateTab.details),
-          CreateTab.design: _buildSegment('Design', CreateTab.design),
+          CreateTab.details:
+              _buildSegment(AppStrings.details, CreateTab.details),
+          CreateTab.design: _buildSegment(AppStrings.design, CreateTab.design),
         },
         onValueChanged: (value) {
           if (value != null) {
@@ -517,7 +509,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
             if (Platform.isIOS) ...[
               CupertinoTextField(
                 controller: _nameController,
-                placeholder: 'Name der Person *',
+                placeholder: AppStrings.personName,
                 prefix: const Padding(
                   padding: EdgeInsets.only(left: 8),
                   child: Icon(CupertinoIcons.person, size: 20),
@@ -532,14 +524,14 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               ),
               const SizedBox(height: 20),
               _buildIOSDateField(
-                label: 'Geburtsdatum',
+                label: AppStrings.birthDate,
                 date: _birthDate,
                 onTap: _selectBirthDate,
                 icon: CupertinoIcons.calendar,
               ),
               const SizedBox(height: 16),
               _buildIOSDateField(
-                label: 'Sterbedatum',
+                label: AppStrings.deathDate,
                 date: _deathDate,
                 onTap: _selectDeathDate,
                 icon: CupertinoIcons.calendar_badge_minus,
@@ -550,8 +542,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                 controller: _nameController,
                 style: theme.textTheme.bodyLarge,
                 decoration: InputDecoration(
-                  labelText: 'Name der Person *',
-                  hintText: 'z.B. Max Mustermann',
+                  labelText: AppStrings.personName,
+                  hintText: AppStrings.personNameHint,
                   prefixIcon: Icon(
                     Icons.person_outline_rounded,
                     color: isDark ? AppColors.primaryLight : AppColors.primary,
@@ -559,7 +551,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Bitte geben Sie einen Namen ein';
+                    return AppStrings.enterPersonName;
                   }
                   return null;
                 },
@@ -568,7 +560,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
 
               // Android Date Fields
               _buildDateField(
-                label: 'Geburtsdatum *',
+                label: AppStrings.birthDateRequired,
                 date: _birthDate,
                 onTap: _selectBirthDate,
                 icon: Icons.cake_outlined,
@@ -577,7 +569,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               const SizedBox(height: 16),
 
               _buildDateField(
-                label: 'Sterbedatum *',
+                label: AppStrings.deathDateRequired,
                 date: _deathDate,
                 onTap: _selectDeathDate,
                 icon: Icons.event_outlined,
@@ -610,7 +602,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Alle Felder können später bearbeitet werden',
+                      AppStrings.fieldsCanBeEditedLater,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color:
                             isDark ? AppColors.primaryLight : AppColors.primary,
@@ -637,7 +629,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Wähle ein Design',
+            AppStrings.chooseDesign,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: isDark ? AppColors.textLight : AppColors.textPrimary,
@@ -645,7 +637,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'Du kannst das Design später jederzeit ändern',
+            AppStrings.designCanBeChangedLater,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: isDark ? const Color(0xFFB0B0B0) : AppColors.textSecondary,
             ),
@@ -702,7 +694,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         ),
         const SizedBox(height: 20),
         Text(
-          'Erstelle eine Gedenkseite',
+          AppStrings.createMemorialTitle,
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: isDark ? AppColors.textLight : AppColors.textPrimary,
@@ -711,7 +703,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         ),
         const SizedBox(height: 8),
         Text(
-          'Bewahre die Erinnerungen für immer',
+          AppStrings.preserveMemoriesForever,
           style: theme.textTheme.bodyLarge?.copyWith(
             color: isDark ? const Color(0xFFB0B0B0) : AppColors.textSecondary,
           ),
@@ -748,7 +740,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         child: Text(
           date != null
               ? '${date.day}.${date.month}.${date.year}'
-              : 'Datum wählen',
+              : AppStrings.selectDate,
           style: theme.textTheme.bodyLarge?.copyWith(
             color: date != null
                 ? (isDark ? AppColors.textLight : AppColors.textPrimary)
@@ -794,7 +786,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                   Text(
                     date != null
                         ? '${date.day}.${date.month}.${date.year}'
-                        : 'Datum wählen',
+                        : AppStrings.selectDate,
                     style: TextStyle(
                       fontSize: 16,
                       color: date != null
@@ -953,7 +945,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'Ausgewählt',
+                                AppStrings.selected,
                                 style: TextStyle(
                                   color: isDark ? Colors.black : Colors.black,
                                   fontWeight: FontWeight.bold,
@@ -1088,15 +1080,25 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
   List<String> _getTemplateFeatureTags(String templateId) {
     switch (templateId) {
       case 'classic':
-        return ['Zeitlos', 'Elegant', 'Traditionell'];
+        return [
+          AppStrings.featureTimeless,
+          AppStrings.featureElegant,
+          AppStrings.featureTraditional,
+        ];
       case 'modern':
-        return ['Modern', 'Minimalistisch', 'Interaktiv'];
+        return [
+          AppStrings.featureModern,
+          AppStrings.featureMinimalist,
+          AppStrings.featureInteractive,
+        ];
       case 'nature':
-        return ['Natürlich', 'Beruhigend', 'Harmonisch'];
+        return [
+          AppStrings.featureNatural,
+          AppStrings.featureCalming,
+          AppStrings.featureHarmonious,
+        ];
       default:
         return [];
     }
   }
 }
-
-// Custom Painter für dezentes Pattern (optional, removed from this version)

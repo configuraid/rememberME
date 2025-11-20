@@ -5,6 +5,7 @@ import '../../../business_logic/profile/profile_bloc.dart';
 import '../../../business_logic/profile/profile_event.dart';
 import '../../../business_logic/profile/profile_state.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 
 class NotificationsSettingsScreen extends StatefulWidget {
   const NotificationsSettingsScreen({super.key});
@@ -24,7 +25,7 @@ class _NotificationsSettingsScreenState
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : null,
       appBar: AppBar(
-        title: const Text('Benachrichtigungen'),
+        title: const Text(AppStrings.notifications),
         elevation: 0,
         backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
         foregroundColor: AppColors.textLight,
@@ -35,7 +36,7 @@ class _NotificationsSettingsScreenState
             padding: const EdgeInsets.symmetric(vertical: 16),
             children: [
               // Push-Benachrichtigungen Section
-              _buildSectionHeader('Push-Benachrichtigungen', isDark),
+              _buildSectionHeader(AppStrings.pushNotifications, isDark),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -45,8 +46,8 @@ class _NotificationsSettingsScreenState
                     _buildSwitchTile(
                       context: context,
                       icon: Icons.notifications_active_rounded,
-                      title: 'Push-Benachrichtigungen',
-                      subtitle: 'Benachrichtigungen auf diesem Gerät',
+                      title: AppStrings.pushNotifications,
+                      subtitle: AppStrings.pushNotificationsSubtitle,
                       value: state.settings.pushNotifications,
                       isDark: isDark,
                       onChanged: (value) => _updateNotifications(
@@ -64,7 +65,7 @@ class _NotificationsSettingsScreenState
               const SizedBox(height: 24),
 
               // E-Mail-Benachrichtigungen Section
-              _buildSectionHeader('E-Mail-Benachrichtigungen', isDark),
+              _buildSectionHeader(AppStrings.emailNotifications, isDark),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -74,8 +75,8 @@ class _NotificationsSettingsScreenState
                     _buildSwitchTile(
                       context: context,
                       icon: Icons.email_rounded,
-                      title: 'E-Mail-Benachrichtigungen',
-                      subtitle: 'Benachrichtigungen per E-Mail',
+                      title: AppStrings.emailNotifications,
+                      subtitle: AppStrings.emailNotificationsSubtitle,
                       value: state.settings.emailNotifications,
                       isDark: isDark,
                       onChanged: (value) => _updateNotifications(
@@ -93,7 +94,7 @@ class _NotificationsSettingsScreenState
               const SizedBox(height: 24),
 
               // Benachrichtigungstypen Section
-              _buildSectionHeader('Benachrichtigungstypen', isDark),
+              _buildSectionHeader(AppStrings.notificationTypes, isDark),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -103,8 +104,8 @@ class _NotificationsSettingsScreenState
                     _buildSwitchTile(
                       context: context,
                       icon: Icons.favorite_rounded,
-                      title: 'Gedenkseiten-Updates',
-                      subtitle: 'Neue Beiträge und Änderungen',
+                      title: AppStrings.memorialUpdates,
+                      subtitle: AppStrings.memorialUpdatesSubtitle,
                       value: state.settings.memorialUpdates,
                       isDark: isDark,
                       onChanged: (value) => _updateNotifications(
@@ -127,8 +128,8 @@ class _NotificationsSettingsScreenState
                     _buildSwitchTile(
                       context: context,
                       icon: Icons.group_add_rounded,
-                      title: 'Gruppen-Einladungen',
-                      subtitle: 'Einladungen zu gemeinsamen Gedenkseiten',
+                      title: AppStrings.groupInvites,
+                      subtitle: AppStrings.groupInvitesSubtitle,
                       value: state.settings.groupInvites,
                       isDark: isDark,
                       onChanged: (value) => _updateNotifications(
@@ -146,7 +147,7 @@ class _NotificationsSettingsScreenState
               const SizedBox(height: 24),
 
               // Nicht stören Section
-              _buildSectionHeader('Nicht stören', isDark),
+              _buildSectionHeader(AppStrings.doNotDisturb, isDark),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -156,8 +157,8 @@ class _NotificationsSettingsScreenState
                     _buildSwitchTile(
                       context: context,
                       icon: Icons.bedtime_rounded,
-                      title: 'Ruhezeiten',
-                      subtitle: 'Keine Benachrichtigungen in der Nacht',
+                      title: AppStrings.quietHours,
+                      subtitle: AppStrings.quietHoursSubtitle,
                       value: false,
                       isDark: isDark,
                       onChanged: (value) {
@@ -176,8 +177,8 @@ class _NotificationsSettingsScreenState
                     _buildActionTile(
                       context: context,
                       icon: Icons.schedule_rounded,
-                      title: 'Zeitplan',
-                      subtitle: '22:00 - 08:00',
+                      title: AppStrings.schedule,
+                      subtitle: AppStrings.scheduleTime,
                       isDark: isDark,
                       onTap: () {
                         // TODO: Zeitplan-Picker öffnen

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -34,7 +35,7 @@ class _AboutScreenState extends State<AboutScreen> {
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : null,
       appBar: AppBar(
-        title: const Text('Über die App'),
+        title: const Text(AppStrings.aboutTheApp),
         elevation: 0,
         backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
         foregroundColor: AppColors.textLight,
@@ -99,7 +100,7 @@ class _AboutScreenState extends State<AboutScreen> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'rememberME',
+                  AppStrings.appNameRememberMe,
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: isDark ? AppColors.textLight : AppColors.textPrimary,
@@ -122,7 +123,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                   ),
                   child: Text(
-                    'Version $_version',
+                    '${AppStrings.version}$_version',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: isDark
                           ? AppColors.primaryLight.withOpacity(0.9)
@@ -156,14 +157,13 @@ class _AboutScreenState extends State<AboutScreen> {
                   _buildListTile(
                     context,
                     icon: Icons.info_outline_rounded,
-                    title: 'Was ist rememberME?',
-                    subtitle:
-                        'Eine würdevolle Plattform für digitale Gedenkseiten',
+                    title: AppStrings.whatIsRememberMe,
+                    subtitle: AppStrings.dignifiedPlatform,
                     isDark: isDark,
                     onTap: () => _showInfoDialog(
                       context,
-                      'Über rememberME',
-                      'rememberME ermöglicht es Ihnen, würdevolle digitale Gedenkseiten für verstorbene Angehörige und Freunde zu erstellen und zu teilen. Bewahren Sie Erinnerungen, teilen Sie Geschichten und ermöglichen Sie anderen, Beileid auszudrücken.',
+                      AppStrings.aboutRememberMe,
+                      AppStrings.aboutRememberMeDescription,
                       isDark,
                     ),
                   ),
@@ -178,7 +178,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   _buildListTile(
                     context,
                     icon: Icons.article_outlined,
-                    title: 'Nutzungsbedingungen',
+                    title: AppStrings.termsOfService,
                     trailing: Icons.open_in_new_rounded,
                     isDark: isDark,
                     onTap: () => _launchUrl('https://example.com/terms'),
@@ -194,7 +194,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   _buildListTile(
                     context,
                     icon: Icons.privacy_tip_outlined,
-                    title: 'Datenschutzerklärung',
+                    title: AppStrings.privacyPolicy,
                     trailing: Icons.open_in_new_rounded,
                     isDark: isDark,
                     onTap: () => _launchUrl('https://example.com/privacy'),
@@ -225,8 +225,8 @@ class _AboutScreenState extends State<AboutScreen> {
                   _buildListTile(
                     context,
                     icon: Icons.language_rounded,
-                    title: 'Website',
-                    subtitle: 'www.digital-memorial.com',
+                    title: AppStrings.website,
+                    subtitle: AppStrings.websiteUrl,
                     trailing: Icons.open_in_new_rounded,
                     isDark: isDark,
                     onTap: () => _launchUrl('https://www.digital-memorial.com'),
@@ -242,12 +242,12 @@ class _AboutScreenState extends State<AboutScreen> {
                   _buildListTile(
                     context,
                     icon: Icons.email_outlined,
-                    title: 'Kontakt',
-                    subtitle: 'support@digital-memorial.com',
+                    title: AppStrings.contact,
+                    subtitle: AppStrings.supportEmail,
                     trailing: Icons.open_in_new_rounded,
                     isDark: isDark,
                     onTap: () =>
-                        _launchUrl('mailto:support@digital-memorial.com'),
+                        _launchUrl('mailto:${AppStrings.supportEmail}'),
                   ),
                 ],
               ),
@@ -262,7 +262,7 @@ class _AboutScreenState extends State<AboutScreen> {
             child: Column(
               children: [
                 Text(
-                  'Folgen Sie uns',
+                  AppStrings.followUs,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: isDark ? AppColors.textLight : AppColors.textPrimary,
@@ -302,7 +302,7 @@ class _AboutScreenState extends State<AboutScreen> {
             child: Column(
               children: [
                 Text(
-                  '© 2025 rememberME',
+                  AppStrings.copyright,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color:
@@ -315,7 +315,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Made with',
+                      AppStrings.madeWith,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: isDark
                             ? const Color(0xFF808080)
@@ -332,7 +332,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'in Germany',
+                      AppStrings.inGermany,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: isDark
                             ? const Color(0xFF808080)
@@ -653,7 +653,7 @@ class _AboutScreenState extends State<AboutScreen> {
                       ),
                     ),
                     child: Text(
-                      'Schließen',
+                      AppStrings.close,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                             color: AppColors.textLight,
@@ -676,7 +676,8 @@ class _AboutScreenState extends State<AboutScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Konnte $urlString nicht öffnen'),
+            content: Text(
+                '${AppStrings.couldNotOpen}$urlString${AppStrings.notOpen}'),
             backgroundColor: Theme.of(context).colorScheme.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(

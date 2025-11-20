@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'dart:io';
 import 'package:rememberme/data/models/content_block_model.dart';
 import 'package:rememberme/core/constants/app_colors.dart';
+import 'package:rememberme/core/constants/app_strings.dart';
 
 class AddBlockBottomSheet extends StatelessWidget {
   final Function(ContentBlockType) onBlockTypeSelected;
@@ -12,10 +15,178 @@ class AddBlockBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (Platform.isIOS) {
+      return _buildIOSSheet(context);
+    } else {
+      return _buildAndroidSheet(context);
+    }
+  }
+
+  // ========== iOS Native UI ==========
+  Widget _buildIOSSheet(BuildContext context) {
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = brightness == Brightness.dark;
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 6),
+              width: 36,
+              height: 5,
+              decoration: BoxDecoration(
+                color:
+                    isDark ? const Color(0xFF48484A) : const Color(0xFFD1D1D6),
+                borderRadius: BorderRadius.circular(2.5),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      AppStrings.addBlock,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? CupertinoColors.white
+                            : CupertinoColors.black,
+                      ),
+                    ),
+                  ),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    minSize: 0,
+                    onPressed: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Fertig',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: ListView.builder(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                itemCount: ContentBlockType.values.length,
+                itemBuilder: (context, index) {
+                  final type = ContentBlockType.values[index];
+                  return _buildWidgetTile(context, type, isDark);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWidgetTile(
+    BuildContext context,
+    ContentBlockType type,
+    bool isDark,
+  ) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: () => onBlockTypeSelected(type),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF2C2C2E) : CupertinoColors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  BlockTypeInfo.getIcon(type),
+                  style: const TextStyle(fontSize: 20),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    BlockTypeInfo.getTitle(type),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: isDark
+                          ? CupertinoColors.white
+                          : CupertinoColors.black,
+                    ),
+                  ),
+                  Text(
+                    BlockTypeInfo.getDescription(type),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark
+                          ? const Color(0xFF98989D)
+                          : const Color(0xFF8E8E93),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              CupertinoIcons.chevron_right,
+              size: 18,
+              color: isDark ? const Color(0xFF48484A) : const Color(0xFFD1D1D6),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ========== Android Material UI ==========
+  Widget _buildAndroidSheet(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -80,7 +251,7 @@ class AddBlockBottomSheet extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Block hinzufügen',
+                      AppStrings.addBlock,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: isDark
@@ -117,30 +288,37 @@ class AddBlockBottomSheet extends StatelessWidget {
               color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
             ),
 
-            // Block Types Grid
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 1.2,
-                children: ContentBlockType.values.map((type) {
-                  return _buildBlockTypeCard(context, type, isDark);
-                }).toList(),
+            // Scrollable Block Types Grid
+            Flexible(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 1.2,
+                    ),
+                    itemCount: ContentBlockType.values.length,
+                    itemBuilder: (context, index) {
+                      final type = ContentBlockType.values[index];
+                      return _buildAndroidBlockTypeCard(context, type, isDark);
+                    },
+                  ),
+                ),
               ),
             ),
-
-            const SizedBox(height: 8),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBlockTypeCard(
+  Widget _buildAndroidBlockTypeCard(
     BuildContext context,
     ContentBlockType type,
     bool isDark,

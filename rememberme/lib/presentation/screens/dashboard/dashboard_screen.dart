@@ -29,32 +29,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _loadData() {
-    print('📚 DashboardScreen - Lade Daten...');
-
     final authState = context.read<AuthBloc>().state;
     final user = authState.user;
 
     if (user == null) {
-      print('❌ DashboardScreen - Kein User gefunden');
       return;
     }
 
     if (user.primaryOrganizationId == null) {
-      print('❌ DashboardScreen - Keine Organisation gefunden');
       return;
     }
 
-    print('👤 User: ${user.name} (${user.id})');
-    print('🏢 Organisation: ${user.primaryOrganizationId}');
-
-    // ✅ FIX: Lade Memorials nur mit organizationId (userId wurde entfernt)
     context.read<MemorialBloc>().add(
           MemorialLoadRequested(
             organizationId: user.primaryOrganizationId!,
           ),
         );
-
-    print('✅ DashboardScreen - Daten werden geladen');
   }
 
   void _onItemTapped(int index) {
@@ -71,14 +61,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (Platform.isIOS) {
       return CupertinoTabScaffold(
         tabBar: CupertinoTabBar(
-          items: const [
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.heart),
-              label: 'Gedenkseite',
+              icon: const Icon(CupertinoIcons.heart),
+              label: AppStrings.memorialPage,
             ),
             BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.person),
-              label: 'Profil',
+              icon: const Icon(CupertinoIcons.person),
+              label: AppStrings.profile,
             ),
           ],
         ),
@@ -95,12 +85,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.favorite),
-            label: 'Gedenkseite',
+            icon: const Icon(Icons.favorite),
+            label: AppStrings.memorialPage,
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: AppStrings.profile,
           ),
@@ -112,16 +102,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildMemorialsTab() {
     return BlocBuilder<MemorialBloc, MemorialState>(
       builder: (context, memorialState) {
-        print('🏗️ DashboardScreen - Memorial Tab wird gebaut');
-        print('📊 Status: ${memorialState.status}');
-        print('📊 Anzahl Memorials: ${memorialState.memorials.length}');
-
         // Ladezustand
         if (memorialState.isLoading) {
-          print('⏳ DashboardScreen - Lädt...');
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Meine Gedenkseite'),
+              title: Text(AppStrings.myMemorialPage),
             ),
             body: const Center(
               child: CircularProgressIndicator(),
@@ -131,10 +116,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         // Fehler
         if (memorialState.hasError) {
-          print('❌ DashboardScreen - Fehler: ${memorialState.errorMessage}');
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Meine Gedenkseite'),
+              title: Text(AppStrings.myMemorialPage),
             ),
             body: Center(
               child: Column(
@@ -144,13 +128,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       size: 64, color: AppColors.error),
                   const SizedBox(height: 16),
                   Text(
-                    memorialState.errorMessage ?? 'Ein Fehler ist aufgetreten',
+                    memorialState.errorMessage ?? AppStrings.errorOccurred,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => _loadData(),
-                    child: const Text('Erneut versuchen'),
+                    child: Text(AppStrings.tryAgain),
                   ),
                 ],
               ),
@@ -160,10 +144,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         // Keine Gedenkseite vorhanden
         if (memorialState.memorials.isEmpty) {
-          print('📝 DashboardScreen - Keine Memorials vorhanden');
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Meine Gedenkseite'),
+              title: Text(AppStrings.myMemorialPage),
             ),
             body: Center(
               child: Padding(
@@ -177,14 +160,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: AppColors.accent.withOpacity(0.5),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Noch keine Gedenkseite',
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    Text(
+                      AppStrings.noMemorialYet,
+                      style: const TextStyle(
+                          fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Erstelle jetzt deine persönliche Gedenkseite',
+                      AppStrings.createYourPersonalMemorial,
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[600],
@@ -194,15 +177,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 32),
                     ElevatedButton.icon(
                       onPressed: () {
-                        print('➕ Navigiere zu Memorial Create');
                         Navigator.of(context, rootNavigator: true).pushNamed(
                           AppRoutes.memorialCreate,
                         );
                       },
                       icon: const Icon(Icons.add, size: 24),
-                      label: const Text(
-                        'Gedenkseite erstellen',
-                        style: TextStyle(fontSize: 16),
+                      label: Text(
+                        AppStrings.createMemorialPage,
+                        style: const TextStyle(fontSize: 16),
                       ),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
@@ -220,7 +202,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         // Gedenkseite vorhanden → Detail-Ansicht anzeigen
         final memorial = memorialState.memorials.first;
-        print('📄 DashboardScreen - Zeige Memorial: ${memorial.name}');
 
         return MemorialDetailScreen(memorial: memorial);
       },
@@ -264,7 +245,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Expanded(
           child: _buildActionButton(
             context,
-            'Bearbeiten',
+            AppStrings.editMemorial,
             Icons.edit_outlined,
             AppColors.accent,
             () {
@@ -277,7 +258,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Expanded(
           child: _buildActionButton(
             context,
-            'Lizenz',
+            AppStrings.license,
             Icons.workspace_premium,
             AppColors.primary,
             () => Navigator.of(context, rootNavigator: true)

@@ -50,18 +50,13 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
     }
 
     if (_usePin && _pinController.text != _confirmPinController.text) {
-      _showError('PINs stimmen nicht überein');
+      _showError(AppStrings.pinsDontMatch);
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      print(
-          '➕ ProfileCreationScreen - Erstelle Profil: ${_nameController.text}');
-      print('📍 Organisation: ${widget.organization.id}');
-      if (_usePin) print('🔒 Mit PIN');
-
       context.read<AuthBloc>().add(
             AuthNewProfileCreationRequested(
               organizationId: widget.organization.id,
@@ -70,10 +65,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
               pin: _usePin ? _pinController.text : null,
             ),
           );
-
-      print('⏳ Warte auf Auth-State Änderung...');
     } catch (e) {
-      print('❌ ProfileCreationScreen - Fehler: $e');
       if (mounted) {
         _showError(e.toString());
         setState(() => _isLoading = false);
@@ -86,12 +78,12 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
       showCupertinoDialog(
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
-          title: const Text('Fehler'),
+          title: Text(AppStrings.errorTitle),
           content: Text(message),
           actions: [
             CupertinoDialogAction(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('OK'),
+              child: Text(AppStrings.ok),
             ),
           ],
         ),
@@ -128,23 +120,19 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        print('👂 ProfileCreationScreen Listener - Status: ${state.status}');
-
         if (state.isAuthenticated) {
-          print('✅ ProfileCreationScreen - User authentifiziert');
           Navigator.of(context).pushNamedAndRemoveUntil(
             AppRoutes.dashboard,
             (route) => false,
           );
         } else if (state.hasError) {
-          print('❌ ProfileCreationScreen - Fehler: ${state.errorMessage}');
           setState(() => _isLoading = false);
-          _showError(state.errorMessage ?? 'Ein Fehler ist aufgetreten');
+          _showError(state.errorMessage ?? AppStrings.errorOccurred);
         }
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Profil erstellen'),
+          title: Text(AppStrings.createProfile),
           elevation: 0,
           backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
           foregroundColor: AppColors.textLight,
@@ -195,7 +183,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
 
                             // Titel
                             Text(
-                              'Neues Profil',
+                              AppStrings.newProfile,
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: isDark
@@ -239,8 +227,8 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                     validator: Validators.validateName,
                                     style: theme.textTheme.bodyLarge,
                                     decoration: InputDecoration(
-                                      labelText: 'Name',
-                                      hintText: 'Dein vollständiger Name',
+                                      labelText: AppStrings.name,
+                                      hintText: AppStrings.yourFullName,
                                       prefixIcon: Icon(
                                         Icons.person_outline_rounded,
                                         color: isDark
@@ -263,8 +251,8 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                     keyboardType: TextInputType.emailAddress,
                                     style: theme.textTheme.bodyLarge,
                                     decoration: InputDecoration(
-                                      labelText: 'E-Mail (optional)',
-                                      hintText: 'beispiel@email.de',
+                                      labelText: AppStrings.emailOptional,
+                                      hintText: AppStrings.emailExample,
                                       prefixIcon: Icon(
                                         Icons.email_outlined,
                                         color: isDark
@@ -320,7 +308,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  'PIN-Schutz',
+                                                  AppStrings.pinProtection,
                                                   style: theme
                                                       .textTheme.bodyMedium
                                                       ?.copyWith(
@@ -331,7 +319,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                                   ),
                                                 ),
                                                 Text(
-                                                  '4-stellige PIN',
+                                                  AppStrings.fourDigitPin,
                                                   style: theme
                                                       .textTheme.bodySmall
                                                       ?.copyWith(
@@ -377,7 +365,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                             maxLength: 4,
                                             style: theme.textTheme.bodyLarge,
                                             decoration: InputDecoration(
-                                              labelText: 'PIN',
+                                              labelText: AppStrings.pin,
                                               hintText: '••••',
                                               prefixIcon: Icon(
                                                 Icons.lock_outline_rounded,
@@ -407,7 +395,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                             maxLength: 4,
                                             style: theme.textTheme.bodyLarge,
                                             decoration: InputDecoration(
-                                              labelText: 'Bestätigen',
+                                              labelText: AppStrings.confirm,
                                               hintText: '••••',
                                               prefixIcon: Icon(
                                                 Icons.lock_outline_rounded,
@@ -462,7 +450,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                             ),
                                           )
                                         : Text(
-                                            'Profil erstellen',
+                                            AppStrings.createProfile,
                                             style: theme.textTheme.titleMedium
                                                 ?.copyWith(
                                               color: AppColors.textLight,
@@ -503,7 +491,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    'Profil später bearbeitbar',
+                                    AppStrings.profileEditableLater,
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: isDark
                                           ? AppColors.info.withOpacity(0.9)
@@ -534,24 +522,19 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
   Widget _buildIOSView() {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        print(
-            '👂 ProfileCreationScreen iOS Listener - Status: ${state.status}');
-
         if (state.isAuthenticated) {
-          print('✅ ProfileCreationScreen iOS - User authentifiziert');
           Navigator.of(context).pushNamedAndRemoveUntil(
             AppRoutes.dashboard,
             (route) => false,
           );
         } else if (state.hasError) {
-          print('❌ ProfileCreationScreen iOS - Fehler: ${state.errorMessage}');
           setState(() => _isLoading = false);
-          _showError(state.errorMessage ?? 'Ein Fehler ist aufgetreten');
+          _showError(state.errorMessage ?? AppStrings.errorOccurred);
         }
       },
       child: CupertinoPageScaffold(
-        navigationBar: const CupertinoNavigationBar(
-          middle: Text('Profil erstellen'),
+        navigationBar: CupertinoNavigationBar(
+          middle: Text(AppStrings.createProfile),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
@@ -567,9 +550,9 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                     color: AppColors.primary,
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Neues Profil',
-                    style: TextStyle(
+                  Text(
+                    AppStrings.newProfile,
+                    style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                     ),
@@ -577,7 +560,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Erstelle dein persönliches Profil für\n${widget.organization.name}',
+                    '${AppStrings.createYourPersonalProfile}\n${widget.organization.name}',
                     style: const TextStyle(
                       fontSize: 16,
                       color: CupertinoColors.systemGrey,
@@ -589,7 +572,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                   // Name
                   _buildIOSTextField(
                     controller: _nameController,
-                    placeholder: 'Dein vollständiger Name',
+                    placeholder: AppStrings.yourFullName,
                     prefix: const Icon(
                       CupertinoIcons.person,
                       color: CupertinoColors.systemGrey,
@@ -600,7 +583,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                   // Email
                   _buildIOSTextField(
                     controller: _emailController,
-                    placeholder: 'beispiel@email.de (optional)',
+                    placeholder: '${AppStrings.emailExample} (optional)',
                     prefix: const Icon(
                       CupertinoIcons.mail,
                       color: CupertinoColors.systemGrey,
@@ -621,21 +604,21 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'PIN-Schutz aktivieren',
-                                style: TextStyle(
+                                AppStrings.activatePinProtection,
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
-                                'Schütze dein Profil mit einer 4-stelligen PIN',
-                                style: TextStyle(
+                                AppStrings.protectProfileWithPin,
+                                style: const TextStyle(
                                   fontSize: 13,
                                   color: CupertinoColors.systemGrey,
                                 ),
@@ -655,7 +638,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                     const SizedBox(height: 16),
                     _buildIOSTextField(
                       controller: _pinController,
-                      placeholder: '4-stellige PIN',
+                      placeholder: AppStrings.fourDigitPin,
                       prefix: const Icon(
                         CupertinoIcons.lock,
                         color: CupertinoColors.systemGrey,
@@ -666,7 +649,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                     const SizedBox(height: 16),
                     _buildIOSTextField(
                       controller: _confirmPinController,
-                      placeholder: 'PIN erneut eingeben',
+                      placeholder: AppStrings.enterPinAgain,
                       prefix: const Icon(
                         CupertinoIcons.lock,
                         color: CupertinoColors.systemGrey,
@@ -687,7 +670,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                           ? const CupertinoActivityIndicator(
                               color: CupertinoColors.white,
                             )
-                          : const Text('Profil erstellen'),
+                          : Text(AppStrings.createProfile),
                     ),
                   ),
 
@@ -703,18 +686,18 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                         color: AppColors.info.withOpacity(0.3),
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(
+                        const Icon(
                           CupertinoIcons.info_circle,
                           color: AppColors.info,
                           size: 20,
                         ),
-                        SizedBox(width: 12),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Du kannst dein Profil später jederzeit bearbeiten',
-                            style: TextStyle(
+                            AppStrings.canEditProfileLater,
+                            style: const TextStyle(
                               fontSize: 13,
                               color: AppColors.info,
                             ),

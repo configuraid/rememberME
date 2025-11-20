@@ -86,7 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           actions: [
             CupertinoDialogAction(
-              child: const Text('OK'),
+              child: Text(AppStrings.ok),
               onPressed: () => Navigator.of(ctx).pop(),
             ),
           ],
@@ -129,7 +129,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           actions: [
             CupertinoDialogAction(
-              child: const Text('OK'),
+              child: Text(AppStrings.ok),
               onPressed: () => Navigator.of(ctx).pop(),
             ),
           ],
@@ -283,7 +283,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              profileState.name ?? user?.name ?? 'Unbekannt',
+              profileState.name ?? user?.name ?? AppStrings.unknown,
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -382,7 +382,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            profileState.name ?? user?.name ?? 'Unbekannt',
+            profileState.name ?? user?.name ?? AppStrings.unknown,
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -416,12 +416,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildMenuSection(BuildContext context, UserModel? user, bool isDark) {
     return Column(
       children: [
-        _buildMenuHeader('Account', isDark),
+        _buildMenuHeader(AppStrings.accountSection, isDark),
         if (Platform.isAndroid)
           _buildAndroidMenuItem(
             context: context,
             icon: Icons.person_rounded,
-            title: 'Profil bearbeiten',
+            title: AppStrings.editProfile,
             isDark: isDark,
             onTap: () => Navigator.push(
               context,
@@ -433,7 +433,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         else
           _buildIOSMenuItem(
             icon: Icons.person,
-            title: 'Profil bearbeiten',
+            title: AppStrings.editProfile,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -445,7 +445,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           height: 1,
           color: isDark ? const Color(0xFF49454F) : const Color(0xFFCAC4D0),
         ),
-        _buildMenuHeader('Einstellungen', isDark),
+        _buildMenuHeader(AppStrings.settings, isDark),
         if (Platform.isAndroid) ...[
           _buildAndroidMenuItem(
             context: context,
@@ -497,12 +497,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           height: 1,
           color: isDark ? const Color(0xFF49454F) : const Color(0xFFCAC4D0),
         ),
-        _buildMenuHeader('Support', isDark),
+        _buildMenuHeader(AppStrings.support, isDark),
         if (Platform.isAndroid) ...[
           _buildAndroidMenuItem(
             context: context,
             icon: Icons.help_outline_rounded,
-            title: 'Hilfe & FAQ',
+            title: AppStrings.helpAndFaq,
             isDark: isDark,
             onTap: () {},
           ),
@@ -521,14 +521,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildAndroidMenuItem(
             context: context,
             icon: Icons.feedback_outlined,
-            title: 'Feedback senden',
+            title: AppStrings.sendFeedback,
             isDark: isDark,
             onTap: () {},
           ),
         ] else ...[
           _buildIOSMenuItem(
             icon: Icons.help_outline,
-            title: 'Hilfe & FAQ',
+            title: AppStrings.helpAndFaq,
             onTap: () {},
           ),
           _buildIOSMenuItem(
@@ -543,7 +543,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           _buildIOSMenuItem(
             icon: Icons.feedback_outlined,
-            title: 'Feedback senden',
+            title: AppStrings.sendFeedback,
             onTap: () {},
           ),
         ],
@@ -551,7 +551,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           height: 1,
           color: isDark ? const Color(0xFF49454F) : const Color(0xFFCAC4D0),
         ),
-        _buildMenuHeader('Gefahrenzone', isDark),
+        _buildMenuHeader(AppStrings.dangerZone, isDark),
         if (Platform.isAndroid) ...[
           _buildAndroidMenuItem(
             context: context,
@@ -564,7 +564,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildAndroidMenuItem(
             context: context,
             icon: Icons.delete_forever_rounded,
-            title: 'Account löschen',
+            title: AppStrings.deleteAccount,
             isDark: isDark,
             isDestructive: true,
             onTap: () => _showDeleteAccountDialog(context, isDark),
@@ -579,7 +579,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           _buildIOSMenuItem(
             icon: Icons.delete_forever,
-            title: 'Account löschen',
+            title: AppStrings.deleteAccount,
             textColor: AppColors.error,
             iconColor: AppColors.error,
             onTap: () => _showDeleteAccountDialog(context, false),
@@ -705,7 +705,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: isDark ? const Color(0xFFAAC7FF) : AppColors.primary,
           ),
           title: const Text(AppStrings.logout),
-          content: const Text('Möchten Sie sich wirklich abmelden?'),
+          content: Text(AppStrings.logoutConfirmMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
@@ -732,7 +732,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
           title: const Text(AppStrings.logout),
-          content: const Text('Möchten Sie sich wirklich abmelden?'),
+          content: Text(AppStrings.logoutConfirmMessage),
           actions: [
             CupertinoDialogAction(
               onPressed: () => Navigator.of(ctx).pop(),
@@ -767,20 +767,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             size: 32,
             color: isDark ? const Color(0xFFFFB4AB) : const Color(0xFFE53935),
           ),
-          title: const Text('Account löschen'),
+          title: Text(AppStrings.deleteAccount),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Dieser Vorgang kann nicht rückgängig gemacht werden. Alle Ihre Daten werden dauerhaft gelöscht.',
-              ),
+              Text(AppStrings.deleteAccountWarning),
               const SizedBox(height: 16),
               TextField(
                 controller: passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Passwort zur Bestätigung',
-                  prefixIcon: Icon(Icons.lock_rounded),
+                decoration: InputDecoration(
+                  labelText: AppStrings.passwordConfirmation,
+                  prefixIcon: const Icon(Icons.lock_rounded),
                 ),
                 obscureText: true,
               ),
@@ -810,7 +808,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 foregroundColor:
                     isDark ? const Color(0xFF690005) : Colors.white,
               ),
-              child: const Text('Account löschen'),
+              child: Text(AppStrings.deleteAccount),
             ),
           ],
         ),
@@ -819,18 +817,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       showCupertinoDialog(
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
-          title: const Text('Account löschen'),
+          title: Text(AppStrings.deleteAccount),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 8),
-              const Text(
-                'Dieser Vorgang kann nicht rückgängig gemacht werden. Alle Ihre Daten werden dauerhaft gelöscht.',
-              ),
+              Text(AppStrings.deleteAccountWarning),
               const SizedBox(height: 16),
               CupertinoTextField(
                 controller: passwordController,
-                placeholder: 'Passwort zur Bestätigung',
+                placeholder: AppStrings.passwordConfirmation,
                 obscureText: true,
               ),
             ],
@@ -854,7 +850,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 }
                 Navigator.of(ctx).pop();
               },
-              child: const Text('Account löschen'),
+              child: Text(AppStrings.deleteAccount),
             ),
           ],
         ),
