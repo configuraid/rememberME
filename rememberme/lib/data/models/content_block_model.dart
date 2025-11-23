@@ -1,4 +1,7 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:io';
 
 /// Simple content block types for memorial pages
 enum ContentBlockType {
@@ -153,24 +156,48 @@ class BlockTypeInfo {
     }
   }
 
-  static String getIcon(ContentBlockType type) {
-    switch (type) {
-      case ContentBlockType.header:
-        return '📝';
-      case ContentBlockType.text:
-        return '📄';
-      case ContentBlockType.image:
-        return '🖼️';
-      case ContentBlockType.gallery:
-        return '📷';
-      case ContentBlockType.quote:
-        return '💬';
-      case ContentBlockType.divider:
-        return '━';
-      case ContentBlockType.video:
-        return '🎬';
-      case ContentBlockType.date:
-        return '📅';
+  /// Get platform-specific icon for block type
+  static IconData getIcon(ContentBlockType type) {
+    final isIOS = Platform.isIOS;
+
+    if (isIOS) {
+      switch (type) {
+        case ContentBlockType.header:
+          return CupertinoIcons.textformat_size;
+        case ContentBlockType.text:
+          return CupertinoIcons.textformat;
+        case ContentBlockType.image:
+          return CupertinoIcons.photo;
+        case ContentBlockType.gallery:
+          return CupertinoIcons.photo_on_rectangle;
+        case ContentBlockType.quote:
+          return CupertinoIcons.quote_bubble;
+        case ContentBlockType.divider:
+          return CupertinoIcons.minus_rectangle;
+        case ContentBlockType.video:
+          return CupertinoIcons.videocam;
+        case ContentBlockType.date:
+          return CupertinoIcons.calendar;
+      }
+    } else {
+      switch (type) {
+        case ContentBlockType.header:
+          return Icons.title_rounded;
+        case ContentBlockType.text:
+          return Icons.text_fields_rounded;
+        case ContentBlockType.image:
+          return Icons.image_outlined;
+        case ContentBlockType.gallery:
+          return Icons.photo_library_outlined;
+        case ContentBlockType.quote:
+          return Icons.format_quote_rounded;
+        case ContentBlockType.divider:
+          return Icons.horizontal_rule_rounded;
+        case ContentBlockType.video:
+          return Icons.videocam_outlined;
+        case ContentBlockType.date:
+          return Icons.calendar_today_rounded;
+      }
     }
   }
 

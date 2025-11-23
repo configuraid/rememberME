@@ -291,12 +291,6 @@ class AppStrings {
   static const String groupInvites = 'Gruppen-Einladungen';
   static const String groupInvitesSubtitle =
       'Einladungen zu gemeinsamen Gedenkseiten';
-  static const String doNotDisturb = 'Nicht stören';
-  static const String quietHours = 'Ruhezeiten';
-  static const String quietHoursSubtitle =
-      'Keine Benachrichtigungen in der Nacht';
-  static const String schedule = 'Zeitplan';
-  static const String scheduleTime = '22:00 - 08:00';
 
   // Groups
   static const String groups = 'Gruppen';

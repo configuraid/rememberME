@@ -57,12 +57,29 @@ class _LoginScreenState extends State<LoginScreen> {
       showCupertinoDialog(
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
-          title: Text(AppStrings.errorTitle),
-          content: Text(message),
+          title: Text(
+            AppStrings.errorTitle,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: Text(
+            message,
+            style: const TextStyle(
+              fontSize: 13,
+            ),
+          ),
           actions: [
             CupertinoDialogAction(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(AppStrings.ok),
+              child: Text(
+                AppStrings.ok,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ),
@@ -395,270 +412,280 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       },
       child: CupertinoPageScaffold(
-        backgroundColor: isDark
-            ? const Color(0xFF000000) // iOS Dark Background
-            : const Color(0xFFF2F2F7), // iOS Light Background
+        backgroundColor:
+            isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 60),
+          child: DefaultTextStyle(
+            style: TextStyle(
+              fontSize: 17,
+              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              fontFamily: '.SF Pro Text',
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 60),
 
-                  // Logo mit Gradient
-                  Center(
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: AppColors.primaryGradient,
+                    // Logo mit Gradient
+                    Center(
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: AppColors.primaryGradient,
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary
+                                  .withOpacity(isDark ? 0.4 : 0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
                         ),
-                        shape: BoxShape.circle,
+                        child: const Icon(
+                          CupertinoIcons.heart_fill,
+                          size: 64,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // App-Name
+                    Text(
+                      AppStrings.appNameRememberMe,
+                      style: TextStyle(
+                        fontSize: 34,
+                        fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? CupertinoColors.white
+                            : CupertinoColors.black,
+                        letterSpacing: -0.5,
+                        fontFamily: '.SF Pro Display',
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Untertitel
+                    Text(
+                      AppStrings.digitalMemorials,
+                      style: TextStyle(
+                        fontSize: 17,
+                        color: CupertinoColors.systemGrey,
+                        fontWeight: FontWeight.w400,
+                        fontFamily: '.SF Pro Text',
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 60),
+
+                    // Input Card Container
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1C1C1E)
+                            : CupertinoColors.white,
+                        borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary
-                                .withOpacity(isDark ? 0.4 : 0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
+                            color: isDark
+                                ? Colors.black.withOpacity(0.3)
+                                : Colors.black.withOpacity(0.08),
+                            blurRadius: isDark ? 12 : 8,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        CupertinoIcons.heart_fill,
-                        size: 64,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // App-Name
-                  Text(
-                    AppStrings.appNameRememberMe,
-                    style: TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.bold,
-                      color: isDark
-                          ? CupertinoColors.white
-                          : CupertinoColors.black,
-                      letterSpacing: -0.5,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Untertitel
-                  Text(
-                    AppStrings.digitalMemorials,
-                    style: TextStyle(
-                      fontSize: 17,
-                      color: isDark
-                          ? CupertinoColors.systemGrey
-                          : CupertinoColors.systemGrey,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: 60),
-
-                  // Input Card Container
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF1C1C1E) // iOS Dark Card
-                          : CupertinoColors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isDark
-                              ? Colors.black.withOpacity(0.3)
-                              : Colors.black.withOpacity(0.08),
-                          blurRadius: isDark ? 12 : 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Auth-Key Input
-                        CustomTextField(
-                          controller: _authKeyController,
-                          label: AppStrings.authKey,
-                          hint: AppStrings.enterYourAuthKey,
-                          validator: Validators.validateAuthKey,
-                          prefixIcon: Icons.key_outlined,
-                          textInputAction: TextInputAction.done,
-                          onFieldSubmitted: (_) => _handleLogin(),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Login Button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: CupertinoButton(
-                            padding: EdgeInsets.zero,
-                            disabledColor: isDark
-                                ? AppColors.primary.withOpacity(0.5)
-                                : AppColors.primary.withOpacity(0.5),
-                            color: isDark
-                                ? AppColors.primaryLight
-                                : AppColors.primary,
-                            borderRadius: BorderRadius.circular(12),
-                            onPressed: _isLoading ? null : _handleLogin,
-                            child: _isLoading
-                                ? const CupertinoActivityIndicator(
-                                    color: CupertinoColors.white,
-                                  )
-                                : Text(
-                                    AppStrings.login,
-                                    style: const TextStyle(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w600,
-                                      color: CupertinoColors.white,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Divider mit "oder"
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          color: isDark
-                              ? CupertinoColors.systemGrey3.darkColor
-                              : CupertinoColors.systemGrey4,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          AppStrings.or,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: isDark
-                                ? CupertinoColors.systemGrey
-                                : CupertinoColors.systemGrey,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          color: isDark
-                              ? CupertinoColors.systemGrey3.darkColor
-                              : CupertinoColors.systemGrey4,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // QR-Code Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      disabledColor: isDark
-                          ? const Color(0xFF2C2C2E)
-                          : CupertinoColors.systemGrey6,
-                      color: isDark
-                          ? const Color(0xFF2C2C2E) // iOS Dark Secondary Button
-                          : CupertinoColors.systemGrey6,
-                      borderRadius: BorderRadius.circular(12),
-                      onPressed: _isLoading ? null : _handleQRCodeScan,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Icon(
-                            CupertinoIcons.qrcode_viewfinder,
-                            size: 24,
-                            color: isDark
-                                ? AppColors.primaryLight
-                                : AppColors.primary,
+                          // Auth-Key Input
+                          CustomTextField(
+                            controller: _authKeyController,
+                            label: AppStrings.authKey,
+                            hint: AppStrings.enterYourAuthKey,
+                            validator: Validators.validateAuthKey,
+                            prefixIcon: Icons.key_outlined,
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) => _handleLogin(),
                           ),
-                          const SizedBox(width: 10),
-                          Text(
-                            AppStrings.scanQrCode,
+
+                          const SizedBox(height: 20),
+
+                          // Login Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              disabledColor: isDark
+                                  ? AppColors.primary.withOpacity(0.5)
+                                  : AppColors.primary.withOpacity(0.5),
+                              color: isDark
+                                  ? AppColors.primaryLight
+                                  : AppColors.primary,
+                              borderRadius: BorderRadius.circular(12),
+                              onPressed: _isLoading ? null : _handleLogin,
+                              child: _isLoading
+                                  ? const CupertinoActivityIndicator(
+                                      color: CupertinoColors.white,
+                                    )
+                                  : Text(
+                                      AppStrings.login,
+                                      style: const TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w600,
+                                        color: CupertinoColors.white,
+                                        fontFamily: '.SF Pro Text',
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Divider mit "oder"
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 1,
+                            color: isDark
+                                ? CupertinoColors.systemGrey3.darkColor
+                                : CupertinoColors.systemGrey4,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            AppStrings.or,
                             style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                              color: CupertinoColors.systemGrey,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: '.SF Pro Text',
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Container(
+                            height: 1,
+                            color: isDark
+                                ? CupertinoColors.systemGrey3.darkColor
+                                : CupertinoColors.systemGrey4,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // QR-Code Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        disabledColor: isDark
+                            ? const Color(0xFF2C2C2E)
+                            : CupertinoColors.systemGrey6,
+                        color: isDark
+                            ? const Color(0xFF2C2C2E)
+                            : CupertinoColors.systemGrey6,
+                        borderRadius: BorderRadius.circular(12),
+                        onPressed: _isLoading ? null : _handleQRCodeScan,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              CupertinoIcons.qrcode_viewfinder,
+                              size: 24,
                               color: isDark
                                   ? AppColors.primaryLight
                                   : AppColors.primary,
                             ),
+                            const SizedBox(width: 10),
+                            Text(
+                              AppStrings.scanQrCode,
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? AppColors.primaryLight
+                                    : AppColors.primary,
+                                fontFamily: '.SF Pro Text',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    // Info-Box
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.info.withOpacity(0.15)
+                            : AppColors.info.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.info.withOpacity(0.4)
+                              : AppColors.info.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            CupertinoIcons.info_circle,
+                            color: isDark
+                                ? AppColors.info.withOpacity(0.9)
+                                : AppColors.info,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              AppStrings.noAuthKey,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isDark
+                                    ? AppColors.info.withOpacity(0.9)
+                                    : AppColors.info,
+                                height: 1.4,
+                                fontFamily: '.SF Pro Text',
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 10),
-
-                  // Info-Box
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.info.withOpacity(0.15)
-                          : AppColors.info.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isDark
-                            ? AppColors.info.withOpacity(0.4)
-                            : AppColors.info.withOpacity(0.3),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          CupertinoIcons.info_circle,
-                          color: isDark
-                              ? AppColors.info.withOpacity(0.9)
-                              : AppColors.info,
-                          size: 22,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            AppStrings.noAuthKey,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: isDark
-                                  ? AppColors.info.withOpacity(0.9)
-                                  : AppColors.info,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
           ),

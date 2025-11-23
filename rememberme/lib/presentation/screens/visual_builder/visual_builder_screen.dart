@@ -75,9 +75,11 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
 
     _shakeController!.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        setState(() {
-          _shakingBlockId = null;
-        });
+        if (mounted) {
+          setState(() {
+            _shakingBlockId = null;
+          });
+        }
       }
     });
   }
@@ -112,14 +114,32 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
 
   void _showSuccessMessage(String message) {
     if (Platform.isIOS) {
+      final brightness = MediaQuery.of(context).platformBrightness;
+      final isDark = brightness == Brightness.dark;
+
       showCupertinoDialog(
         context: context,
         barrierDismissible: true,
         builder: (context) => CupertinoAlertDialog(
-          content: Text(message),
+          content: Text(
+            message,
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              fontFamily: '.SF Pro Text',
+            ),
+          ),
           actions: [
             CupertinoDialogAction(
-              child: Text(AppStrings.ok),
+              child: Text(
+                AppStrings.ok,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  fontFamily: '.SF Pro Text',
+                ),
+              ),
               onPressed: () => Navigator.pop(context),
             ),
           ],
@@ -211,19 +231,51 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
     }
 
     if (Platform.isIOS) {
+      final brightness = MediaQuery.of(context).platformBrightness;
+      final isDark = brightness == Brightness.dark;
+
       final shouldPop = await showCupertinoDialog<bool>(
         context: context,
         builder: (context) => CupertinoAlertDialog(
-          title: Text(AppStrings.unsavedChanges),
-          content: Text(AppStrings.unsavedChangesMessage),
+          title: Text(
+            AppStrings.unsavedChanges,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              fontFamily: '.SF Pro Text',
+            ),
+          ),
+          content: Text(
+            AppStrings.unsavedChangesMessage,
+            style: TextStyle(
+              fontSize: 13,
+              color: CupertinoColors.systemGrey,
+              fontFamily: '.SF Pro Text',
+            ),
+          ),
           actions: [
             CupertinoDialogAction(
-              child: Text(AppStrings.cancel),
+              child: Text(
+                AppStrings.cancel,
+                style: TextStyle(
+                  fontSize: 17,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  fontFamily: '.SF Pro Text',
+                ),
+              ),
               onPressed: () => Navigator.pop(context, false),
             ),
             CupertinoDialogAction(
               isDestructiveAction: true,
-              child: Text(AppStrings.discardChanges),
+              child: Text(
+                AppStrings.discardChanges,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: '.SF Pro Text',
+                ),
+              ),
               onPressed: () => Navigator.pop(context, true),
             ),
           ],
@@ -720,12 +772,22 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 key: ValueKey(block.id),
                 index: index,
                 child: AnimatedBuilder(
-                  animation: _shakeAnimation ?? const AlwaysStoppedAnimation(0),
+                  animation:
+                      _shakeController ?? const AlwaysStoppedAnimation(0.0),
                   builder: (context, child) {
+                    // ✅ KORRIGIERT: Verwende direkt den value der Animation
+                    double offsetX = 0.0;
+                    if (isShaking && _shakeAnimation != null) {
+                      try {
+                        offsetX = _shakeAnimation!.value;
+                      } catch (e) {
+                        // Falls ein Fehler auftritt, verwende 0
+                        offsetX = 0.0;
+                      }
+                    }
+
                     return Transform.translate(
-                      offset: isShaking
-                          ? Offset(_shakeAnimation?.value ?? 0, 0)
-                          : Offset.zero,
+                      offset: Offset(offsetX, 0),
                       child: child,
                     );
                   },
@@ -850,7 +912,11 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
 
-      _shakeController?.forward(from: 0.0);
+      // ✅ SICHERE ANIMATION: Reset vor dem Start
+      if (mounted && _shakeController != null) {
+        _shakeController!.reset();
+        _shakeController!.forward();
+      }
 
       if (Platform.isIOS) {
         Future.delayed(const Duration(milliseconds: 100), () {
@@ -889,24 +955,17 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _shakeController?.forward(from: 0.0);
-
-      final duplicateIndex = _blocks.indexWhere((b) => b.id == _shakingBlockId);
-      if (_scrollController.hasClients && duplicateIndex > 0) {
-        final estimatedPosition = duplicateIndex * 200.0;
-        _scrollController.animateTo(
-          estimatedPosition,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
+      if (mounted && _shakeController != null) {
+        _shakeController!.reset();
+        _shakeController!.forward();
       }
 
       if (Platform.isIOS) {
         Future.delayed(const Duration(milliseconds: 100), () {
-          HapticFeedback.selectionClick();
+          if (mounted) HapticFeedback.selectionClick();
         });
         Future.delayed(const Duration(milliseconds: 200), () {
-          HapticFeedback.selectionClick();
+          if (mounted) HapticFeedback.selectionClick();
         });
       }
     });
@@ -914,19 +973,51 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
 
   void _deleteBlock(String blockId) {
     if (Platform.isIOS) {
+      final brightness = MediaQuery.of(context).platformBrightness;
+      final isDark = brightness == Brightness.dark;
+
       showCupertinoDialog(
         context: context,
         builder: (context) => CupertinoAlertDialog(
-          title: Text(AppStrings.deleteBlockTitle),
-          content: Text(AppStrings.deleteBlockMessage),
+          title: Text(
+            AppStrings.deleteBlockTitle,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              fontFamily: '.SF Pro Text',
+            ),
+          ),
+          content: Text(
+            AppStrings.deleteBlockMessage,
+            style: TextStyle(
+              fontSize: 13,
+              color: CupertinoColors.systemGrey,
+              fontFamily: '.SF Pro Text',
+            ),
+          ),
           actions: [
             CupertinoDialogAction(
-              child: Text(AppStrings.cancel),
+              child: Text(
+                AppStrings.cancel,
+                style: TextStyle(
+                  fontSize: 17,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  fontFamily: '.SF Pro Text',
+                ),
+              ),
               onPressed: () => Navigator.pop(context),
             ),
             CupertinoDialogAction(
               isDestructiveAction: true,
-              child: Text(AppStrings.delete),
+              child: Text(
+                AppStrings.delete,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: '.SF Pro Text',
+                ),
+              ),
               onPressed: () {
                 HapticFeedback.mediumImpact();
                 setState(() {

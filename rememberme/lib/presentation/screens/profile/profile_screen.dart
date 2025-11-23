@@ -13,7 +13,6 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_routes.dart';
 import 'edit_profile_screen.dart';
 import 'notifications_settings_screen.dart';
-import 'privacy_settings_screen.dart';
 import 'about_screen.dart';
 import 'dart:io';
 
@@ -459,18 +458,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ),
-          _buildAndroidMenuItem(
-            context: context,
-            icon: Icons.lock_rounded,
-            title: AppStrings.privacy,
-            isDark: isDark,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const PrivacySettingsScreen(),
-              ),
-            ),
-          ),
         ] else ...[
           _buildIOSMenuItem(
             icon: Icons.notifications,
@@ -479,16 +466,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               context,
               MaterialPageRoute(
                 builder: (context) => const NotificationsSettingsScreen(),
-              ),
-            ),
-          ),
-          _buildIOSMenuItem(
-            icon: Icons.lock,
-            title: AppStrings.privacy,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const PrivacySettingsScreen(),
               ),
             ),
           ),

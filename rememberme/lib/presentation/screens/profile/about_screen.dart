@@ -40,311 +40,322 @@ class _AboutScreenState extends State<AboutScreen> {
         backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
         foregroundColor: AppColors.textLight,
       ),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 32),
-        children: [
-          // App Logo & Name Header
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 32),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: isDark
-                    ? [
-                        AppColors.primaryLight.withOpacity(0.2),
-                        const Color(0xFF121212),
-                      ]
-                    : [
-                        AppColors.primary.withOpacity(0.1),
-                        Colors.transparent,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.only(top: 0, bottom: 32),
+          children: [
+            // App Logo & Name Header
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: isDark
+                      ? [
+                          AppColors.primaryLight.withOpacity(0.2),
+                          const Color(0xFF121212),
+                        ]
+                      : [
+                          AppColors.primary.withOpacity(0.1),
+                          Colors.transparent,
+                        ],
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Logo mit Gradient und Glow
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: isDark
+                            ? [
+                                AppColors.primaryLight.withOpacity(0.4),
+                                AppColors.accent.withOpacity(0.3),
+                              ]
+                            : [
+                                AppColors.primary.withOpacity(0.15),
+                                AppColors.accent.withOpacity(0.1),
+                              ],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark
+                              ? AppColors.primaryLight.withOpacity(0.4)
+                              : AppColors.primary.withOpacity(0.2),
+                          blurRadius: 30,
+                          spreadRadius: 5,
+                          offset: const Offset(0, 8),
+                        ),
                       ],
+                    ),
+                    child: Icon(
+                      Icons.favorite_rounded,
+                      size: 64,
+                      color:
+                          isDark ? AppColors.primaryLight : AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    AppStrings.appNameRememberMe,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF1E1E1E)
+                          : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isDark
+                            ? AppColors.primaryLight.withOpacity(0.3)
+                            : Colors.grey.shade300,
+                      ),
+                    ),
+                    child: Text(
+                      '${AppStrings.version}$_version',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: isDark
+                            ? AppColors.primaryLight.withOpacity(0.9)
+                            : AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Column(
-              children: [
-                // Logo mit Gradient und Glow
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isDark
-                          ? [
-                              AppColors.primaryLight.withOpacity(0.4),
-                              AppColors.accent.withOpacity(0.3),
-                            ]
-                          : [
-                              AppColors.primary.withOpacity(0.15),
-                              AppColors.accent.withOpacity(0.1),
-                            ],
+
+            const SizedBox(height: 16),
+
+            // Info Card
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Card(
+                elevation: 0,
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color:
+                        isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    _buildListTile(
+                      context,
+                      icon: Icons.info_outline_rounded,
+                      title: AppStrings.whatIsRememberMe,
+                      subtitle: AppStrings.dignifiedPlatform,
+                      isDark: isDark,
+                      onTap: () => _showInfoDialog(
+                        context,
+                        AppStrings.aboutRememberMe,
+                        AppStrings.aboutRememberMeDescription,
+                        isDark,
+                      ),
                     ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: isDark
-                            ? AppColors.primaryLight.withOpacity(0.4)
-                            : AppColors.primary.withOpacity(0.2),
-                        blurRadius: 30,
-                        spreadRadius: 5,
-                        offset: const Offset(0, 8),
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      indent: 84,
+                      endIndent: 20,
+                      color: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : Colors.grey.shade200,
+                    ),
+                    _buildListTile(
+                      context,
+                      icon: Icons.article_outlined,
+                      title: AppStrings.termsOfService,
+                      trailing: Icons.open_in_new_rounded,
+                      isDark: isDark,
+                      onTap: () => _launchUrl('https://example.com/terms'),
+                    ),
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      indent: 84,
+                      endIndent: 20,
+                      color: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : Colors.grey.shade200,
+                    ),
+                    _buildListTile(
+                      context,
+                      icon: Icons.privacy_tip_outlined,
+                      title: AppStrings.privacyPolicy,
+                      trailing: Icons.open_in_new_rounded,
+                      isDark: isDark,
+                      onTap: () => _launchUrl('https://example.com/privacy'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Kontakt Card
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Card(
+                elevation: 0,
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color:
+                        isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    _buildListTile(
+                      context,
+                      icon: Icons.language_rounded,
+                      title: AppStrings.website,
+                      subtitle: AppStrings.websiteUrl,
+                      trailing: Icons.open_in_new_rounded,
+                      isDark: isDark,
+                      onTap: () =>
+                          _launchUrl('https://www.digital-memorial.com'),
+                    ),
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      indent: 84,
+                      endIndent: 20,
+                      color: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : Colors.grey.shade200,
+                    ),
+                    _buildListTile(
+                      context,
+                      icon: Icons.email_outlined,
+                      title: AppStrings.contact,
+                      subtitle: AppStrings.supportEmail,
+                      trailing: Icons.open_in_new_rounded,
+                      isDark: isDark,
+                      onTap: () =>
+                          _launchUrl('mailto:${AppStrings.supportEmail}'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 40),
+
+            // Social Media Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                children: [
+                  Text(
+                    AppStrings.followUs,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildSocialButton(
+                        Icons.facebook_rounded,
+                        isDark,
+                        () => _launchUrl('https://facebook.com'),
+                      ),
+                      const SizedBox(width: 16),
+                      _buildSocialButton(
+                        Icons.public_rounded,
+                        isDark,
+                        () => _launchUrl('https://twitter.com'),
+                      ),
+                      const SizedBox(width: 16),
+                      _buildSocialButton(
+                        Icons.camera_alt_rounded,
+                        isDark,
+                        () => _launchUrl('https://instagram.com'),
                       ),
                     ],
                   ),
-                  child: Icon(
-                    Icons.favorite_rounded,
-                    size: 64,
-                    color: isDark ? AppColors.primaryLight : AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  AppStrings.appNameRememberMe,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.primaryLight.withOpacity(0.3)
-                          : Colors.grey.shade300,
-                    ),
-                  ),
-                  child: Text(
-                    '${AppStrings.version}$_version',
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // Copyright
+            Center(
+              child: Column(
+                children: [
+                  Text(
+                    AppStrings.copyright,
+                    textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: isDark
-                          ? AppColors.primaryLight.withOpacity(0.9)
-                          : AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
+                          ? const Color(0xFF808080)
+                          : Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Info Card
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Card(
-              elevation: 0,
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color:
-                      isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
-                  width: 1,
-                ),
-              ),
-              child: Column(
-                children: [
-                  _buildListTile(
-                    context,
-                    icon: Icons.info_outline_rounded,
-                    title: AppStrings.whatIsRememberMe,
-                    subtitle: AppStrings.dignifiedPlatform,
-                    isDark: isDark,
-                    onTap: () => _showInfoDialog(
-                      context,
-                      AppStrings.aboutRememberMe,
-                      AppStrings.aboutRememberMeDescription,
-                      isDark,
-                    ),
-                  ),
-                  Divider(
-                    height: 1,
-                    thickness: 1,
-                    indent: 84,
-                    endIndent: 20,
-                    color:
-                        isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
-                  ),
-                  _buildListTile(
-                    context,
-                    icon: Icons.article_outlined,
-                    title: AppStrings.termsOfService,
-                    trailing: Icons.open_in_new_rounded,
-                    isDark: isDark,
-                    onTap: () => _launchUrl('https://example.com/terms'),
-                  ),
-                  Divider(
-                    height: 1,
-                    thickness: 1,
-                    indent: 84,
-                    endIndent: 20,
-                    color:
-                        isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
-                  ),
-                  _buildListTile(
-                    context,
-                    icon: Icons.privacy_tip_outlined,
-                    title: AppStrings.privacyPolicy,
-                    trailing: Icons.open_in_new_rounded,
-                    isDark: isDark,
-                    onTap: () => _launchUrl('https://example.com/privacy'),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        AppStrings.madeWith,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: isDark
+                              ? const Color(0xFF808080)
+                              : Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.favorite_rounded,
+                        size: 16,
+                        color: isDark
+                            ? AppColors.accent.withOpacity(0.9)
+                            : AppColors.error,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        AppStrings.inGermany,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: isDark
+                              ? const Color(0xFF808080)
+                              : Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Kontakt Card
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Card(
-              elevation: 0,
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color:
-                      isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
-                  width: 1,
-                ),
-              ),
-              child: Column(
-                children: [
-                  _buildListTile(
-                    context,
-                    icon: Icons.language_rounded,
-                    title: AppStrings.website,
-                    subtitle: AppStrings.websiteUrl,
-                    trailing: Icons.open_in_new_rounded,
-                    isDark: isDark,
-                    onTap: () => _launchUrl('https://www.digital-memorial.com'),
-                  ),
-                  Divider(
-                    height: 1,
-                    thickness: 1,
-                    indent: 84,
-                    endIndent: 20,
-                    color:
-                        isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
-                  ),
-                  _buildListTile(
-                    context,
-                    icon: Icons.email_outlined,
-                    title: AppStrings.contact,
-                    subtitle: AppStrings.supportEmail,
-                    trailing: Icons.open_in_new_rounded,
-                    isDark: isDark,
-                    onTap: () =>
-                        _launchUrl('mailto:${AppStrings.supportEmail}'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 40),
-
-          // Social Media Section
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Column(
-              children: [
-                Text(
-                  AppStrings.followUs,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildSocialButton(
-                      Icons.facebook_rounded,
-                      isDark,
-                      () => _launchUrl('https://facebook.com'),
-                    ),
-                    const SizedBox(width: 16),
-                    _buildSocialButton(
-                      Icons.public_rounded,
-                      isDark,
-                      () => _launchUrl('https://twitter.com'),
-                    ),
-                    const SizedBox(width: 16),
-                    _buildSocialButton(
-                      Icons.camera_alt_rounded,
-                      isDark,
-                      () => _launchUrl('https://instagram.com'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Copyright
-          Center(
-            child: Column(
-              children: [
-                Text(
-                  AppStrings.copyright,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color:
-                        isDark ? const Color(0xFF808080) : Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      AppStrings.madeWith,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: isDark
-                            ? const Color(0xFF808080)
-                            : Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Icon(
-                      Icons.favorite_rounded,
-                      size: 16,
-                      color: isDark
-                          ? AppColors.accent.withOpacity(0.9)
-                          : AppColors.error,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      AppStrings.inGermany,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: isDark
-                            ? const Color(0xFF808080)
-                            : Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

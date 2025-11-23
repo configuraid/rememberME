@@ -59,7 +59,10 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
           title: Text(
             AppStrings.enterPin,
             style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
               color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              fontFamily: '.SF Pro Text',
             ),
           ),
           content: Column(
@@ -72,6 +75,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                   color: isDark
                       ? CupertinoColors.systemGrey
                       : CupertinoColors.systemGrey2,
+                  fontFamily: '.SF Pro Text',
                 ),
               ),
               const SizedBox(height: 16),
@@ -83,7 +87,9 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                 maxLength: 4,
                 autofocus: true,
                 style: TextStyle(
+                  fontSize: 17,
                   color: isDark ? CupertinoColors.white : CupertinoColors.black,
+                  fontFamily: '.SF Pro Text',
                 ),
                 decoration: BoxDecoration(
                   color: isDark
@@ -104,10 +110,10 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
               },
               child: Text(
                 AppStrings.cancel,
-                style: TextStyle(
-                  color: isDark
-                      ? CupertinoColors.systemRed
-                      : CupertinoColors.systemRed,
+                style: const TextStyle(
+                  fontSize: 17,
+                  color: CupertinoColors.systemRed,
+                  fontFamily: '.SF Pro Text',
                 ),
               ),
             ),
@@ -121,8 +127,10 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
               child: Text(
                 AppStrings.login,
                 style: TextStyle(
+                  fontSize: 17,
                   color: isDark ? AppColors.primaryLight : AppColors.primary,
                   fontWeight: FontWeight.w600,
+                  fontFamily: '.SF Pro Text',
                 ),
               ),
             ),
@@ -237,15 +245,20 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
           title: Text(
             AppStrings.errorTitle,
             style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
               color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              fontFamily: '.SF Pro Text',
             ),
           ),
           content: Text(
             message,
             style: TextStyle(
+              fontSize: 13,
               color: isDark
                   ? CupertinoColors.systemGrey
                   : CupertinoColors.systemGrey2,
+              fontFamily: '.SF Pro Text',
             ),
           ),
           actions: [
@@ -255,7 +268,10 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
               child: Text(
                 AppStrings.ok,
                 style: TextStyle(
+                  fontSize: 17,
                   color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: '.SF Pro Text',
                 ),
               ),
             ),
@@ -660,188 +676,200 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
         }
       },
       child: CupertinoPageScaffold(
-        backgroundColor: isDark
-            ? const Color(0xFF000000) // iOS Dark Background
-            : const Color(0xFFF2F2F7), // iOS Light Background
+        backgroundColor:
+            isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7),
         navigationBar: CupertinoNavigationBar(
           backgroundColor:
               isDark ? const Color(0xFF1C1C1E).withOpacity(0.8) : null,
           middle: Text(
             AppStrings.selectProfile,
             style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
               color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              fontFamily: '.SF Pro Text',
             ),
           ),
         ),
         child: SafeArea(
-          child: _isLoading
-              ? Center(
-                  child: CupertinoActivityIndicator(
-                    radius: 20,
-                    color:
-                        isDark ? CupertinoColors.white : CupertinoColors.black,
-                  ),
-                )
-              : Column(
-                  children: [
-                    // Header mit Organisation
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 32,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: isDark
-                              ? [
-                                  AppColors.primaryLight.withOpacity(0.15),
-                                  Colors.transparent,
-                                ]
-                              : [
-                                  AppColors.primary.withOpacity(0.08),
-                                  Colors.transparent,
-                                ],
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          // Organisation Icon
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.primaryLight.withOpacity(0.2)
-                                  : AppColors.primary.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              CupertinoIcons.person_2_fill,
-                              size: 48,
-                              color: isDark
-                                  ? AppColors.primaryLight
-                                  : AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          // Organisation Name
-                          Text(
-                            widget.organization.name,
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: isDark
-                                  ? CupertinoColors.white
-                                  : CupertinoColors.black,
-                              letterSpacing: -0.5,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          // Untertitel
-                          Text(
-                            AppStrings.chooseYourProfile,
-                            style: TextStyle(
-                              fontSize: 17,
-                              color: isDark
-                                  ? CupertinoColors.systemGrey
-                                  : CupertinoColors.systemGrey,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
+          child: DefaultTextStyle(
+            style: TextStyle(
+              fontSize: 17,
+              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              fontFamily: '.SF Pro Text',
+            ),
+            child: _isLoading
+                ? Center(
+                    child: CupertinoActivityIndicator(
+                      radius: 20,
+                      color: isDark
+                          ? CupertinoColors.white
+                          : CupertinoColors.black,
                     ),
-
-                    // User Liste
-                    Expanded(
-                      child: widget.membersWithData.isEmpty
-                          ? _buildEmptyStateIOS(isDark)
-                          : ListView.builder(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
+                  )
+                : Column(
+                    children: [
+                      // Header mit Organisation
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 32,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: isDark
+                                ? [
+                                    AppColors.primaryLight.withOpacity(0.15),
+                                    Colors.transparent,
+                                  ]
+                                : [
+                                    AppColors.primary.withOpacity(0.08),
+                                    Colors.transparent,
+                                  ],
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            // Organisation Icon
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? AppColors.primaryLight.withOpacity(0.2)
+                                    : AppColors.primary.withOpacity(0.1),
+                                shape: BoxShape.circle,
                               ),
-                              itemCount: widget.membersWithData.length,
-                              itemBuilder: (context, index) {
-                                final data = widget.membersWithData[index];
-                                final user = data['user'] as UserModel;
-                                final member =
-                                    data['member'] as OrganizationMemberModel;
-                                return _buildUserCardIOS(user, member, isDark);
-                              },
+                              child: Icon(
+                                CupertinoIcons.person_2_fill,
+                                size: 48,
+                                color: isDark
+                                    ? AppColors.primaryLight
+                                    : AppColors.primary,
+                              ),
                             ),
-                    ),
-
-                    // Neues Profil Button
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF1C1C1E)
-                            : CupertinoColors.white,
-                        border: Border(
-                          top: BorderSide(
-                            color: isDark
-                                ? CupertinoColors.systemGrey3.darkColor
-                                : CupertinoColors.systemGrey4,
-                            width: 0.5,
-                          ),
+                            const SizedBox(height: 16),
+                            // Organisation Name
+                            Text(
+                              widget.organization.name,
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: isDark
+                                    ? CupertinoColors.white
+                                    : CupertinoColors.black,
+                                letterSpacing: -0.5,
+                                fontFamily: '.SF Pro Display',
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            // Untertitel
+                            Text(
+                              AppStrings.chooseYourProfile,
+                              style: TextStyle(
+                                fontSize: 17,
+                                color: CupertinoColors.systemGrey,
+                                fontWeight: FontWeight.w400,
+                                fontFamily: '.SF Pro Text',
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: isDark
-                                ? Colors.black.withOpacity(0.3)
-                                : Colors.black.withOpacity(0.05),
-                            blurRadius: 8,
-                            offset: const Offset(0, -2),
-                          ),
-                        ],
                       ),
-                      child: SafeArea(
-                        top: false,
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: CupertinoButton(
-                            padding: EdgeInsets.zero,
-                            color: isDark
-                                ? const Color(0xFF2C2C2E)
-                                : CupertinoColors.systemGrey6,
-                            borderRadius: BorderRadius.circular(12),
-                            onPressed: _createNewProfile,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  CupertinoIcons.add,
-                                  size: 22,
-                                  color: isDark
-                                      ? AppColors.primaryLight
-                                      : AppColors.primary,
+
+                      // User Liste
+                      Expanded(
+                        child: widget.membersWithData.isEmpty
+                            ? _buildEmptyStateIOS(isDark)
+                            : ListView.builder(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
                                 ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  AppStrings.createNewProfile,
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w600,
+                                itemCount: widget.membersWithData.length,
+                                itemBuilder: (context, index) {
+                                  final data = widget.membersWithData[index];
+                                  final user = data['user'] as UserModel;
+                                  final member =
+                                      data['member'] as OrganizationMemberModel;
+                                  return _buildUserCardIOS(
+                                      user, member, isDark);
+                                },
+                              ),
+                      ),
+
+                      // Neues Profil Button
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF1C1C1E)
+                              : CupertinoColors.white,
+                          border: Border(
+                            top: BorderSide(
+                              color: isDark
+                                  ? CupertinoColors.systemGrey3.darkColor
+                                  : CupertinoColors.systemGrey4,
+                              width: 0.5,
+                            ),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: isDark
+                                  ? Colors.black.withOpacity(0.3)
+                                  : Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, -2),
+                            ),
+                          ],
+                        ),
+                        child: SafeArea(
+                          top: false,
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              color: isDark
+                                  ? const Color(0xFF2C2C2E)
+                                  : CupertinoColors.systemGrey6,
+                              borderRadius: BorderRadius.circular(12),
+                              onPressed: _createNewProfile,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    CupertinoIcons.add,
+                                    size: 22,
                                     color: isDark
                                         ? AppColors.primaryLight
                                         : AppColors.primary,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    AppStrings.createNewProfile,
+                                    style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark
+                                          ? AppColors.primaryLight
+                                          : AppColors.primary,
+                                      fontFamily: '.SF Pro Text',
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+          ),
         ),
       ),
     );
@@ -868,6 +896,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: isDark ? CupertinoColors.white : CupertinoColors.black,
+                fontFamily: '.SF Pro Display',
               ),
               textAlign: TextAlign.center,
             ),
@@ -876,9 +905,8 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
               AppStrings.createFirstProfile,
               style: TextStyle(
                 fontSize: 17,
-                color: isDark
-                    ? CupertinoColors.systemGrey
-                    : CupertinoColors.systemGrey2,
+                color: CupertinoColors.systemGrey,
+                fontFamily: '.SF Pro Text',
               ),
               textAlign: TextAlign.center,
             ),
@@ -898,9 +926,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isDark
-              ? const Color(0xFF1C1C1E) // iOS Dark Card
-              : CupertinoColors.white,
+          color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
@@ -959,6 +985,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                           color: isDark
                               ? AppColors.primaryLight
                               : AppColors.primary,
+                          fontFamily: '.SF Pro Display',
                         ),
                       )
                     : null,
@@ -979,6 +1006,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                       color: isDark
                           ? CupertinoColors.white
                           : CupertinoColors.black,
+                      fontFamily: '.SF Pro Text',
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -989,18 +1017,15 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                             ? CupertinoIcons.lock_fill
                             : CupertinoIcons.lock_open_fill,
                         size: 14,
-                        color: isDark
-                            ? CupertinoColors.systemGrey
-                            : CupertinoColors.systemGrey2,
+                        color: CupertinoColors.systemGrey,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         member.roleText,
                         style: TextStyle(
                           fontSize: 15,
-                          color: isDark
-                              ? CupertinoColors.systemGrey
-                              : CupertinoColors.systemGrey2,
+                          color: CupertinoColors.systemGrey,
+                          fontFamily: '.SF Pro Text',
                         ),
                       ),
                     ],
@@ -1015,9 +1040,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
               size: 20,
               color: isSelected
                   ? (isDark ? AppColors.primaryLight : AppColors.primary)
-                  : (isDark
-                      ? CupertinoColors.systemGrey
-                      : CupertinoColors.systemGrey2),
+                  : CupertinoColors.systemGrey,
             ),
           ],
         ),

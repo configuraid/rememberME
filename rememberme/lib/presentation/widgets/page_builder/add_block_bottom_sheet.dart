@@ -63,6 +63,7 @@ class AddBlockBottomSheet extends StatelessWidget {
                         color: isDark
                             ? CupertinoColors.white
                             : CupertinoColors.black,
+                        fontFamily: '.SF Pro Display',
                       ),
                     ),
                   ),
@@ -74,15 +75,17 @@ class AddBlockBottomSheet extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppColors.primary,
+                        color:
+                            isDark ? AppColors.primaryLight : AppColors.primary,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Fertig',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: isDark ? AppColors.primaryDark : Colors.white,
+                          fontFamily: '.SF Pro Text',
                         ),
                       ),
                     ),
@@ -128,13 +131,16 @@ class AddBlockBottomSheet extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.15),
+                color: isDark
+                    ? AppColors.primaryLight.withOpacity(0.2)
+                    : AppColors.primary.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
-                child: Text(
+                child: Icon(
                   BlockTypeInfo.getIcon(type),
-                  style: const TextStyle(fontSize: 20),
+                  size: 20,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
                 ),
               ),
             ),
@@ -151,6 +157,7 @@ class AddBlockBottomSheet extends StatelessWidget {
                       color: isDark
                           ? CupertinoColors.white
                           : CupertinoColors.black,
+                      fontFamily: '.SF Pro Text',
                     ),
                   ),
                   Text(
@@ -160,6 +167,7 @@ class AddBlockBottomSheet extends StatelessWidget {
                       color: isDark
                           ? const Color(0xFF98989D)
                           : const Color(0xFF8E8E93),
+                      fontFamily: '.SF Pro Text',
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -384,9 +392,10 @@ class AddBlockBottomSheet extends StatelessWidget {
                       width: 1.5,
                     ),
                   ),
-                  child: Text(
+                  child: Icon(
                     BlockTypeInfo.getIcon(type),
-                    style: const TextStyle(fontSize: 32),
+                    size: 32,
+                    color: isDark ? AppColors.primaryLight : AppColors.primary,
                   ),
                 ),
                 const SizedBox(height: 12),

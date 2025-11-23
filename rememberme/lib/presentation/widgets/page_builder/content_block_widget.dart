@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:rememberme/core/constants/app_colors.dart';
 import 'package:rememberme/data/models/content_block_model.dart';
 import 'package:rememberme/core/constants/app_strings.dart';
 import 'dart:io';
@@ -165,9 +167,14 @@ class ContentBlockWidget extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  BlockTypeInfo.getIcon(block.type),
-                  style: const TextStyle(fontSize: 18),
+                Icon(
+                  BlockTypeInfo.getIcon(block.type), // ✅ NEUE METHODE
+                  size: 18,
+                  color: isSelected
+                      ? colorScheme.onPrimaryContainer
+                      : (isDark
+                          ? const Color(0xFFE0E0E0)
+                          : const Color(0xFF424242)),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -249,15 +256,23 @@ class ContentBlockWidget extends StatelessWidget {
   }
 
   Widget _buildIOSHeader(BuildContext context) {
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
-          Icon(Icons.drag_indicator, color: Colors.grey[400], size: 20),
+          Icon(
+            CupertinoIcons.line_horizontal_3,
+            color: isDark ? const Color(0xFF8E8E93) : const Color(0xFFC7C7CC),
+            size: 20,
+          ),
           const SizedBox(width: 8),
-          Text(
-            BlockTypeInfo.getIcon(block.type),
-            style: const TextStyle(fontSize: 20),
+          Icon(
+            BlockTypeInfo.getIcon(block.type), // ✅ NEUE METHODE
+            size: 20,
+            color: isDark ? AppColors.primaryLight : AppColors.primary,
           ),
           const SizedBox(width: 8),
           Text(
@@ -265,32 +280,42 @@ class ContentBlockWidget extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
+              color: isDark ? const Color(0xFFE5E5EA) : const Color(0xFF3C3C43),
+              fontFamily: '.SF Pro Text',
             ),
           ),
           const Spacer(),
-          IconButton(
-            icon: Icon(Icons.settings, size: 18, color: Colors.grey[600]),
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            minSize: 0,
             onPressed: onEdit,
-            tooltip: AppStrings.edit,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+            child: Icon(
+              CupertinoIcons.pencil,
+              size: 18,
+              color: isDark ? AppColors.primaryLight : AppColors.primary,
+            ),
           ),
           const SizedBox(width: 8),
-          IconButton(
-            icon: Icon(Icons.content_copy, size: 18, color: Colors.grey[600]),
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            minSize: 0,
             onPressed: onDuplicate,
-            tooltip: AppStrings.duplicate,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+            child: Icon(
+              CupertinoIcons.doc_on_doc,
+              size: 18,
+              color: isDark ? const Color(0xFF8E8E93) : const Color(0xFF8E8E93),
+            ),
           ),
           const SizedBox(width: 8),
-          IconButton(
-            icon: Icon(Icons.delete_outline, size: 18, color: Colors.red[400]),
-            onPressed: onDelete,
-            tooltip: AppStrings.delete,
+          CupertinoButton(
             padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+            minSize: 0,
+            onPressed: onDelete,
+            child: const Icon(
+              CupertinoIcons.trash,
+              size: 18,
+              color: CupertinoColors.destructiveRed,
+            ),
           ),
         ],
       ),

@@ -197,22 +197,38 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
   void _showSuccessSnackBar(String message) {
     if (Platform.isIOS) {
-      // iOS: CupertinoAlertDialog
+      final brightness = MediaQuery.of(context).platformBrightness;
+      final isDark = brightness == Brightness.dark;
+
       showCupertinoDialog(
         context: context,
         barrierDismissible: true,
         builder: (context) => CupertinoAlertDialog(
-          content: Text(message),
+          content: Text(
+            message,
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              fontFamily: '.SF Pro Text',
+            ),
+          ),
           actions: [
             CupertinoDialogAction(
-              child: Text(AppStrings.ok),
+              child: Text(
+                AppStrings.ok,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  fontFamily: '.SF Pro Text',
+                ),
+              ),
               onPressed: () => Navigator.pop(context),
             ),
           ],
         ),
       );
     } else {
-      // Android: Material Design Dialog
       final isDark = Theme.of(context).brightness == Brightness.dark;
 
       showDialog(
@@ -294,22 +310,46 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
   void _showErrorDialog(String title, String message) {
     if (Platform.isIOS) {
-      // iOS: CupertinoAlertDialog
+      final brightness = MediaQuery.of(context).platformBrightness;
+      final isDark = brightness == Brightness.dark;
+
       showCupertinoDialog(
         context: context,
         builder: (context) => CupertinoAlertDialog(
-          title: Text(title),
-          content: Text(message),
+          title: Text(
+            title,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              fontFamily: '.SF Pro Text',
+            ),
+          ),
+          content: Text(
+            message,
+            style: TextStyle(
+              fontSize: 13,
+              color: CupertinoColors.systemGrey,
+              fontFamily: '.SF Pro Text',
+            ),
+          ),
           actions: [
             CupertinoDialogAction(
-              child: Text(AppStrings.ok),
+              child: Text(
+                AppStrings.ok,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  fontFamily: '.SF Pro Text',
+                ),
+              ),
               onPressed: () => Navigator.pop(context),
             ),
           ],
         ),
       );
     } else {
-      // Android: Material Design Dialog
       final isDark = Theme.of(context).brightness == Brightness.dark;
 
       showDialog(
@@ -492,9 +532,12 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                           width: 1.5,
                         ),
                       ),
-                      child: Text(
-                        BlockTypeInfo.getIcon(widget.block.type),
-                        style: const TextStyle(fontSize: 24),
+                      child: Icon(
+                        BlockTypeInfo.getIcon(
+                            widget.block.type), // ✅ NEUE METHODE
+                        size: 24,
+                        color:
+                            isDark ? AppColors.primaryLight : AppColors.primary,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -949,22 +992,617 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     ];
   }
 
+  // ✅ NEU: Video-Upload Handler mit Fortschrittsanzeige
+  double _videoUploadProgress = 0.0;
+
+  Future<void> _handleVideoUpload() async {
+    if (_isUploading) return;
+
+    try {
+      // Video-Picker (verwendet image_picker für Videos)
+      final XFile? video = await _imagePicker.pickVideo(
+        source: ImageSource.gallery,
+        maxDuration: const Duration(seconds: 15), // Max 15 Sekunden
+      );
+
+      if (video == null) return;
+
+      // Prüfe Video-Länge (falls verfügbar)
+      final videoFile = File(video.path);
+      final fileSize = await videoFile.length();
+
+      // Größen-Check (ca. 50MB für 15 Sekunden)
+      if (fileSize > 50 * 1024 * 1024) {
+        _showErrorDialog(
+          AppStrings.uploadError,
+          'Das Video ist zu groß. Bitte wähle ein kürzeres Video (max. 15 Sekunden).',
+        );
+        return;
+      }
+
+      setState(() {
+        _isUploading = true;
+        _videoUploadProgress = 0.0;
+      });
+
+      // Upload mit Fortschrittsanzeige
+      final String downloadUrl = await _storageService.uploadBlockVideo(
+        memorialId: widget.memorialId,
+        blockId: widget.block.id,
+        videoFile: videoFile,
+        onProgress: (progress) {
+          if (mounted) {
+            setState(() {
+              _videoUploadProgress = progress;
+            });
+          }
+        },
+      );
+
+      _updateValue('url', downloadUrl);
+
+      if (mounted) {
+        _showSuccessSnackBar('Video erfolgreich hochgeladen!');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog(AppStrings.uploadError, e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+          _videoUploadProgress = 0.0;
+        });
+      }
+    }
+  }
+
   List<Widget> _buildVideoSettings() {
-    return [
-      _buildTextField(
-        label: AppStrings.videoUrl,
-        key: 'url',
-        defaultValue: '',
-        hint: AppStrings.videoUrlHint,
-      ),
-      const SizedBox(height: 20),
-      _buildTextField(
-        label: AppStrings.description,
-        key: 'caption',
-        defaultValue: '',
-        maxLines: 2,
-      ),
-    ];
+    final currentUrl = _getContent('url', '');
+    final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
+
+    if (Platform.isIOS) {
+      // ✅ iOS NATIVE UI
+      return [
+        // Video-Vorschau mit iOS-Style
+        if (currentUrl.isNotEmpty) ...[
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      color: isDark
+                          ? const Color(0xFF2C2C2E)
+                          : const Color(0xFFE5E5EA),
+                      child: Center(
+                        child: Icon(
+                          CupertinoIcons.video_camera_solid,
+                          size: 48,
+                          color: isDark
+                              ? CupertinoColors.systemGrey
+                              : CupertinoColors.systemGrey2,
+                        ),
+                      ),
+                    ),
+                    // Play Button Overlay
+                    Container(
+                      decoration: BoxDecoration(
+                        color: CupertinoColors.black.withOpacity(0.3),
+                      ),
+                      child: Center(
+                        child: Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: CupertinoColors.white.withOpacity(0.9),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            CupertinoIcons.play_fill,
+                            size: 32,
+                            color: CupertinoColors.black,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        // iOS List-Style Upload Section
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              // Upload Button
+              CupertinoButton(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                onPressed: _isUploading ? null : _handleVideoUpload,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: _isUploading
+                            ? (isDark
+                                ? const Color(0xFF2C2C2E)
+                                : const Color(0xFFF2F2F7))
+                            : AppColors.primary.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: _isUploading
+                          ? Center(
+                              child: SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator.adaptive(
+                                  strokeWidth: 2,
+                                  value: _videoUploadProgress,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Icon(
+                              CupertinoIcons.videocam_fill,
+                              size: 18,
+                              color: AppColors.primary,
+                            ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _isUploading
+                                ? 'Video wird hochgeladen...'
+                                : currentUrl.isEmpty
+                                    ? 'Video hochladen'
+                                    : 'Video ersetzen',
+                            style: TextStyle(
+                              fontSize: 17,
+                              color: isDark
+                                  ? CupertinoColors.white
+                                  : CupertinoColors.black,
+                              fontFamily: '.SF Pro Text',
+                            ),
+                          ),
+                          if (_isUploading)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                '${(_videoUploadProgress * 100).toInt()}% abgeschlossen',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: CupertinoColors.systemGrey,
+                                  fontFamily: '.SF Pro Text',
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (!_isUploading)
+                      Icon(
+                        CupertinoIcons.chevron_right,
+                        size: 20,
+                        color: CupertinoColors.systemGrey3,
+                      ),
+                  ],
+                ),
+              ),
+
+              // Progress Bar (wenn Upload läuft)
+              if (_isUploading)
+                Container(
+                  height: 3,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: LinearProgressIndicator(
+                      value: _videoUploadProgress,
+                      backgroundColor: isDark
+                          ? const Color(0xFF2C2C2E)
+                          : const Color(0xFFE5E5EA),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    ),
+                  ),
+                ),
+
+              if (_isUploading) const SizedBox(height: 12),
+
+              // Divider
+              Container(
+                height: 0.5,
+                margin: const EdgeInsets.only(left: 60),
+                color:
+                    isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8),
+              ),
+
+              // Info Row
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: CupertinoColors.systemBlue.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        CupertinoIcons.info,
+                        size: 18,
+                        color: CupertinoColors.systemBlue,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Max. 15 Sekunden • Max. 50 MB',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: CupertinoColors.systemGrey,
+                          fontFamily: '.SF Pro Text',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Beschreibung mit iOS TextField
+        Text(
+          'Beschreibung',
+          style: TextStyle(
+            fontSize: 13,
+            color: CupertinoColors.systemGrey,
+            fontFamily: '.SF Pro Text',
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: CupertinoTextField(
+            controller: _getController('caption', ''),
+            placeholder: 'Optional',
+            maxLines: 3,
+            padding: const EdgeInsets.all(16),
+            style: TextStyle(
+              fontSize: 17,
+              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              fontFamily: '.SF Pro Text',
+            ),
+            placeholderStyle: TextStyle(
+              fontSize: 17,
+              color: CupertinoColors.systemGrey3,
+              fontFamily: '.SF Pro Text',
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            onChanged: (value) => _updateValue('caption', value),
+          ),
+        ),
+
+        // Video löschen (falls vorhanden)
+        if (currentUrl.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              showCupertinoDialog(
+                context: context,
+                builder: (ctx) => CupertinoAlertDialog(
+                  title: Text(
+                    'Video entfernen?',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: isDark
+                          ? CupertinoColors.white
+                          : CupertinoColors.black,
+                      fontFamily: '.SF Pro Text',
+                    ),
+                  ),
+                  content: Text(
+                    'Das Video wird dauerhaft gelöscht.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: CupertinoColors.systemGrey,
+                      fontFamily: '.SF Pro Text',
+                    ),
+                  ),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: Text(
+                        'Abbrechen',
+                        style: TextStyle(
+                          fontSize: 17,
+                          color: AppColors.primary,
+                          fontFamily: '.SF Pro Text',
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                    CupertinoDialogAction(
+                      isDestructiveAction: true,
+                      child: Text(
+                        'Entfernen',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: '.SF Pro Text',
+                        ),
+                      ),
+                      onPressed: () {
+                        _updateValue('url', '');
+                        _storageService.deleteBlockVideo(
+                          memorialId: widget.memorialId,
+                          blockId: widget.block.id,
+                        );
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  'Video entfernen',
+                  style: TextStyle(
+                    fontSize: 17,
+                    color: CupertinoColors.systemRed,
+                    fontFamily: '.SF Pro Text',
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ];
+    } else {
+      return [
+        if (currentUrl.isNotEmpty) ...[
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? const Color(0xFF404040) : Colors.grey.shade300,
+                width: 1.5,
+              ),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.play_circle_filled,
+                    size: 64,
+                    color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Video hochgeladen',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Tippe zum Abspielen',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark
+                          ? const Color(0xFF808080)
+                          : Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+
+        // Upload-Button mit Fortschrittsanzeige
+        Container(
+          height: 56,
+          decoration: BoxDecoration(
+            gradient: _isUploading
+                ? null
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            AppColors.primaryLight,
+                            AppColors.primaryLight.withOpacity(0.85),
+                          ]
+                        : [
+                            AppColors.primary,
+                            AppColors.primary.withOpacity(0.9),
+                          ],
+                  ),
+            color: _isUploading
+                ? (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300)
+                : null,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: _isUploading
+                ? []
+                : [
+                    BoxShadow(
+                      color: isDark
+                          ? AppColors.primaryLight.withOpacity(0.3)
+                          : AppColors.primary.withOpacity(0.4),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+          ),
+          child: Stack(
+            children: [
+              if (_isUploading)
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: LinearProgressIndicator(
+                      value: _videoUploadProgress,
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isDark
+                            ? AppColors.primaryLight.withOpacity(0.3)
+                            : AppColors.primary.withOpacity(0.3),
+                      ),
+                    ),
+                  ),
+                ),
+              ElevatedButton.icon(
+                onPressed: _isUploading ? null : _handleVideoUpload,
+                icon: _isUploading
+                    ? SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          value: _videoUploadProgress,
+                          valueColor:
+                              const AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Icon(Icons.videocam_rounded, size: 22),
+                label: Text(
+                  _isUploading
+                      ? 'Uploading... ${(_videoUploadProgress * 100).toInt()}%'
+                      : currentUrl.isEmpty
+                          ? 'Video hochladen (max. 15 Sek.)'
+                          : 'Video ersetzen',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.transparent,
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: 16,
+                color: isDark ? const Color(0xFF808080) : Colors.grey.shade600,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Maximale Länge: 15 Sekunden • Max. Größe: 50MB',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color:
+                        isDark ? const Color(0xFF808080) : Colors.grey.shade600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        _buildTextField(
+          label: AppStrings.description,
+          key: 'caption',
+          defaultValue: '',
+          maxLines: 2,
+        ),
+
+        if (currentUrl.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            onPressed: () {
+              _updateValue('url', '');
+              _storageService.deleteBlockVideo(
+                memorialId: widget.memorialId,
+                blockId: widget.block.id,
+              );
+            },
+            icon: const Icon(Icons.delete_outline, size: 20),
+            label: const Text('Video entfernen'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.error,
+              side: BorderSide(color: AppColors.error.withOpacity(0.5)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ];
+    }
   }
 
   List<Widget> _buildDateSettings() {

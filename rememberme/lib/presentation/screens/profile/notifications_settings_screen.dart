@@ -33,7 +33,10 @@ class _NotificationsSettingsScreenState
       body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {
           return ListView(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: EdgeInsets.only(
+              top: 16,
+              bottom: MediaQuery.of(context).padding.bottom + 32,
+            ),
             children: [
               // Push-Benachrichtigungen Section
               _buildSectionHeader(AppStrings.pushNotifications, isDark),
@@ -139,50 +142,6 @@ class _NotificationsSettingsScreenState
                         memorialUpdates: state.settings.memorialUpdates,
                         groupInvites: value,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Nicht stören Section
-              _buildSectionHeader(AppStrings.doNotDisturb, isDark),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildSettingCard(
-                  isDark: isDark,
-                  children: [
-                    _buildSwitchTile(
-                      context: context,
-                      icon: Icons.bedtime_rounded,
-                      title: AppStrings.quietHours,
-                      subtitle: AppStrings.quietHoursSubtitle,
-                      value: false,
-                      isDark: isDark,
-                      onChanged: (value) {
-                        // TODO: Implementieren
-                      },
-                    ),
-                    Divider(
-                      height: 1,
-                      thickness: 1,
-                      indent: 84,
-                      endIndent: 20,
-                      color: isDark
-                          ? const Color(0xFF2A2A2A)
-                          : Colors.grey.shade200,
-                    ),
-                    _buildActionTile(
-                      context: context,
-                      icon: Icons.schedule_rounded,
-                      title: AppStrings.schedule,
-                      subtitle: AppStrings.scheduleTime,
-                      isDark: isDark,
-                      onTap: () {
-                        // TODO: Zeitplan-Picker öffnen
-                      },
                     ),
                   ],
                 ),

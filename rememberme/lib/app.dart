@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:rememberme/data/models/auth/organization_model.dart';
 import 'package:rememberme/presentation/screens/auth/user_selection_screen.dart';
 import 'package:rememberme/presentation/screens/auth/profile_creation_screen.dart';
+import 'package:rememberme/presentation/screens/dashboard/dashboard_screen.dart';
 import 'package:rememberme/presentation/screens/memorial/memorial_create_screen.dart';
 import 'package:rememberme/presentation/screens/visual_builder/visual_builder_screen.dart';
 import 'package:rememberme/data/models/memorial_page_model.dart';
@@ -11,7 +12,6 @@ import 'core/theme/app_theme.dart';
 import 'core/constants/app_routes.dart';
 import 'presentation/screens/splash_screen.dart';
 import 'presentation/screens/auth/login_screen.dart';
-import 'presentation/screens/dashboard/dashboard_screen.dart';
 import 'presentation/screens/memorial/memorial_screen.dart';
 import 'presentation/screens/profile/profile_screen.dart';
 
@@ -20,21 +20,6 @@ class MemorialApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (Platform.isIOS) {
-      return CupertinoApp(
-        title: 'Digital Memorial',
-        theme: AppTheme.cupertinoTheme,
-        initialRoute: AppRoutes.splash,
-        onGenerateRoute: _onGenerateRoute,
-        debugShowCheckedModeBanner: false,
-        localizationsDelegates: const [
-          DefaultMaterialLocalizations.delegate,
-          DefaultCupertinoLocalizations.delegate,
-          DefaultWidgetsLocalizations.delegate,
-        ],
-      );
-    }
-
     return MaterialApp(
       title: 'Digital Memorial',
       theme: AppTheme.lightTheme,
@@ -43,6 +28,11 @@ class MemorialApp extends StatelessWidget {
       initialRoute: AppRoutes.splash,
       onGenerateRoute: _onGenerateRoute,
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        DefaultMaterialLocalizations.delegate,
+        DefaultCupertinoLocalizations.delegate,
+        DefaultWidgetsLocalizations.delegate,
+      ],
     );
   }
 
@@ -60,7 +50,6 @@ class MemorialApp extends StatelessWidget {
         page = const LoginScreen();
         break;
 
-      // ✅ NEU: User Selection Route
       case AppRoutes.userSelection:
         final args = settings.arguments as Map<String, dynamic>?;
         if (args == null) {
@@ -74,7 +63,6 @@ class MemorialApp extends StatelessWidget {
         );
         break;
 
-      // ✅ NEU: Profile Creation Route
       case AppRoutes.profileCreation:
         final organization = settings.arguments as OrganizationModel?;
         if (organization == null) {
@@ -115,7 +103,6 @@ class MemorialApp extends StatelessWidget {
         return null;
     }
 
-    // ✅ Platform-spezifische Routes
     if (Platform.isIOS) {
       return CupertinoPageRoute(
         builder: (_) => page,

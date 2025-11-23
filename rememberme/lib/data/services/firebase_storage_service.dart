@@ -224,4 +224,80 @@ class FirebaseStorageService {
       // Don't rethrow - file might not exist
     }
   }
+
+  Future<String> uploadBlockVideo({
+    required String memorialId,
+    required String blockId,
+    required File videoFile,
+    Function(double)? onProgress,
+  }) async {
+    try {
+      print('📤 Uploading video for block: $blockId');
+
+      // Check file size (max 50MB for 15 second video)
+      final fileSize = await videoFile.length();
+      final maxSize = 50 * 1024 * 1024; // 50MB in bytes
+
+      if (fileSize > maxSize) {
+        throw Exception('Video ist zu groß. Maximale Größe: 50MB');
+      }
+
+      // Build storage path
+      final String path = 'memorials/$memorialId/blocks/$blockId/video.mp4';
+
+      // Create reference
+      final Reference ref = _storage.ref().child(path);
+
+      // Upload file with progress tracking
+      final UploadTask uploadTask = ref.putFile(
+        videoFile,
+        SettableMetadata(
+          contentType: 'video/mp4',
+          customMetadata: {
+            'memorialId': memorialId,
+            'blockId': blockId,
+            'uploadedAt': DateTime.now().toIso8601String(),
+          },
+        ),
+      );
+
+      // Track progress
+      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        onProgress?.call(progress);
+        print('📊 Upload progress: ${(progress * 100).toStringAsFixed(1)}%');
+      });
+
+      // Wait for upload to complete
+      final TaskSnapshot snapshot = await uploadTask;
+
+      // Get download URL
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+
+      print('✅ Video uploaded successfully: $downloadUrl');
+      return downloadUrl;
+    } catch (e) {
+      print('❌ Error uploading video: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete video for a content block
+  Future<void> deleteBlockVideo({
+    required String memorialId,
+    required String blockId,
+  }) async {
+    try {
+      print('🗑️ Deleting video for block: $blockId');
+
+      final String path = 'memorials/$memorialId/blocks/$blockId/video.mp4';
+      final Reference ref = _storage.ref().child(path);
+
+      await ref.delete();
+      print('✅ Video deleted successfully');
+    } catch (e) {
+      print('❌ Error deleting video: $e');
+      // Don't rethrow - file might not exist
+    }
+  }
 }
