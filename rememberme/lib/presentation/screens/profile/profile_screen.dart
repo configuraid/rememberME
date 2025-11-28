@@ -12,7 +12,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_routes.dart';
 import 'edit_profile_screen.dart';
-import 'notifications_settings_screen.dart';
 import 'about_screen.dart';
 import 'dart:io';
 
@@ -444,32 +443,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           height: 1,
           color: isDark ? const Color(0xFF49454F) : const Color(0xFFCAC4D0),
         ),
-        _buildMenuHeader(AppStrings.settings, isDark),
-        if (Platform.isAndroid) ...[
-          _buildAndroidMenuItem(
-            context: context,
-            icon: Icons.notifications_rounded,
-            title: AppStrings.notifications,
-            isDark: isDark,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const NotificationsSettingsScreen(),
-              ),
-            ),
-          ),
-        ] else ...[
-          _buildIOSMenuItem(
-            icon: Icons.notifications,
-            title: AppStrings.notifications,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const NotificationsSettingsScreen(),
-              ),
-            ),
-          ),
-        ],
         Divider(
           height: 1,
           color: isDark ? const Color(0xFF49454F) : const Color(0xFFCAC4D0),

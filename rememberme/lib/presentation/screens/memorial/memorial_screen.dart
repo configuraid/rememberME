@@ -6,6 +6,7 @@ import 'package:rememberme/business_logic/auth/auth_bloc.dart';
 import 'package:rememberme/business_logic/memorial/memorial_bloc.dart';
 import 'package:rememberme/business_logic/memorial/memorial_event.dart';
 import 'package:rememberme/business_logic/memorial/memorial_state.dart';
+import 'package:rememberme/presentation/widgets/memorial/paginatedContentPreview.dart';
 import '../../../data/models/memorial_page_model.dart' hide MemorialStatus;
 import '../../../data/models/content_block_model.dart';
 import '../../../core/constants/app_colors.dart';
@@ -25,13 +26,16 @@ class MemorialDetailScreen extends StatelessWidget {
         if (state.status == MemorialStatus.success) {
           if (state.memorials.isEmpty) {
             Navigator.of(context).popUntil((route) => route.isFirst);
-          } else {
-            Navigator.of(context).pop();
           }
         }
 
         if (state.hasError && state.errorMessage != null) {
           _showErrorSnackBar(context, state.errorMessage!);
+        }
+
+        if (state.status == MemorialStatus.success &&
+            state.successMessage != null) {
+          _showSuccessSnackBar(context, state.successMessage!);
         }
       },
       child: BlocBuilder<MemorialBloc, MemorialState>(
@@ -66,10 +70,15 @@ class MemorialDetailScreen extends StatelessWidget {
             return const MemorialCreateScreen();
           }
 
+          final updatedMemorial = state.memorials.firstWhere(
+            (m) => m.id == memorialData.id,
+            orElse: () => memorialData,
+          );
+
           if (Platform.isIOS) {
-            return _buildIOSView(context, memorialData);
+            return _buildIOSView(context, updatedMemorial);
           }
-          return _buildAndroidView(context, memorialData);
+          return _buildAndroidView(context, updatedMemorial);
         },
       ),
     );
@@ -130,6 +139,23 @@ class MemorialDetailScreen extends StatelessWidget {
     }
   }
 
+  void _showSuccessSnackBar(BuildContext context, String message) {
+    if (Platform.isIOS) {
+      return;
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+  }
+
   Widget _buildLoadingScreen(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -176,7 +202,6 @@ class MemorialDetailScreen extends StatelessWidget {
     );
   }
 
-  // ===== ANDROID (Material Design) =====
   Widget _buildAndroidView(BuildContext context, MemorialPageModel memorial) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -207,7 +232,6 @@ class MemorialDetailScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Edit Button
                       _buildPrimaryButton(
                         context: context,
                         icon: Icons.edit_rounded,
@@ -217,8 +241,6 @@ class MemorialDetailScreen extends StatelessWidget {
                             _navigateToPageBuilder(context, memorial),
                       ),
                       const SizedBox(height: 12),
-
-                      // Preview Button
                       _buildSecondaryButton(
                         context: context,
                         icon: Icons.visibility_outlined,
@@ -227,12 +249,8 @@ class MemorialDetailScreen extends StatelessWidget {
                         onPressed: () => _showPreview(context, memorial),
                       ),
                       const SizedBox(height: 24),
-
-                      // Content Preview
                       _buildContentPreview(context, memorial, isDark),
                       const SizedBox(height: 24),
-
-                      // Actions Section
                       _buildActionsSection(context, memorial, isDark),
                       const SizedBox(height: 32),
                     ],
@@ -246,7 +264,6 @@ class MemorialDetailScreen extends StatelessWidget {
     );
   }
 
-  // ===== iOS (Cupertino Design) =====
   Widget _buildIOSView(BuildContext context, MemorialPageModel memorial) {
     final brightness = CupertinoTheme.brightnessOf(context);
     final isDark = brightness == Brightness.dark;
@@ -478,41 +495,70 @@ class MemorialDetailScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Icon Container
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isDark
-                  ? const Color(0xFF2A2A2A)
-                  : AppColors.accent.withOpacity(0.1),
-              border: Border.all(
-                color: isDark
-                    ? const Color(0xFF404040)
-                    : AppColors.accent.withOpacity(0.4),
-                width: 3,
+          Stack(
+            children: [
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDark
+                      ? const Color(0xFF2A2A2A)
+                      : AppColors.accent.withOpacity(0.1),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF404040)
+                        : AppColors.accent.withOpacity(0.4),
+                    width: 3,
+                  ),
+                  boxShadow: isDark
+                      ? []
+                      : [
+                          BoxShadow(
+                            color: AppColors.accent.withOpacity(0.3),
+                            blurRadius: 24,
+                            spreadRadius: 2,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                ),
+                child: Icon(
+                  isIOS ? CupertinoIcons.heart_fill : Icons.favorite_rounded,
+                  size: 56,
+                  color: isDark ? const Color(0xFF707070) : AppColors.accent,
+                ),
               ),
-              boxShadow: isDark
-                  ? []
-                  : [
-                      BoxShadow(
-                        color: AppColors.accent.withOpacity(0.3),
-                        blurRadius: 24,
-                        spreadRadius: 2,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-            ),
-            child: Icon(
-              isIOS ? CupertinoIcons.heart_fill : Icons.favorite_rounded,
-              size: 56,
-              color: isDark ? const Color(0xFF707070) : AppColors.accent,
-            ),
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: memorial.isPublic
+                        ? Colors.green
+                        : (isDark
+                            ? const Color(0xFF404040)
+                            : AppColors.primary),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF121212) : Colors.white,
+                      width: 2,
+                    ),
+                  ),
+                  child: Icon(
+                    memorial.isPublic
+                        ? (isIOS ? CupertinoIcons.globe : Icons.public_rounded)
+                        : (isIOS
+                            ? CupertinoIcons.lock_fill
+                            : Icons.lock_rounded),
+                    size: 14,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
-
-          // Name
           Text(
             memorial.name,
             style: isIOS
@@ -532,8 +578,6 @@ class MemorialDetailScreen extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
-
-          // Lifespan Badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
@@ -618,7 +662,6 @@ class MemorialDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Column(
           children: [
-            // Icon Container
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -683,6 +726,28 @@ class MemorialDetailScreen extends StatelessWidget {
       );
     }
 
+    if (memorial.contentBlocks.length > 10) {
+      return PaginatedContentPreview(
+        memorial: memorial,
+        isDark: isDark,
+        theme: theme,
+        isIOS: isIOS,
+        getBlockIcon: _getBlockIcon,
+        getBlockTypeName: _getBlockTypeName,
+      );
+    }
+
+    // Standard-Ansicht für 10 oder weniger Elemente
+    return _buildStandardContentGrid(context, memorial, isDark, theme, isIOS);
+  }
+
+  Widget _buildStandardContentGrid(
+    BuildContext context,
+    MemorialPageModel memorial,
+    bool isDark,
+    ThemeData theme,
+    bool isIOS,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
@@ -705,89 +770,8 @@ class MemorialDetailScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header mit Titel und Count Badge
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF2A2A2A)
-                          : AppColors.primary.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isDark
-                            ? const Color(0xFF404040)
-                            : AppColors.primary.withOpacity(0.2),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Icon(
-                      isIOS
-                          ? CupertinoIcons.square_grid_2x2
-                          : Icons.widgets_rounded,
-                      size: 20,
-                      color:
-                          isDark ? const Color(0xFF909090) : AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    AppStrings.contents,
-                    style: isIOS
-                        ? TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? CupertinoColors.white
-                                : CupertinoColors.black,
-                            fontFamily: '.SF Pro Display',
-                          )
-                        : theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? AppColors.textLight
-                                : AppColors.textPrimary,
-                            letterSpacing: 0.15,
-                          ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF2A2A2A)
-                      : AppColors.primary.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDark
-                        ? const Color(0xFF404040)
-                        : AppColors.primary.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  '${memorial.contentBlocks.length}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? const Color(0xFFB0B0B0) : AppColors.primary,
-                    fontFamily: isIOS ? '.SF Pro Text' : null,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          _buildContentHeader(memorial, isDark, theme, isIOS),
           const SizedBox(height: 20),
-
-          // Content Blocks Grid
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -800,85 +784,175 @@ class MemorialDetailScreen extends StatelessWidget {
             itemCount: memorial.contentBlocks.length,
             itemBuilder: (context, index) {
               final block = memorial.contentBlocks[index];
-
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF252525) : Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color:
-                        isDark ? const Color(0xFF383838) : Colors.grey.shade300,
-                    width: 1.5,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    // Nummer Badge - ✅ HIER WAR DAS PROBLEM!
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF383838)
-                            : AppColors.primary.withOpacity(0.12),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${index + 1}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? const Color(0xFFB0B0B0)
-                                : AppColors.primary,
-                            decoration: TextDecoration.none,
-                            fontFamily:
-                                isIOS ? '.SF Pro Text' : null, // ✅ LÖSUNG!
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Icon
-                    Icon(
-                      _getBlockIcon(block.type, isIOS),
-                      size: 16,
-                      color:
-                          isDark ? const Color(0xFF909090) : AppColors.primary,
-                    ),
-                    const SizedBox(width: 6),
-                    // Text
-                    Expanded(
-                      child: Text(
-                        _getBlockTypeName(block.type),
-                        style: isIOS
-                            ? TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? const Color(0xFFD0D0D0)
-                                    : CupertinoColors.black,
-                                fontFamily: '.SF Pro Text',
-                              )
-                            : theme.textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                                color: isDark
-                                    ? const Color(0xFFD0D0D0)
-                                    : AppColors.textPrimary,
-                              ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
+              return _buildContentBlockItem(
+                block: block,
+                index: index,
+                isDark: isDark,
+                theme: theme,
+                isIOS: isIOS,
               );
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContentHeader(
+    MemorialPageModel memorial,
+    bool isDark,
+    ThemeData theme,
+    bool isIOS,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF2A2A2A)
+                    : AppColors.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF404040)
+                      : AppColors.primary.withOpacity(0.2),
+                  width: 1.5,
+                ),
+              ),
+              child: Icon(
+                isIOS ? CupertinoIcons.square_grid_2x2 : Icons.widgets_rounded,
+                size: 20,
+                color: isDark ? const Color(0xFF909090) : AppColors.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              AppStrings.contents,
+              style: isIOS
+                  ? TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: isDark
+                          ? CupertinoColors.white
+                          : CupertinoColors.black,
+                      fontFamily: '.SF Pro Display',
+                    )
+                  : theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                      letterSpacing: 0.15,
+                    ),
+            ),
+          ],
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF2A2A2A)
+                : AppColors.primary.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark
+                  ? const Color(0xFF404040)
+                  : AppColors.primary.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            '${memorial.contentBlocks.length}',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: isDark ? const Color(0xFFB0B0B0) : AppColors.primary,
+              fontFamily: isIOS ? '.SF Pro Text' : null,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContentBlockItem({
+    required ContentBlock block,
+    required int index,
+    required bool isDark,
+    required ThemeData theme,
+    required bool isIOS,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 12,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF252525) : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? const Color(0xFF383838) : Colors.grey.shade300,
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF383838)
+                  : AppColors.primary.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                '${index + 1}',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? const Color(0xFFB0B0B0) : AppColors.primary,
+                  decoration: TextDecoration.none,
+                  fontFamily: isIOS ? '.SF Pro Text' : null,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Icon(
+            _getBlockIcon(block.type, isIOS),
+            size: 16,
+            color: isDark ? const Color(0xFF909090) : AppColors.primary,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              _getBlockTypeName(block.type),
+              style: isIOS
+                  ? TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isDark
+                          ? const Color(0xFFD0D0D0)
+                          : CupertinoColors.black,
+                      fontFamily: '.SF Pro Text',
+                    )
+                  : theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: isDark
+                          ? const Color(0xFFD0D0D0)
+                          : AppColors.textPrimary,
+                    ),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -893,7 +967,6 @@ class MemorialDetailScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Header
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 12),
           child: Row(
@@ -942,7 +1015,11 @@ class MemorialDetailScreen extends StatelessWidget {
           ),
         ),
 
-        // Delete Action Tile
+        // Visibility Toggle
+        _buildVisibilityToggleTile(context, memorial, isDark),
+        const SizedBox(height: 12),
+
+        // Delete Action
         _buildActionTile(
           context,
           isIOS ? CupertinoIcons.trash : Icons.delete_outline_rounded,
@@ -953,6 +1030,143 @@ class MemorialDetailScreen extends StatelessWidget {
           isDestructive: true,
         ),
       ],
+    );
+  }
+
+  Widget _buildVisibilityToggleTile(
+      BuildContext context, MemorialPageModel memorial, bool isDark) {
+    final theme = Theme.of(context);
+    final isIOS = Platform.isIOS;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: memorial.isPublic
+                  ? Colors.green.withOpacity(0.12)
+                  : (isDark
+                      ? const Color(0xFF2A2A2A)
+                      : AppColors.primary.withOpacity(0.08)),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: memorial.isPublic
+                    ? Colors.green.withOpacity(0.3)
+                    : (isDark
+                        ? const Color(0xFF404040)
+                        : AppColors.primary.withOpacity(0.2)),
+                width: 1.5,
+              ),
+            ),
+            child: Icon(
+              memorial.isPublic
+                  ? (isIOS ? CupertinoIcons.globe : Icons.public_rounded)
+                  : (isIOS ? CupertinoIcons.lock_fill : Icons.lock_rounded),
+              color: memorial.isPublic
+                  ? Colors.green
+                  : (isDark ? const Color(0xFF909090) : AppColors.primary),
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Sichtbarkeit',
+                  style: isIOS
+                      ? TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? CupertinoColors.white
+                              : CupertinoColors.black,
+                          fontFamily: '.SF Pro Text',
+                        )
+                      : theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? AppColors.textLight
+                              : AppColors.textPrimary,
+                          letterSpacing: 0.15,
+                        ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  memorial.isPublic
+                      ? 'Öffentlich – Jeder kann die Seite sehen'
+                      : 'Privat – Nur eingeladene Personen',
+                  style: isIOS
+                      ? TextStyle(
+                          fontSize: 15,
+                          color: CupertinoColors.systemGrey,
+                          height: 1.4,
+                          fontFamily: '.SF Pro Text',
+                        )
+                      : theme.textTheme.bodyMedium?.copyWith(
+                          color: isDark
+                              ? const Color(0xFF909090)
+                              : AppColors.textSecondary,
+                          height: 1.4,
+                        ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          isIOS
+              ? CupertinoSwitch(
+                  value: memorial.isPublic,
+                  onChanged: (value) {
+                    context.read<MemorialBloc>().add(
+                          MemorialVisibilityToggleRequested(
+                            memorialId: memorial.id,
+                            isPublic: value,
+                          ),
+                        );
+                  },
+                  activeTrackColor: CupertinoColors.systemGreen,
+                )
+              : Switch(
+                  value: memorial.isPublic,
+                  onChanged: (value) {
+                    context.read<MemorialBloc>().add(
+                          MemorialVisibilityToggleRequested(
+                            memorialId: memorial.id,
+                            isPublic: value,
+                          ),
+                        );
+                  },
+                  activeColor: Colors.green,
+                  activeTrackColor: Colors.green.withOpacity(0.3),
+                  inactiveThumbColor:
+                      isDark ? const Color(0xFF606060) : Colors.grey.shade400,
+                  inactiveTrackColor:
+                      isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300,
+                ),
+        ],
+      ),
     );
   }
 
@@ -1006,7 +1220,6 @@ class MemorialDetailScreen extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           child: Row(
             children: [
-              // Icon Container
               Container(
                 width: 48,
                 height: 48,
@@ -1035,8 +1248,6 @@ class MemorialDetailScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-
-              // Text Content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1085,8 +1296,6 @@ class MemorialDetailScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-
-              // Arrow Icon
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
@@ -1305,7 +1514,6 @@ class MemorialDetailScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Header
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -1357,8 +1565,6 @@ class MemorialDetailScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-
-                // Content
                 Padding(
                   padding: const EdgeInsets.all(24),
                   child: Text(
@@ -1372,8 +1578,6 @@ class MemorialDetailScreen extends StatelessWidget {
                         ),
                   ),
                 ),
-
-                // Actions
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                   child: Row(

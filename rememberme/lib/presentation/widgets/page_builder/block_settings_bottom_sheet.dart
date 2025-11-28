@@ -533,8 +533,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                         ),
                       ),
                       child: Icon(
-                        BlockTypeInfo.getIcon(
-                            widget.block.type), // ✅ NEUE METHODE
+                        BlockTypeInfo.getIcon(widget.block.type),
                         size: 24,
                         color:
                             isDark ? AppColors.primaryLight : AppColors.primary,
@@ -992,7 +991,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     ];
   }
 
-  // ✅ NEU: Video-Upload Handler mit Fortschrittsanzeige
   double _videoUploadProgress = 0.0;
 
   Future<void> _handleVideoUpload() async {
@@ -1063,7 +1061,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     if (Platform.isIOS) {
-      // ✅ iOS NATIVE UI
       return [
         // Video-Vorschau mit iOS-Style
         if (currentUrl.isNotEmpty) ...[

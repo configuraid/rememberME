@@ -8,38 +8,19 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
 
   MemorialBloc({required this.memorialRepository})
       : super(MemorialState.initial()) {
-    // Gedenkseiten laden
     on<MemorialLoadRequested>(_onLoadMemorials);
-
-    // Einzelne Gedenkseite laden
     on<MemorialDetailLoadRequested>(_onLoadMemorialDetail);
-
-    // Neue Gedenkseite erstellen
     on<MemorialCreateRequested>(_onCreateMemorial);
-
-    // Gedenkseite aktualisieren
     on<MemorialUpdateRequested>(_onUpdateMemorial);
-
-    // Gedenkseite löschen
     on<MemorialDeleteRequested>(_onDeleteMemorial);
-
-    // Content-Block hinzufügen
+    on<MemorialVisibilityToggleRequested>(_onToggleVisibility);
     on<MemorialContentBlockAddRequested>(_onAddContentBlock);
-
-    // Content-Block aktualisieren
     on<MemorialContentBlockUpdateRequested>(_onUpdateContentBlock);
-
-    // Content-Block löschen
     on<MemorialContentBlockDeleteRequested>(_onDeleteContentBlock);
-
-    // Gedenkseite veröffentlichen
     on<MemorialPublishRequested>(_onPublishMemorial);
-
-    // Gruppenmitglied einladen
     on<MemorialInviteMemberRequested>(_onInviteMember);
   }
 
-  // ✅ FIX: Gedenkseiten laden Handler - nutzt jetzt organizationId
   Future<void> _onLoadMemorials(
     MemorialLoadRequested event,
     Emitter<MemorialState> emit,
@@ -47,7 +28,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(MemorialState.loading());
 
     try {
-      // ✅ GEÄNDERT: Nutze getMemorialsByOrganization statt getMemorialsByUserId
       final memorials = await memorialRepository
           .getMemorialsByOrganization(event.organizationId);
       emit(MemorialState.loaded(memorials));
@@ -57,7 +37,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     }
   }
 
-  // Einzelne Gedenkseite laden Handler
   Future<void> _onLoadMemorialDetail(
     MemorialDetailLoadRequested event,
     Emitter<MemorialState> emit,
@@ -82,7 +61,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     }
   }
 
-  // ✅ FIX: Neue Gedenkseite erstellen Handler - Memorials neu laden mit organizationId
   Future<void> _onCreateMemorial(
     MemorialCreateRequested event,
     Emitter<MemorialState> emit,
@@ -97,9 +75,9 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
         templateId: event.templateId,
         birthDate: event.birthDate,
         deathDate: event.deathDate,
+        isPublic: event.isPublic,
       );
 
-      // ✅ GEÄNDERT: Alle Gedenkseiten mit organizationId neu laden
       final memorials = await memorialRepository
           .getMemorialsByOrganization(event.organizationId);
 
@@ -113,7 +91,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     }
   }
 
-  // Gedenkseite aktualisieren Handler
   Future<void> _onUpdateMemorial(
     MemorialUpdateRequested event,
     Emitter<MemorialState> emit,
@@ -124,7 +101,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
       final updatedMemorial =
           await memorialRepository.updateMemorial(event.memorial);
 
-      // Liste aktualisieren
       final updatedMemorials = state.memorials.map((m) {
         return m.id == updatedMemorial.id ? updatedMemorial : m;
       }).toList();
@@ -139,7 +115,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     }
   }
 
-  // Gedenkseite löschen Handler
   Future<void> _onDeleteMemorial(
     MemorialDeleteRequested event,
     Emitter<MemorialState> emit,
@@ -149,7 +124,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     try {
       await memorialRepository.deleteMemorial(event.memorialId);
 
-      // Liste aktualisieren
       final updatedMemorials =
           state.memorials.where((m) => m.id != event.memorialId).toList();
 
@@ -163,7 +137,36 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     }
   }
 
-  // Content-Block hinzufügen Handler
+  Future<void> _onToggleVisibility(
+    MemorialVisibilityToggleRequested event,
+    Emitter<MemorialState> emit,
+  ) async {
+    emit(state.copyWith(status: MemorialStatus.updating));
+
+    try {
+      final updatedMemorial = await memorialRepository.updateMemorialVisibility(
+        event.memorialId,
+        event.isPublic,
+      );
+
+      final updatedMemorials = state.memorials.map((m) {
+        return m.id == updatedMemorial.id ? updatedMemorial : m;
+      }).toList();
+
+      final message = event.isPublic
+          ? 'Gedenkseite ist jetzt öffentlich'
+          : 'Gedenkseite ist jetzt privat';
+
+      emit(MemorialState.success(
+        message,
+        memorials: updatedMemorials,
+      ).copyWith(selectedMemorial: updatedMemorial));
+    } catch (e) {
+      emit(MemorialState.error(
+          'Fehler beim Ändern der Sichtbarkeit: ${e.toString()}'));
+    }
+  }
+
   Future<void> _onAddContentBlock(
     MemorialContentBlockAddRequested event,
     Emitter<MemorialState> emit,
@@ -176,7 +179,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
         event.block,
       );
 
-      // Liste aktualisieren
       final updatedMemorials = state.memorials.map((m) {
         return m.id == updatedMemorial.id ? updatedMemorial : m;
       }).toList();
@@ -191,7 +193,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     }
   }
 
-  // Content-Block aktualisieren Handler
   Future<void> _onUpdateContentBlock(
     MemorialContentBlockUpdateRequested event,
     Emitter<MemorialState> emit,
@@ -204,7 +205,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
         event.block,
       );
 
-      // Liste aktualisieren
       final updatedMemorials = state.memorials.map((m) {
         return m.id == updatedMemorial.id ? updatedMemorial : m;
       }).toList();
@@ -219,7 +219,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     }
   }
 
-  // Content-Block löschen Handler
   Future<void> _onDeleteContentBlock(
     MemorialContentBlockDeleteRequested event,
     Emitter<MemorialState> emit,
@@ -232,7 +231,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
         event.blockId,
       );
 
-      // Liste aktualisieren
       final updatedMemorials = state.memorials.map((m) {
         return m.id == updatedMemorial.id ? updatedMemorial : m;
       }).toList();
@@ -247,7 +245,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     }
   }
 
-  // Gedenkseite veröffentlichen Handler
   Future<void> _onPublishMemorial(
     MemorialPublishRequested event,
     Emitter<MemorialState> emit,
@@ -258,7 +255,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
       final publishedMemorial =
           await memorialRepository.publishMemorial(event.memorialId);
 
-      // Liste aktualisieren
       final updatedMemorials = state.memorials.map((m) {
         return m.id == publishedMemorial.id ? publishedMemorial : m;
       }).toList();
@@ -273,7 +269,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     }
   }
 
-  // Gruppenmitglied einladen Handler
   Future<void> _onInviteMember(
     MemorialInviteMemberRequested event,
     Emitter<MemorialState> emit,
@@ -281,10 +276,6 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(state.copyWith(status: MemorialStatus.updating));
 
     try {
-      // ⚠️ HINWEIS: Diese Methode existiert nicht mehr im neuen Repository
-      // Du musst diese Funktionalität über OrganizationRepository implementieren
-      // Hier als Platzhalter gelassen
-
       emit(state.copyWith(
         status: MemorialStatus.error,
         errorMessage:

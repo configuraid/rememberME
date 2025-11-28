@@ -39,10 +39,8 @@ class _SplashScreenState extends State<SplashScreen>
 
     _animationController.forward();
 
-    // Warte auf Auth-Status (wird automatisch im AuthBloc gemacht)
-    // Nach Animation navigieren wir basierend auf dem State
     Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return; // ✅ Wichtig: Prüfen ob Widget noch existiert!
+      if (!mounted) return;
 
       final authState = context.read<AuthBloc>().state;
 

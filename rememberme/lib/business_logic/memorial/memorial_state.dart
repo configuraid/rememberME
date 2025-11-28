@@ -28,17 +28,14 @@ class MemorialState extends Equatable {
     this.successMessage,
   });
 
-  // Initial State
   factory MemorialState.initial() {
     return const MemorialState(status: MemorialStatus.initial);
   }
 
-  // Loading State
   factory MemorialState.loading() {
     return const MemorialState(status: MemorialStatus.loading);
   }
 
-  // Loaded State
   factory MemorialState.loaded(List<MemorialPageModel> memorials) {
     return MemorialState(
       status: MemorialStatus.loaded,
@@ -46,7 +43,6 @@ class MemorialState extends Equatable {
     );
   }
 
-  // Success State
   factory MemorialState.success(String message,
       {List<MemorialPageModel>? memorials}) {
     return MemorialState(
@@ -56,7 +52,6 @@ class MemorialState extends Equatable {
     );
   }
 
-  // Error State
   factory MemorialState.error(String message) {
     return MemorialState(
       status: MemorialStatus.error,
@@ -64,7 +59,6 @@ class MemorialState extends Equatable {
     );
   }
 
-  // Getter
   bool get isLoading =>
       status == MemorialStatus.loading ||
       status == MemorialStatus.creating ||
@@ -75,7 +69,6 @@ class MemorialState extends Equatable {
   bool get hasError => status == MemorialStatus.error;
   bool get isSuccess => status == MemorialStatus.success;
 
-  // CopyWith
   MemorialState copyWith({
     MemorialStatus? status,
     List<MemorialPageModel>? memorials,

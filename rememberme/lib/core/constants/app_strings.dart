@@ -323,7 +323,7 @@ class AppStrings {
   static const String unsavedChangesMessage =
       'Du hast ungespeicherte Änderungen. Möchtest du wirklich zurück?';
   static const String notSaved = 'Nicht gespeichert';
-  static const String pageSaved = '✓ Seite gespeichert';
+  static const String pageSaved = 'Seite gespeichert';
 
   // Validation
   static const String requiredField = 'Dieses Feld ist erforderlich';

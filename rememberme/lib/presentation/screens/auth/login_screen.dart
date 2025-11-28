@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:rememberme/business_logic/auth/auth_bloc.dart';
 import 'package:rememberme/business_logic/auth/auth_event.dart';
 import 'package:rememberme/business_logic/auth/auth_state.dart';
-import 'package:rememberme/presentation/widgets/common/custom_text_field.dart';
 import 'dart:io';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_routes.dart';
-import '../../../core/utils/validators.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,65 +19,43 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _authKeyController = TextEditingController();
   bool _isLoading = false;
-
-  @override
-  void dispose() {
-    _authKeyController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      context.read<AuthBloc>().add(
-            AuthLoginWithKeyRequested(_authKeyController.text),
-          );
-    } catch (e) {
-      if (mounted) {
-        _showError(e.toString());
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Future<void> _handleQRCodeScan() async {
-    _showError(AppStrings.qrScannerNotImplemented);
-  }
 
   void _showError(String message) {
     if (Platform.isIOS) {
+      final brightness = MediaQuery.of(context).platformBrightness;
+      final isDark = brightness == Brightness.dark;
+
       showCupertinoDialog(
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
           title: Text(
             AppStrings.errorTitle,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
+              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              fontFamily: '.SF Pro Text',
             ),
           ),
           content: Text(
             message,
             style: const TextStyle(
               fontSize: 13,
+              color: CupertinoColors.systemGrey,
+              fontFamily: '.SF Pro Text',
             ),
           ),
           actions: [
             CupertinoDialogAction(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(
+              child: const Text(
                 AppStrings.ok,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
+                  color: CupertinoColors.activeBlue,
+                  fontFamily: '.SF Pro Text',
                 ),
               ),
             ),
@@ -88,14 +66,51 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: Theme.of(context).colorScheme.error,
+          backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
           ),
+          margin: const EdgeInsets.all(16),
         ),
       );
     }
+  }
+
+  void _openQRScanner() {
+    Navigator.of(context).push(
+      Platform.isIOS
+          ? CupertinoPageRoute(
+              builder: (context) => _QRScannerScreen(
+                onCodeScanned: _handleQRCodeScanned,
+              ),
+            )
+          : MaterialPageRoute(
+              builder: (context) => _QRScannerScreen(
+                onCodeScanned: _handleQRCodeScanned,
+              ),
+            ),
+    );
+  }
+
+  void _handleQRCodeScanned(String code) {
+    // Validiere den QR-Code (Auth-Key)
+    if (code.length < 10) {
+      _showError(AppStrings.invalidAuthKey);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    // Haptic Feedback
+    if (Platform.isIOS) {
+      HapticFeedback.vibrate();
+    } else {
+      HapticFeedback.mediumImpact();
+    }
+
+    // Login mit dem gescannten Auth-Key
+    context.read<AuthBloc>().add(AuthLoginWithKeyRequested(code));
   }
 
   @override
@@ -106,6 +121,9 @@ class _LoginScreenState extends State<LoginScreen> {
     return _buildAndroidView();
   }
 
+  // ============================================================
+  // Android View
+  // ============================================================
   Widget _buildAndroidView() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -138,239 +156,231 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       },
       child: Scaffold(
+        backgroundColor:
+            isDark ? const Color(0xFF121212) : AppColors.background,
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 40),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 40),
 
-                    // Logo Container mit Gradient und Schatten
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: AppColors.primaryGradient,
+                  // Logo Container
+                  Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: AppColors.accentGradient,
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.accent.withOpacity(0.4),
+                          blurRadius: 24,
+                          offset: const Offset(0, 12),
                         ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.favorite_rounded,
-                        size: 64,
-                        color: Colors.white,
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // App-Name
-                    Text(
-                      AppStrings.appNameRememberMe,
-                      style: theme.textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isDark
-                            ? AppColors.textLight
-                            : AppColors.textPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // Untertitel
-                    Text(
-                      AppStrings.digitalMemorials,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: isDark
-                            ? const Color(0xFFB0B0B0)
-                            : AppColors.textSecondary,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-
-                    const SizedBox(height: 48),
-
-                    // Haupt-Card mit Input und Button
-                    Card(
-                      elevation: isDark ? 4 : 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Auth-Key Input
-                            TextFormField(
-                              controller: _authKeyController,
-                              validator: Validators.validateAuthKey,
-                              textInputAction: TextInputAction.done,
-                              onFieldSubmitted: (_) => _handleLogin(),
-                              style: theme.textTheme.bodyLarge,
-                              decoration: InputDecoration(
-                                labelText: AppStrings.authKey,
-                                hintText: AppStrings.enterYourAuthKey,
-                                prefixIcon: Icon(
-                                  Icons.key_rounded,
-                                  color: isDark
-                                      ? AppColors.primaryLight
-                                      : AppColors.primary,
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 24),
-
-                            // Login Button
-                            FilledButton(
-                              onPressed: _isLoading ? null : _handleLogin,
-                              style: FilledButton.styleFrom(
-                                backgroundColor: isDark
-                                    ? AppColors.primaryLight
-                                    : AppColors.primary,
-                                foregroundColor: AppColors.textLight,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                elevation: 2,
-                              ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                          AppColors.textLight,
-                                        ),
-                                      ),
-                                    )
-                                  : Text(
-                                      AppStrings.login,
-                                      style:
-                                          theme.textTheme.titleMedium?.copyWith(
-                                        color: AppColors.textLight,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Divider mit "oder"
-                    Row(
-                      children: [
-                        const Expanded(child: Divider()),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            AppStrings.or,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: isDark
-                                  ? const Color(0xFFB0B0B0)
-                                  : AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                        const Expanded(child: Divider()),
                       ],
                     ),
-
-                    const SizedBox(height: 24),
-
-                    // QR-Code Button
-                    OutlinedButton.icon(
-                      onPressed: _isLoading ? null : _handleQRCodeScan,
-                      icon: Icon(
-                        Icons.qr_code_scanner_rounded,
-                        color:
-                            isDark ? AppColors.primaryLight : AppColors.primary,
-                      ),
-                      label: Text(
-                        AppStrings.scanQrCode,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: isDark
-                              ? AppColors.primaryLight
-                              : AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(
-                          color: isDark
-                              ? AppColors.primaryLight
-                              : AppColors.primary,
-                          width: 2,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
+                    child: const Icon(
+                      Icons.favorite_rounded,
+                      size: 72,
+                      color: Colors.white,
                     ),
+                  ),
 
-                    const SizedBox(height: 32),
+                  const SizedBox(height: 40),
 
-                    // Info-Box
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.info.withOpacity(isDark ? 0.15 : 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: AppColors.info.withOpacity(isDark ? 0.4 : 0.3),
-                          width: 1,
+                  // App Name
+                  Text(
+                    AppStrings.appNameRememberMe,
+                    style: theme.textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                      letterSpacing: -0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Subtitle
+                  Text(
+                    AppStrings.digitalMemorials,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: isDark
+                          ? const Color(0xFFB0B0B0)
+                          : AppColors.textSecondary,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: 80),
+
+                  // QR Scanner Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color:
+                          isDark ? const Color(0xFF1E1E1E) : AppColors.surface,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark
+                              ? Colors.black.withOpacity(0.3)
+                              : Colors.black.withOpacity(0.08),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
                         ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.info_outline_rounded,
-                            color: AppColors.info,
-                            size: 22,
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        // QR Icon
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.primary.withOpacity(0.15)
+                                : AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              AppStrings.noAuthKey,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: isDark
-                                    ? AppColors.info.withOpacity(0.9)
-                                    : AppColors.info,
-                                height: 1.4,
+                          child: Icon(
+                            Icons.qr_code_scanner_rounded,
+                            size: 44,
+                            color: isDark
+                                ? AppColors.primaryLight
+                                : AppColors.primary,
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Title
+                        Text(
+                          'QR-Code scannen',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? AppColors.textLight
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // Description
+                        Text(
+                          'Scanne den QR-Code deiner\nOrganisation zum Anmelden',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: isDark
+                                ? const Color(0xFFB0B0B0)
+                                : AppColors.textSecondary,
+                            height: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+
+                        const SizedBox(height: 32),
+
+                        // Scan Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _openQRScanner,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isDark
+                                  ? AppColors.primaryLight
+                                  : AppColors.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
                               ),
                             ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.camera_alt_rounded,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'Scanner öffnen',
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                           ),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Info Box
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.info.withOpacity(isDark ? 0.15 : 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.info.withOpacity(isDark ? 0.4 : 0.3),
+                        width: 1,
                       ),
                     ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.info_outline_rounded,
+                          color: AppColors.info,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Den QR-Code findest du in deinen Unterlagen oder bei deinem Administrator.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: isDark
+                                  ? AppColors.info.withOpacity(0.9)
+                                  : AppColors.info,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
-                    const SizedBox(height: 40),
-                  ],
-                ),
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
           ),
@@ -379,9 +389,11 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // ============================================================
+  // iOS View - Mit Material Wrapper für korrekte Text-Darstellung
+  // ============================================================
   Widget _buildIOSView() {
-    // Dark Mode Detection
-    final brightness = CupertinoTheme.brightnessOf(context);
+    final brightness = MediaQuery.of(context).platformBrightness;
     final isDark = brightness == Brightness.dark;
 
     return BlocListener<AuthBloc, AuthState>(
@@ -414,280 +426,697 @@ class _LoginScreenState extends State<LoginScreen> {
       child: CupertinoPageScaffold(
         backgroundColor:
             isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7),
-        child: SafeArea(
-          child: DefaultTextStyle(
-            style: TextStyle(
-              fontSize: 17,
-              color: isDark ? CupertinoColors.white : CupertinoColors.black,
-              fontFamily: '.SF Pro Text',
-            ),
-            child: SingleChildScrollView(
+        // Material Wrapper entfernt gelbe Unterstriche
+        child: Material(
+          type: MaterialType.transparency,
+          child: SafeArea(
+            child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 60),
+              child: Column(
+                children: [
+                  const Spacer(flex: 2),
 
-                    // Logo mit Gradient
-                    Center(
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: AppColors.primaryGradient,
-                          ),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary
-                                  .withOpacity(isDark ? 0.4 : 0.3),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
+                  // Logo
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: AppColors.accentGradient,
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              AppColors.accent.withOpacity(isDark ? 0.5 : 0.4),
+                          blurRadius: 24,
+                          offset: const Offset(0, 12),
                         ),
-                        child: const Icon(
-                          CupertinoIcons.heart_fill,
-                          size: 64,
-                          color: Colors.white,
+                      ],
+                    ),
+                    child: const Icon(
+                      CupertinoIcons.heart_fill,
+                      size: 60,
+                      color: Colors.white,
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // App Name
+                  Text(
+                    AppStrings.appNameRememberMe,
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: isDark
+                          ? CupertinoColors.white
+                          : CupertinoColors.black,
+                      letterSpacing: -0.5,
+                      fontFamily: '.SF Pro Display',
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Subtitle
+                  Text(
+                    AppStrings.digitalMemorials,
+                    style: TextStyle(
+                      fontSize: 17,
+                      color: CupertinoColors.systemGrey,
+                      fontWeight: FontWeight.w400,
+                      fontFamily: '.SF Pro Text',
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const Spacer(flex: 1),
+
+                  // QR Scanner Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF1C1C1E)
+                          : CupertinoColors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark
+                              ? Colors.black.withOpacity(0.3)
+                              : Colors.black.withOpacity(0.08),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
                         ),
-                      ),
+                      ],
                     ),
-
-                    const SizedBox(height: 32),
-
-                    // App-Name
-                    Text(
-                      AppStrings.appNameRememberMe,
-                      style: TextStyle(
-                        fontSize: 34,
-                        fontWeight: FontWeight.bold,
-                        color: isDark
-                            ? CupertinoColors.white
-                            : CupertinoColors.black,
-                        letterSpacing: -0.5,
-                        fontFamily: '.SF Pro Display',
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // Untertitel
-                    Text(
-                      AppStrings.digitalMemorials,
-                      style: TextStyle(
-                        fontSize: 17,
-                        color: CupertinoColors.systemGrey,
-                        fontWeight: FontWeight.w400,
-                        fontFamily: '.SF Pro Text',
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-
-                    const SizedBox(height: 60),
-
-                    // Input Card Container
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF1C1C1E)
-                            : CupertinoColors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: isDark
-                                ? Colors.black.withOpacity(0.3)
-                                : Colors.black.withOpacity(0.08),
-                            blurRadius: isDark ? 12 : 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Auth-Key Input
-                          CustomTextField(
-                            controller: _authKeyController,
-                            label: AppStrings.authKey,
-                            hint: AppStrings.enterYourAuthKey,
-                            validator: Validators.validateAuthKey,
-                            prefixIcon: Icons.key_outlined,
-                            textInputAction: TextInputAction.done,
-                            onFieldSubmitted: (_) => _handleLogin(),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Login Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 50,
-                            child: CupertinoButton(
-                              padding: EdgeInsets.zero,
-                              disabledColor: isDark
-                                  ? AppColors.primary.withOpacity(0.5)
-                                  : AppColors.primary.withOpacity(0.5),
-                              color: isDark
-                                  ? AppColors.primaryLight
-                                  : AppColors.primary,
-                              borderRadius: BorderRadius.circular(12),
-                              onPressed: _isLoading ? null : _handleLogin,
-                              child: _isLoading
-                                  ? const CupertinoActivityIndicator(
-                                      color: CupertinoColors.white,
-                                    )
-                                  : Text(
-                                      AppStrings.login,
-                                      style: const TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w600,
-                                        color: CupertinoColors.white,
-                                        fontFamily: '.SF Pro Text',
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Divider mit "oder"
-                    Row(
+                    child: Column(
                       children: [
-                        Expanded(
-                          child: Container(
-                            height: 1,
+                        // QR Icon Container
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
                             color: isDark
-                                ? CupertinoColors.systemGrey3.darkColor
-                                : CupertinoColors.systemGrey4,
+                                ? AppColors.primary.withOpacity(0.15)
+                                : AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(
+                            CupertinoIcons.qrcode_viewfinder,
+                            size: 36,
+                            color: isDark
+                                ? AppColors.primaryLight
+                                : AppColors.primary,
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            AppStrings.or,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: CupertinoColors.systemGrey,
-                              fontWeight: FontWeight.w500,
-                              fontFamily: '.SF Pro Text',
-                            ),
+
+                        const SizedBox(height: 16),
+
+                        // Title
+                        Text(
+                          'QR-Code scannen',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? CupertinoColors.white
+                                : CupertinoColors.black,
+                            fontFamily: '.SF Pro Display',
                           ),
                         ),
-                        Expanded(
-                          child: Container(
-                            height: 1,
+
+                        const SizedBox(height: 8),
+
+                        // Description
+                        Text(
+                          'Scanne den QR-Code deiner\nOrganisation zum Anmelden',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: CupertinoColors.systemGrey,
+                            height: 1.5,
+                            fontFamily: '.SF Pro Text',
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Scan Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: CupertinoButton(
+                            padding: EdgeInsets.zero,
                             color: isDark
-                                ? CupertinoColors.systemGrey3.darkColor
-                                : CupertinoColors.systemGrey4,
+                                ? AppColors.primaryLight
+                                : AppColors.primary,
+                            borderRadius: BorderRadius.circular(14),
+                            onPressed: _isLoading ? null : _openQRScanner,
+                            child: _isLoading
+                                ? const CupertinoActivityIndicator(
+                                    color: CupertinoColors.white,
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        CupertinoIcons.camera_fill,
+                                        size: 22,
+                                        color: CupertinoColors.white,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        'Scanner öffnen',
+                                        style: TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w600,
+                                          color: CupertinoColors.white,
+                                          fontFamily: '.SF Pro Text',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                           ),
                         ),
                       ],
                     ),
+                  ),
 
-                    const SizedBox(height: 32),
+                  const SizedBox(height: 20),
 
-                    // QR-Code Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        disabledColor: isDark
-                            ? const Color(0xFF2C2C2E)
-                            : CupertinoColors.systemGrey6,
+                  // Info Box
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppColors.info.withOpacity(0.15)
+                          : AppColors.info.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
                         color: isDark
-                            ? const Color(0xFF2C2C2E)
-                            : CupertinoColors.systemGrey6,
-                        borderRadius: BorderRadius.circular(12),
-                        onPressed: _isLoading ? null : _handleQRCodeScan,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              CupertinoIcons.qrcode_viewfinder,
-                              size: 24,
-                              color: isDark
-                                  ? AppColors.primaryLight
-                                  : AppColors.primary,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              AppStrings.scanQrCode,
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? AppColors.primaryLight
-                                    : AppColors.primary,
-                                fontFamily: '.SF Pro Text',
-                              ),
-                            ),
-                          ],
-                        ),
+                            ? AppColors.info.withOpacity(0.4)
+                            : AppColors.info.withOpacity(0.3),
+                        width: 1,
                       ),
                     ),
-
-                    const SizedBox(height: 40),
-
-                    // Info-Box
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.info.withOpacity(0.15)
-                            : AppColors.info.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          CupertinoIcons.info_circle,
                           color: isDark
-                              ? AppColors.info.withOpacity(0.4)
-                              : AppColors.info.withOpacity(0.3),
-                          width: 1.5,
+                              ? AppColors.info.withOpacity(0.9)
+                              : AppColors.info,
+                          size: 20,
                         ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            CupertinoIcons.info_circle,
-                            color: isDark
-                                ? AppColors.info.withOpacity(0.9)
-                                : AppColors.info,
-                            size: 22,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              AppStrings.noAuthKey,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: isDark
-                                    ? AppColors.info.withOpacity(0.9)
-                                    : AppColors.info,
-                                height: 1.4,
-                                fontFamily: '.SF Pro Text',
-                              ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Den QR-Code findest du in deinen Unterlagen oder bei deinem Administrator.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: isDark
+                                  ? AppColors.info.withOpacity(0.9)
+                                  : AppColors.info,
+                              height: 1.4,
+                              fontFamily: '.SF Pro Text',
                             ),
                           ),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const Spacer(flex: 1),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// QR Scanner Screen
+// ============================================================
+class _QRScannerScreen extends StatefulWidget {
+  final Function(String) onCodeScanned;
+
+  const _QRScannerScreen({required this.onCodeScanned});
+
+  @override
+  State<_QRScannerScreen> createState() => _QRScannerScreenState();
+}
+
+class _QRScannerScreenState extends State<_QRScannerScreen>
+    with SingleTickerProviderStateMixin {
+  MobileScannerController? _scannerController;
+  bool _hasScanned = false;
+  bool _isTorchOn = false;
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _scannerController = MobileScannerController(
+      detectionSpeed: DetectionSpeed.normal,
+      facing: CameraFacing.back,
+      torchEnabled: false,
+    );
+
+    // Scanner Line Animation
+    _animationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+
+    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _animationController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _scannerController?.dispose();
+    super.dispose();
+  }
+
+  void _onDetect(BarcodeCapture capture) {
+    if (_hasScanned) return;
+
+    final List<Barcode> barcodes = capture.barcodes;
+    for (final barcode in barcodes) {
+      if (barcode.rawValue != null && barcode.rawValue!.isNotEmpty) {
+        setState(() => _hasScanned = true);
+
+        // Haptic Feedback
+        if (Platform.isIOS) {
+          HapticFeedback.vibrate();
+        } else {
+          HapticFeedback.heavyImpact();
+        }
+
+        // Kurze Verzögerung für visuelles Feedback
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            Navigator.of(context).pop();
+            widget.onCodeScanned(barcode.rawValue!);
+          }
+        });
+
+        break;
+      }
+    }
+  }
+
+  void _toggleTorch() {
+    _scannerController?.toggleTorch();
+    setState(() => _isTorchOn = !_isTorchOn);
+
+    if (Platform.isIOS) {
+      HapticFeedback.selectionClick();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (Platform.isIOS) {
+      return _buildIOSScanner();
+    }
+    return _buildAndroidScanner();
+  }
+
+  // ============================================================
+  // iOS Scanner - Mit Material Wrapper
+  // ============================================================
+  Widget _buildIOSScanner() {
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = brightness == Brightness.dark;
+
+    return CupertinoPageScaffold(
+      backgroundColor: CupertinoColors.black,
+      navigationBar: CupertinoNavigationBar(
+        backgroundColor: Colors.black.withOpacity(0.8),
+        border: null,
+        leading: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Icon(
+            CupertinoIcons.xmark,
+            color: CupertinoColors.white,
+            size: 24,
+          ),
+        ),
+        middle: const Text(
+          'QR-Code scannen',
+          style: TextStyle(
+            color: CupertinoColors.white,
+            fontWeight: FontWeight.w600,
+            fontFamily: '.SF Pro Text',
+          ),
+        ),
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: _toggleTorch,
+          child: Icon(
+            _isTorchOn
+                ? CupertinoIcons.bolt_fill
+                : CupertinoIcons.bolt_slash_fill,
+            color: _isTorchOn
+                ? CupertinoColors.systemYellow
+                : CupertinoColors.white,
+            size: 24,
+          ),
+        ),
+      ),
+      // Material Wrapper entfernt gelbe Unterstriche
+      child: Material(
+        type: MaterialType.transparency,
+        child: Stack(
+          children: [
+            // Camera
+            MobileScanner(
+              controller: _scannerController,
+              onDetect: _onDetect,
+            ),
+
+            // Overlay
+            _buildScannerOverlay(isDark),
+
+            // Bottom Instructions
+            Positioned(
+              bottom: 100,
+              left: 0,
+              right: 0,
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      _hasScanned
+                          ? '✓ Code erkannt!'
+                          : 'Halte die Kamera auf den QR-Code',
+                      style: const TextStyle(
+                        color: CupertinoColors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: '.SF Pro Text',
                       ),
                     ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-                    const SizedBox(height: 40),
+  // ============================================================
+  // Android Scanner
+  // ============================================================
+  Widget _buildAndroidScanner() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black.withOpacity(0.8),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text(
+          'QR-Code scannen',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isTorchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+              color: _isTorchOn ? Colors.yellow : Colors.white,
+            ),
+            onPressed: _toggleTorch,
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          // Camera
+          MobileScanner(
+            controller: _scannerController,
+            onDetect: _onDetect,
+          ),
+
+          // Overlay
+          _buildScannerOverlay(isDark),
+
+          // Bottom Instructions
+          Positioned(
+            bottom: 100,
+            left: 0,
+            right: 0,
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    _hasScanned
+                        ? '✓ Code erkannt!'
+                        : 'Halte die Kamera auf den QR-Code',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // Scanner Overlay mit animierter Linie
+  // ============================================================
+  Widget _buildScannerOverlay(bool isDark) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final scanAreaSize = constraints.maxWidth * 0.7;
+
+        return Stack(
+          children: [
+            // Dunkle Überlagerung mit Ausschnitt
+            ColorFiltered(
+              colorFilter: ColorFilter.mode(
+                Colors.black.withOpacity(0.6),
+                BlendMode.srcOut,
+              ),
+              child: Stack(
+                children: [
+                  Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.transparent,
+                      backgroundBlendMode: BlendMode.dstOut,
+                    ),
+                  ),
+                  Center(
+                    child: Container(
+                      width: scanAreaSize,
+                      height: scanAreaSize,
+                      margin: const EdgeInsets.only(bottom: 80),
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Scanner Rahmen
+            Center(
+              child: Container(
+                width: scanAreaSize,
+                height: scanAreaSize,
+                margin: const EdgeInsets.only(bottom: 80),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: _hasScanned ? AppColors.success : AppColors.accent,
+                    width: 3,
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    // Ecken
+                    _buildCorner(Alignment.topLeft),
+                    _buildCorner(Alignment.topRight),
+                    _buildCorner(Alignment.bottomLeft),
+                    _buildCorner(Alignment.bottomRight),
+
+                    // Animierte Scanner-Linie
+                    if (!_hasScanned)
+                      AnimatedBuilder(
+                        animation: _animation,
+                        builder: (context, child) {
+                          return Positioned(
+                            top: _animation.value * (scanAreaSize - 4),
+                            left: 20,
+                            right: 20,
+                            child: Container(
+                              height: 2,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.accent.withOpacity(0),
+                                    AppColors.accent,
+                                    AppColors.accent.withOpacity(0),
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.accent.withOpacity(0.5),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                    // Success Checkmark
+                    if (_hasScanned)
+                      Center(
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: AppColors.success,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.success.withOpacity(0.4),
+                                blurRadius: 20,
+                                spreadRadius: 4,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Platform.isIOS
+                                ? CupertinoIcons.checkmark_alt
+                                : Icons.check_rounded,
+                            color: Colors.white,
+                            size: 48,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
             ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCorner(Alignment alignment) {
+    final isTop =
+        alignment == Alignment.topLeft || alignment == Alignment.topRight;
+    final isLeft =
+        alignment == Alignment.topLeft || alignment == Alignment.bottomLeft;
+
+    return Positioned(
+      top: isTop ? 0 : null,
+      bottom: isTop ? null : 0,
+      left: isLeft ? 0 : null,
+      right: isLeft ? null : 0,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          border: Border(
+            top: isTop
+                ? BorderSide(
+                    color: _hasScanned ? AppColors.success : AppColors.accent,
+                    width: 4,
+                  )
+                : BorderSide.none,
+            bottom: !isTop
+                ? BorderSide(
+                    color: _hasScanned ? AppColors.success : AppColors.accent,
+                    width: 4,
+                  )
+                : BorderSide.none,
+            left: isLeft
+                ? BorderSide(
+                    color: _hasScanned ? AppColors.success : AppColors.accent,
+                    width: 4,
+                  )
+                : BorderSide.none,
+            right: !isLeft
+                ? BorderSide(
+                    color: _hasScanned ? AppColors.success : AppColors.accent,
+                    width: 4,
+                  )
+                : BorderSide.none,
+          ),
+          borderRadius: BorderRadius.only(
+            topLeft: alignment == Alignment.topLeft
+                ? const Radius.circular(24)
+                : Radius.zero,
+            topRight: alignment == Alignment.topRight
+                ? const Radius.circular(24)
+                : Radius.zero,
+            bottomLeft: alignment == Alignment.bottomLeft
+                ? const Radius.circular(24)
+                : Radius.zero,
+            bottomRight: alignment == Alignment.bottomRight
+                ? const Radius.circular(24)
+                : Radius.zero,
           ),
         ),
       ),

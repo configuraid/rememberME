@@ -59,15 +59,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ];
 
     if (Platform.isIOS) {
+      final brightness = MediaQuery.of(context).platformBrightness;
+      final isDark = brightness == Brightness.dark;
+
       return CupertinoTabScaffold(
         tabBar: CupertinoTabBar(
+          activeColor: isDark ? AppColors.accent : AppColors.primary,
+          inactiveColor: isDark
+              ? CupertinoColors.systemGrey
+              : CupertinoColors.inactiveGray,
+          backgroundColor: isDark
+              ? const Color(0xFF1C1C1E).withOpacity(0.94)
+              : CupertinoColors.systemBackground.withOpacity(0.94),
+          border: Border(
+            top: BorderSide(
+              color:
+                  isDark ? const Color(0xFF38383A) : CupertinoColors.separator,
+              width: 0.5,
+            ),
+          ),
           items: [
             BottomNavigationBarItem(
               icon: const Icon(CupertinoIcons.heart),
+              activeIcon: const Icon(CupertinoIcons.heart_fill),
               label: AppStrings.memorialPage,
             ),
             BottomNavigationBarItem(
               icon: const Icon(CupertinoIcons.person),
+              activeIcon: const Icon(CupertinoIcons.person_fill),
               label: AppStrings.profile,
             ),
           ],
@@ -80,18 +99,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
+    // Android
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        selectedItemColor: isDark ? AppColors.primaryLight : AppColors.primary,
+        unselectedItemColor:
+            isDark ? const Color(0xFF909090) : Colors.grey.shade600,
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
+        ),
         items: [
           BottomNavigationBarItem(
-            icon: const Icon(Icons.favorite),
+            icon: const Icon(Icons.favorite_outline),
+            activeIcon: const Icon(Icons.favorite),
             label: AppStrings.memorialPage,
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.person),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.person_outline),
+            activeIcon: const Icon(Icons.person),
             label: AppStrings.profile,
           ),
         ],
@@ -102,7 +140,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildMemorialsTab() {
     return BlocBuilder<MemorialBloc, MemorialState>(
       builder: (context, memorialState) {
-        // Ladezustand
         if (memorialState.isLoading) {
           return Scaffold(
             appBar: AppBar(
@@ -114,7 +151,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         }
 
-        // Fehler
         if (memorialState.hasError) {
           return Scaffold(
             appBar: AppBar(

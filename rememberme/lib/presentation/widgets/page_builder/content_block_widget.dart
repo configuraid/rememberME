@@ -57,7 +57,7 @@ class ContentBlockWidget extends StatelessWidget {
             ? Colors.black.withOpacity(0.5)
             : Colors.black.withOpacity(0.1),
         child: InkWell(
-          onTap: onTap,
+          onTap: onEdit,
           borderRadius: BorderRadius.circular(16),
           splashColor: colorScheme.primary.withOpacity(0.1),
           highlightColor: colorScheme.primary.withOpacity(0.05),
@@ -76,7 +76,7 @@ class ContentBlockWidget extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header with type and actions
+                // Header with type and actions (ohne Edit-Button)
                 _buildAndroidHeader(context),
 
                 // Divider
@@ -102,19 +102,26 @@ class ContentBlockWidget extends StatelessWidget {
   }
 
   Widget _buildIOSContent(BuildContext context) {
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Material(
         elevation: isSelected ? 4 : 1,
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         child: InkWell(
-          onTap: onTap,
+          onTap: onEdit,
           borderRadius: BorderRadius.circular(12),
           child: Container(
             decoration: BoxDecoration(
               border: Border.all(
-                color: isSelected ? Colors.blue : Colors.grey[200]!,
+                color: isSelected
+                    ? CupertinoColors.activeBlue
+                    : (isDark
+                        ? const Color(0xFF38383A)
+                        : const Color(0xFFE5E5EA)),
                 width: isSelected ? 2 : 1,
               ),
               borderRadius: BorderRadius.circular(12),
@@ -123,7 +130,12 @@ class ContentBlockWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildIOSHeader(context),
-                Divider(height: 1, color: Colors.grey[200]),
+                Divider(
+                  height: 1,
+                  color: isDark
+                      ? const Color(0xFF38383A)
+                      : const Color(0xFFE5E5EA),
+                ),
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: _buildContent(context),
@@ -168,7 +180,7 @@ class ContentBlockWidget extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  BlockTypeInfo.getIcon(block.type), // ✅ NEUE METHODE
+                  BlockTypeInfo.getIcon(block.type),
                   size: 18,
                   color: isSelected
                       ? colorScheme.onPrimaryContainer
@@ -195,15 +207,6 @@ class ContentBlockWidget extends StatelessWidget {
 
           const Spacer(),
 
-          // Quick Actions mit Material 3 Design
-          _buildAndroidIconButton(
-            context,
-            icon: Icons.edit_outlined,
-            onPressed: onEdit,
-            tooltip: AppStrings.edit,
-            color: isDark ? const Color(0xFF90CAF9) : colorScheme.primary,
-          ),
-          const SizedBox(width: 4),
           _buildAndroidIconButton(
             context,
             icon: Icons.content_copy_rounded,
@@ -270,32 +273,23 @@ class ContentBlockWidget extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Icon(
-            BlockTypeInfo.getIcon(block.type), // ✅ NEUE METHODE
+            BlockTypeInfo.getIcon(block.type),
             size: 20,
             color: isDark ? AppColors.primaryLight : AppColors.primary,
           ),
           const SizedBox(width: 8),
-          Text(
-            BlockTypeInfo.getTitle(block.type),
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isDark ? const Color(0xFFE5E5EA) : const Color(0xFF3C3C43),
-              fontFamily: '.SF Pro Text',
+          Expanded(
+            child: Text(
+              BlockTypeInfo.getTitle(block.type),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color:
+                    isDark ? const Color(0xFFE5E5EA) : const Color(0xFF3C3C43),
+                fontFamily: '.SF Pro Text',
+              ),
             ),
           ),
-          const Spacer(),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            minSize: 0,
-            onPressed: onEdit,
-            child: Icon(
-              CupertinoIcons.pencil,
-              size: 18,
-              color: isDark ? AppColors.primaryLight : AppColors.primary,
-            ),
-          ),
-          const SizedBox(width: 8),
           CupertinoButton(
             padding: EdgeInsets.zero,
             minSize: 0,
@@ -306,7 +300,7 @@ class ContentBlockWidget extends StatelessWidget {
               color: isDark ? const Color(0xFF8E8E93) : const Color(0xFF8E8E93),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           CupertinoButton(
             padding: EdgeInsets.zero,
             minSize: 0,
@@ -353,8 +347,10 @@ class ContentBlockWidget extends StatelessWidget {
   // ===== CONTENT RENDERERS =====
 
   Widget _buildHeaderContent(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = Platform.isIOS
+        ? brightness == Brightness.dark
+        : Theme.of(context).brightness == Brightness.dark;
 
     final text = block.getContent('text', AppStrings.headerPlaceholder);
     final level = block.getContent('level', 1);
@@ -367,9 +363,9 @@ class ContentBlockWidget extends StatelessWidget {
             ? 24
             : 20;
 
-    // Für Android: Theme-bewusste Farben
+    // Theme-bewusste Farben
     Color textColor = _hexToColor(colorHex);
-    if (Platform.isAndroid && colorHex == '#000000') {
+    if (colorHex == '#000000') {
       textColor = isDark ? Colors.white : Colors.black;
     }
 
@@ -390,17 +386,19 @@ class ContentBlockWidget extends StatelessWidget {
   }
 
   Widget _buildTextContent(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = Platform.isIOS
+        ? brightness == Brightness.dark
+        : Theme.of(context).brightness == Brightness.dark;
 
     final text = block.getContent('text', AppStrings.textPlaceholder);
     final align = block.getContent('align', 'left');
     final fontSize = block.getContent('fontSize', 16.0);
     final colorHex = block.getContent('color', '#333333');
 
-    // Für Android: Theme-bewusste Farben
+    // Theme-bewusste Farben
     Color textColor = _hexToColor(colorHex);
-    if (Platform.isAndroid && colorHex == '#333333') {
+    if (colorHex == '#333333') {
       textColor = isDark ? const Color(0xFFE0E0E0) : const Color(0xFF424242);
     }
 
@@ -420,8 +418,10 @@ class ContentBlockWidget extends StatelessWidget {
   }
 
   Widget _buildImageContent(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = Platform.isIOS
+        ? brightness == Brightness.dark
+        : Theme.of(context).brightness == Brightness.dark;
 
     final url = block.getContent('url', '');
     final caption = block.getContent('caption', '');
@@ -501,8 +501,10 @@ class ContentBlockWidget extends StatelessWidget {
   }
 
   Widget _buildGalleryContent(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = Platform.isIOS
+        ? brightness == Brightness.dark
+        : Theme.of(context).brightness == Brightness.dark;
 
     final images = block.getContent<List>('images', []);
     final columns = block.getContent('columns', 3);
@@ -575,16 +577,20 @@ class ContentBlockWidget extends StatelessWidget {
   }
 
   Widget _buildQuoteContent(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = Platform.isIOS
+        ? brightness == Brightness.dark
+        : Theme.of(context).brightness == Brightness.dark;
 
     final text = block.getContent('text', AppStrings.quotePlaceholder);
     final author = block.getContent('author', '');
     final colorHex = block.getContent('color', '#666666');
 
     Color quoteColor = _hexToColor(colorHex);
-    if (Platform.isAndroid && colorHex == '#666666') {
-      quoteColor = isDark ? const Color(0xFF90CAF9) : theme.colorScheme.primary;
+    if (colorHex == '#666666') {
+      quoteColor = isDark
+          ? const Color(0xFF90CAF9)
+          : (Platform.isIOS ? AppColors.primary : AppColors.primary);
     }
 
     return Container(
@@ -626,14 +632,16 @@ class ContentBlockWidget extends StatelessWidget {
   }
 
   Widget _buildDividerContent(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = Platform.isIOS
+        ? brightness == Brightness.dark
+        : Theme.of(context).brightness == Brightness.dark;
 
     final colorHex = block.getContent('color', '#E0E0E0');
     final thickness = block.getContent('thickness', 1.0);
 
     Color dividerColor = _hexToColor(colorHex);
-    if (Platform.isAndroid && colorHex == '#E0E0E0') {
+    if (colorHex == '#E0E0E0') {
       dividerColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE0E0E0);
     }
 
@@ -647,8 +655,10 @@ class ContentBlockWidget extends StatelessWidget {
   }
 
   Widget _buildVideoContent(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = Platform.isIOS
+        ? brightness == Brightness.dark
+        : Theme.of(context).brightness == Brightness.dark;
 
     final url = block.getContent('url', '');
     final caption = block.getContent('caption', '');
@@ -721,8 +731,10 @@ class ContentBlockWidget extends StatelessWidget {
   }
 
   Widget _buildDateContent(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = Platform.isIOS
+        ? brightness == Brightness.dark
+        : Theme.of(context).brightness == Brightness.dark;
 
     final birthDate = block.getContent('birthDate', '');
     final deathDate = block.getContent('deathDate', '');
@@ -740,8 +752,7 @@ class ContentBlockWidget extends StatelessWidget {
             Icon(
               Icons.cake_outlined,
               size: 22,
-              color:
-                  isDark ? const Color(0xFF90CAF9) : theme.colorScheme.primary,
+              color: isDark ? const Color(0xFF90CAF9) : AppColors.primary,
             ),
             const SizedBox(width: 8),
             Text(

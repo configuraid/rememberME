@@ -10,7 +10,6 @@ abstract class MemorialEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-// ✅ GEÄNDERT: Nutzt organizationId statt userId
 class MemorialLoadRequested extends MemorialEvent {
   final String organizationId;
 
@@ -29,7 +28,6 @@ class MemorialDetailLoadRequested extends MemorialEvent {
   List<Object?> get props => [memorialId];
 }
 
-// ✅ GEÄNDERT: Nutzt organizationId statt userId (war vorher nur implizit)
 class MemorialCreateRequested extends MemorialEvent {
   final String organizationId;
   final String ownerId;
@@ -37,6 +35,7 @@ class MemorialCreateRequested extends MemorialEvent {
   final String templateId;
   final DateTime? birthDate;
   final DateTime? deathDate;
+  final bool isPublic;
 
   const MemorialCreateRequested({
     required this.organizationId,
@@ -45,11 +44,19 @@ class MemorialCreateRequested extends MemorialEvent {
     required this.templateId,
     this.birthDate,
     this.deathDate,
+    this.isPublic = false,
   });
 
   @override
-  List<Object?> get props =>
-      [organizationId, ownerId, name, templateId, birthDate, deathDate];
+  List<Object?> get props => [
+        organizationId,
+        ownerId,
+        name,
+        templateId,
+        birthDate,
+        deathDate,
+        isPublic
+      ];
 }
 
 class MemorialUpdateRequested extends MemorialEvent {
@@ -68,6 +75,19 @@ class MemorialDeleteRequested extends MemorialEvent {
 
   @override
   List<Object?> get props => [memorialId];
+}
+
+class MemorialVisibilityToggleRequested extends MemorialEvent {
+  final String memorialId;
+  final bool isPublic;
+
+  const MemorialVisibilityToggleRequested({
+    required this.memorialId,
+    required this.isPublic,
+  });
+
+  @override
+  List<Object?> get props => [memorialId, isPublic];
 }
 
 class MemorialContentBlockAddRequested extends MemorialEvent {

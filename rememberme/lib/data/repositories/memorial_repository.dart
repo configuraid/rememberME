@@ -11,7 +11,6 @@ class MemorialRepository {
 
   // ========== MEMORIALS NACH ORGANISATION ==========
 
-  /// Alle Gedenkseiten einer Organisation abrufen
   Future<List<MemorialPageModel>> getMemorialsByOrganization(
       String organizationId) async {
     print('🔍 Repository - Lade Memorials für Organisation: $organizationId');
@@ -20,8 +19,7 @@ class MemorialRepository {
       final querySnapshot = await _firestore
           .collection('memorials')
           .where('organizationId', isEqualTo: organizationId)
-          .orderBy('createdAt',
-              descending: true) // ✅ GEÄNDERT: createdAt statt updatedAt
+          .orderBy('createdAt', descending: true)
           .get();
 
       print(
@@ -45,7 +43,6 @@ class MemorialRepository {
 
   // ========== EINZELNE GEDENKSEITE ==========
 
-  /// Einzelne Gedenkseite abrufen
   Future<MemorialPageModel?> getMemorialById(String memorialId) async {
     print('🔍 Repository - Lade Memorial: $memorialId');
 
@@ -62,6 +59,7 @@ class MemorialRepository {
           MemorialPageModel.fromJson({...doc.data()!, 'id': doc.id});
       print('✅ Repository - Memorial gefunden: ${memorial.name}');
       print('   → ContentBlocks: ${memorial.contentBlocks.length}');
+      print('   → isPublic: ${memorial.isPublic}');
       return memorial;
     } catch (e) {
       print('❌ Repository - Fehler: $e');
@@ -71,7 +69,6 @@ class MemorialRepository {
 
   // ========== ERSTELLEN ==========
 
-  /// Neue Gedenkseite erstellen
   Future<MemorialPageModel> createMemorial({
     required String organizationId,
     required String ownerId,
@@ -79,10 +76,12 @@ class MemorialRepository {
     required String templateId,
     DateTime? birthDate,
     DateTime? deathDate,
+    bool isPublic = false,
   }) async {
     print('➕ Repository - Erstelle neue Gedenkseite: $name');
     print('📍 Organisation: $organizationId');
     print('👤 Owner: $ownerId');
+    print('🔒 isPublic: $isPublic');
 
     final now = DateTime.now();
     final newId = _uuid.v4();
@@ -96,7 +95,7 @@ class MemorialRepository {
       birthDate: birthDate,
       deathDate: deathDate,
       templateId: templateId,
-      privacyLevel: PrivacyLevel.private,
+      isPublic: isPublic,
       createdAt: now,
       contentBlocks: [
         ContentBlock(
@@ -107,18 +106,16 @@ class MemorialRepository {
     );
 
     try {
-      // ✅ DEBUG: Zeige das JSON das gespeichert wird
       final jsonData = newMemorial.toJson();
       print('🔍 Zu speicherndes JSON:');
       print('   id: ${jsonData['id']}');
       print('   name: ${jsonData['name']}');
       print('   organizationId: ${jsonData['organizationId']}');
+      print('   isPublic: ${jsonData['isPublic']}');
       print('   contentBlocks: ${jsonData['contentBlocks']}');
 
-      // 1. Memorial in Firestore speichern
       await _firestore.collection('memorials').doc(newId).set(jsonData);
 
-      // 2. Memorial-ID zur Organisation hinzufügen
       await _firestore.collection('organizations').doc(organizationId).update({
         'memorialIds': FieldValue.arrayUnion([newId]),
       });
@@ -136,16 +133,17 @@ class MemorialRepository {
 
   // ========== AKTUALISIEREN ==========
 
-  /// Gedenkseite aktualisieren
   Future<MemorialPageModel> updateMemorial(MemorialPageModel memorial) async {
     print(
         '🔄 Repository - Aktualisiere Memorial: ${memorial.name} (${memorial.id})');
     print('   → ContentBlocks: ${memorial.contentBlocks.length}');
+    print('   → isPublic: ${memorial.isPublic}');
 
     try {
       final jsonData = memorial.toJson();
 
       print('🔍 Update JSON:');
+      print('   isPublic: ${jsonData['isPublic']}');
       print('   contentBlocks: ${jsonData['contentBlocks']}');
 
       await _firestore
@@ -162,23 +160,46 @@ class MemorialRepository {
     }
   }
 
+  // ========== SICHTBARKEIT ÄNDERN ==========
+
+  Future<MemorialPageModel> updateMemorialVisibility(
+    String memorialId,
+    bool isPublic,
+  ) async {
+    print('🔒 Repository - Ändere Sichtbarkeit: $memorialId → $isPublic');
+
+    try {
+      await _firestore.collection('memorials').doc(memorialId).update({
+        'isPublic': isPublic,
+      });
+
+      final memorial = await getMemorialById(memorialId);
+      if (memorial == null) {
+        throw Exception('Memorial nicht gefunden nach Update');
+      }
+
+      print('✅ Repository - Sichtbarkeit geändert: ${memorial.isPublic}');
+      return memorial;
+    } catch (e, stackTrace) {
+      print('❌ Repository - Fehler beim Ändern der Sichtbarkeit: $e');
+      print('📚 StackTrace: $stackTrace');
+      rethrow;
+    }
+  }
+
   // ========== LÖSCHEN ==========
 
-  /// Gedenkseite löschen
   Future<void> deleteMemorial(String memorialId) async {
     print('🗑️ Repository - Lösche Memorial: $memorialId');
 
     try {
-      // 1. Lade Memorial um organizationId zu bekommen
       final memorial = await getMemorialById(memorialId);
       if (memorial == null) {
         throw Exception('Memorial nicht gefunden');
       }
 
-      // 2. Lösche Memorial
       await _firestore.collection('memorials').doc(memorialId).delete();
 
-      // 3. Entferne Memorial-ID aus Organisation
       await _firestore
           .collection('organizations')
           .doc(memorial.organizationId)
@@ -197,7 +218,6 @@ class MemorialRepository {
 
   // ========== CONTENT BLOCKS ==========
 
-  /// Content-Block hinzufügen
   Future<MemorialPageModel> addContentBlock(
     String memorialId,
     ContentBlock block,
@@ -224,7 +244,6 @@ class MemorialRepository {
     }
   }
 
-  /// Content-Block aktualisieren
   Future<MemorialPageModel> updateContentBlock(
     String memorialId,
     ContentBlock block,
@@ -252,7 +271,6 @@ class MemorialRepository {
     }
   }
 
-  /// Content-Block löschen
   Future<MemorialPageModel> deleteContentBlock(
     String memorialId,
     String blockId,
@@ -281,7 +299,6 @@ class MemorialRepository {
     }
   }
 
-  /// Content-Blocks neu sortieren
   Future<MemorialPageModel> reorderContentBlocks(
     String memorialId,
     List<String> blockIds,
@@ -294,7 +311,6 @@ class MemorialRepository {
         throw Exception('Gedenkseite nicht gefunden');
       }
 
-      // Erstelle neue Block-Liste in der richtigen Reihenfolge
       final reorderedBlocks = <ContentBlock>[];
       for (var blockId in blockIds) {
         final block = memorial.contentBlocks.firstWhere(
@@ -317,7 +333,6 @@ class MemorialRepository {
 
   // ========== VERÖFFENTLICHEN ==========
 
-  /// Gedenkseite veröffentlichen
   Future<MemorialPageModel> publishMemorial(String memorialId) async {
     print('🌐 Repository - Veröffentliche Memorial: $memorialId');
 
@@ -327,12 +342,13 @@ class MemorialRepository {
         throw Exception('Gedenkseite nicht gefunden');
       }
 
-      // Validierung
       if (memorial.contentBlocks.isEmpty) {
         throw Exception('Gedenkseite muss mindestens einen Block enthalten');
       }
 
-      final updatedMemorial = memorial.copyWith();
+      final updatedMemorial = memorial.copyWith(
+        status: MemorialStatus.published,
+      );
 
       await updateMemorial(updatedMemorial);
 
@@ -344,7 +360,6 @@ class MemorialRepository {
     }
   }
 
-  /// Gedenkseite zurück in Entwurf
   Future<MemorialPageModel> unpublishMemorial(String memorialId) async {
     print('📝 Repository - Zurück zu Entwurf: $memorialId');
 
@@ -354,7 +369,9 @@ class MemorialRepository {
         throw Exception('Gedenkseite nicht gefunden');
       }
 
-      final updatedMemorial = memorial.copyWith();
+      final updatedMemorial = memorial.copyWith(
+        status: MemorialStatus.draft,
+      );
 
       await updateMemorial(updatedMemorial);
 
@@ -366,7 +383,6 @@ class MemorialRepository {
     }
   }
 
-  /// Gedenkseite archivieren
   Future<MemorialPageModel> archiveMemorial(String memorialId) async {
     print('📦 Repository - Archiviere Memorial: $memorialId');
 
@@ -376,7 +392,9 @@ class MemorialRepository {
         throw Exception('Gedenkseite nicht gefunden');
       }
 
-      final updatedMemorial = memorial.copyWith();
+      final updatedMemorial = memorial.copyWith(
+        status: MemorialStatus.archived,
+      );
 
       await updateMemorial(updatedMemorial);
 

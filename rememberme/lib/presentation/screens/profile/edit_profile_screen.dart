@@ -659,7 +659,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         centerTitle: true,
         elevation: 0,
         backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
-        foregroundColor: AppColors.textLight, // ✅ Immer weiß!
+        foregroundColor: AppColors.textLight,
       ),
       body: Form(
         key: _formKey,

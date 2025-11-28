@@ -1,10 +1,10 @@
 import 'package:equatable/equatable.dart';
 import 'content_block_model.dart';
 
-enum PrivacyLevel {
-  public,
-  familyOnly,
-  private,
+enum MemorialStatus {
+  draft,
+  published,
+  archived,
 }
 
 class MemorialPageModel extends Equatable {
@@ -16,7 +16,8 @@ class MemorialPageModel extends Equatable {
   final DateTime? birthDate;
   final DateTime? deathDate;
   final String templateId;
-  final PrivacyLevel privacyLevel;
+  final bool isPublic;
+  final MemorialStatus status;
   final List<ContentBlock> contentBlocks;
   final List<String>? groupMemberIds;
   final DateTime createdAt;
@@ -30,13 +31,13 @@ class MemorialPageModel extends Equatable {
     this.birthDate,
     this.deathDate,
     required this.templateId,
-    this.privacyLevel = PrivacyLevel.private,
+    this.isPublic = false,
+    this.status = MemorialStatus.draft,
     this.contentBlocks = const [],
     this.groupMemberIds,
     required this.createdAt,
   });
 
-  // Computed Properties
   String get lifespan {
     if (birthDate == null && deathDate == null) {
       return 'Keine Daten';
@@ -61,18 +62,21 @@ class MemorialPageModel extends Equatable {
     return contentBlocks.isNotEmpty;
   }
 
-  String get privacyLevelText {
-    switch (privacyLevel) {
-      case PrivacyLevel.public:
-        return 'Öffentlich';
-      case PrivacyLevel.familyOnly:
-        return 'Nur Familie';
-      case PrivacyLevel.private:
-        return 'Privat';
+  String get visibilityText {
+    return isPublic ? 'Öffentlich' : 'Privat';
+  }
+
+  String get statusText {
+    switch (status) {
+      case MemorialStatus.draft:
+        return 'Entwurf';
+      case MemorialStatus.published:
+        return 'Veröffentlicht';
+      case MemorialStatus.archived:
+        return 'Archiviert';
     }
   }
 
-  // Group Management
   bool get hasGroupMembers {
     return groupMemberIds != null && groupMemberIds!.isNotEmpty;
   }
@@ -89,7 +93,6 @@ class MemorialPageModel extends Equatable {
     return ownerId == userId;
   }
 
-  // Content Block Helpers
   ContentBlock? getBlockById(String blockId) {
     try {
       return contentBlocks.firstWhere((block) => block.id == blockId);
@@ -115,9 +118,9 @@ class MemorialPageModel extends Equatable {
     DateTime? birthDate,
     DateTime? deathDate,
     String? templateId,
-    PrivacyLevel? privacyLevel,
+    bool? isPublic,
+    MemorialStatus? status,
     List<ContentBlock>? contentBlocks,
-    List<String>? collaboratorIds,
     List<String>? groupMemberIds,
     DateTime? createdAt,
   }) {
@@ -130,7 +133,8 @@ class MemorialPageModel extends Equatable {
       birthDate: birthDate ?? this.birthDate,
       deathDate: deathDate ?? this.deathDate,
       templateId: templateId ?? this.templateId,
-      privacyLevel: privacyLevel ?? this.privacyLevel,
+      isPublic: isPublic ?? this.isPublic,
+      status: status ?? this.status,
       contentBlocks: contentBlocks ?? this.contentBlocks,
       groupMemberIds: groupMemberIds ?? this.groupMemberIds,
       createdAt: createdAt ?? this.createdAt,
@@ -151,7 +155,8 @@ class MemorialPageModel extends Equatable {
           ? DateTime.parse(json['deathDate'] as String)
           : null,
       templateId: json['templateId'] as String? ?? 'default',
-      privacyLevel: _parsePrivacyLevel(json['privacyLevel'] as String?),
+      isPublic: json['isPublic'] as bool? ?? false,
+      status: _parseStatus(json['status'] as String?),
       contentBlocks: (json['contentBlocks'] as List?)
               ?.map((e) => ContentBlock.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -173,21 +178,22 @@ class MemorialPageModel extends Equatable {
       'birthDate': birthDate?.toIso8601String(),
       'deathDate': deathDate?.toIso8601String(),
       'templateId': templateId,
-      'privacyLevel': privacyLevel.toString().split('.').last,
+      'isPublic': isPublic,
+      'status': status.toString().split('.').last,
       'contentBlocks': contentBlocks.map((block) => block.toJson()).toList(),
       'groupMemberIds': groupMemberIds,
       'createdAt': createdAt.toIso8601String(),
     };
   }
 
-  static PrivacyLevel _parsePrivacyLevel(String? privacyString) {
-    if (privacyString == null) return PrivacyLevel.private;
+  static MemorialStatus _parseStatus(String? statusString) {
+    if (statusString == null) return MemorialStatus.draft;
     try {
-      return PrivacyLevel.values.firstWhere(
-        (e) => e.toString().split('.').last == privacyString,
+      return MemorialStatus.values.firstWhere(
+        (e) => e.toString().split('.').last == statusString,
       );
     } catch (_) {
-      return PrivacyLevel.private;
+      return MemorialStatus.draft;
     }
   }
 
@@ -205,7 +211,8 @@ class MemorialPageModel extends Equatable {
         birthDate,
         deathDate,
         templateId,
-        privacyLevel,
+        isPublic,
+        status,
         contentBlocks,
         groupMemberIds,
         createdAt,
