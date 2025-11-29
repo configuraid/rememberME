@@ -102,6 +102,58 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
     }
   }
 
+  // ============================================================
+  // Helper: InputDecoration mit TextDecoration.none
+  // ============================================================
+  InputDecoration _buildInputDecoration({
+    required String labelText,
+    String? hintText,
+    required Widget prefixIcon,
+    required bool isDark,
+    EdgeInsetsGeometry? contentPadding,
+    String? counterText,
+  }) {
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      prefixIcon: prefixIcon,
+      counterText: counterText,
+      contentPadding: contentPadding ??
+          const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+      // FIX: Alle TextStyles mit decoration: TextDecoration.none
+      labelStyle: TextStyle(
+        color: AppColors.textSecondary,
+        fontSize: 15,
+        decoration: TextDecoration.none,
+      ),
+      floatingLabelStyle: TextStyle(
+        color: isDark ? AppColors.primaryLight : AppColors.primary,
+        fontSize: 14,
+        decoration: TextDecoration.none,
+      ),
+      hintStyle: TextStyle(
+        color: AppColors.textSecondary,
+        fontSize: 15,
+        decoration: TextDecoration.none,
+      ),
+      errorStyle: const TextStyle(
+        color: AppColors.error,
+        fontSize: 12,
+        decoration: TextDecoration.none,
+      ),
+      // Alle Borders explizit setzen
+      border: InputBorder.none,
+      enabledBorder: InputBorder.none,
+      focusedBorder: InputBorder.none,
+      errorBorder: InputBorder.none,
+      focusedErrorBorder: InputBorder.none,
+      disabledBorder: InputBorder.none,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (Platform.isIOS) {
@@ -189,6 +241,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                 color: isDark
                                     ? AppColors.textLight
                                     : AppColors.textPrimary,
+                                decoration: TextDecoration.none,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -202,6 +255,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                 color: isDark
                                     ? const Color(0xFFB0B0B0)
                                     : AppColors.textSecondary,
+                                decoration: TextDecoration.none,
                               ),
                               textAlign: TextAlign.center,
                               maxLines: 1,
@@ -225,8 +279,10 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                   TextFormField(
                                     controller: _nameController,
                                     validator: Validators.validateName,
-                                    style: theme.textTheme.bodyLarge,
-                                    decoration: InputDecoration(
+                                    style: theme.textTheme.bodyLarge?.copyWith(
+                                      decoration: TextDecoration.none,
+                                    ),
+                                    decoration: _buildInputDecoration(
                                       labelText: AppStrings.name,
                                       hintText: AppStrings.yourFullName,
                                       prefixIcon: Icon(
@@ -235,11 +291,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                             ? AppColors.primaryLight
                                             : AppColors.primary,
                                       ),
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 12,
-                                      ),
+                                      isDark: isDark,
                                     ),
                                   ),
 
@@ -249,8 +301,10 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                   TextFormField(
                                     controller: _emailController,
                                     keyboardType: TextInputType.emailAddress,
-                                    style: theme.textTheme.bodyLarge,
-                                    decoration: InputDecoration(
+                                    style: theme.textTheme.bodyLarge?.copyWith(
+                                      decoration: TextDecoration.none,
+                                    ),
+                                    decoration: _buildInputDecoration(
                                       labelText: AppStrings.emailOptional,
                                       hintText: AppStrings.emailExample,
                                       prefixIcon: Icon(
@@ -259,11 +313,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                             ? AppColors.primaryLight
                                             : AppColors.primary,
                                       ),
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 12,
-                                      ),
+                                      isDark: isDark,
                                     ),
                                   ),
 
@@ -316,6 +366,8 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                                     color: isDark
                                                         ? AppColors.textLight
                                                         : AppColors.textPrimary,
+                                                    decoration:
+                                                        TextDecoration.none,
                                                   ),
                                                 ),
                                                 Text(
@@ -329,6 +381,8 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                                         : AppColors
                                                             .textSecondary,
                                                     fontSize: 12,
+                                                    decoration:
+                                                        TextDecoration.none,
                                                   ),
                                                 ),
                                               ],
@@ -363,8 +417,11 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                             obscureText: true,
                                             keyboardType: TextInputType.number,
                                             maxLength: 4,
-                                            style: theme.textTheme.bodyLarge,
-                                            decoration: InputDecoration(
+                                            style: theme.textTheme.bodyLarge
+                                                ?.copyWith(
+                                              decoration: TextDecoration.none,
+                                            ),
+                                            decoration: _buildInputDecoration(
                                               labelText: AppStrings.pin,
                                               hintText: '••••',
                                               prefixIcon: Icon(
@@ -374,6 +431,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                                     ? AppColors.primaryLight
                                                     : AppColors.primary,
                                               ),
+                                              isDark: isDark,
                                               counterText: '',
                                               contentPadding:
                                                   const EdgeInsets.symmetric(
@@ -393,8 +451,11 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                             obscureText: true,
                                             keyboardType: TextInputType.number,
                                             maxLength: 4,
-                                            style: theme.textTheme.bodyLarge,
-                                            decoration: InputDecoration(
+                                            style: theme.textTheme.bodyLarge
+                                                ?.copyWith(
+                                              decoration: TextDecoration.none,
+                                            ),
+                                            decoration: _buildInputDecoration(
                                               labelText: AppStrings.confirm,
                                               hintText: '••••',
                                               prefixIcon: Icon(
@@ -404,6 +465,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                                     ? AppColors.primaryLight
                                                     : AppColors.primary,
                                               ),
+                                              isDark: isDark,
                                               counterText: '',
                                               contentPadding:
                                                   const EdgeInsets.symmetric(
@@ -455,6 +517,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                                 ?.copyWith(
                                               color: AppColors.textLight,
                                               fontWeight: FontWeight.w600,
+                                              decoration: TextDecoration.none,
                                             ),
                                           ),
                                   ),
@@ -497,6 +560,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                           ? AppColors.info.withOpacity(0.9)
                                           : AppColors.info,
                                       fontSize: 12,
+                                      decoration: TextDecoration.none,
                                     ),
                                   ),
                                 ),
@@ -520,6 +584,8 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
 
   // ===== iOS VIEW =====
   Widget _buildIOSView() {
+    final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
+
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state.isAuthenticated) {
@@ -544,26 +610,31 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(
+                  Icon(
                     CupertinoIcons.person_add,
                     size: 80,
-                    color: AppColors.primary,
+                    color: isDark ? AppColors.accent : AppColors.primary,
                   ),
                   const SizedBox(height: 24),
                   Text(
                     AppStrings.newProfile,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
+                      color: isDark
+                          ? CupertinoColors.white
+                          : CupertinoColors.black,
+                      decoration: TextDecoration.none,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '${AppStrings.createYourPersonalProfile}\n${widget.organization.name}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       color: CupertinoColors.systemGrey,
+                      decoration: TextDecoration.none,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -577,6 +648,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                       CupertinoIcons.person,
                       color: CupertinoColors.systemGrey,
                     ),
+                    isDark: isDark,
                   ),
                   const SizedBox(height: 16),
 
@@ -589,6 +661,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                       color: CupertinoColors.systemGrey,
                     ),
                     keyboardType: TextInputType.emailAddress,
+                    isDark: isDark,
                   ),
                   const SizedBox(height: 24),
 
@@ -598,9 +671,11 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                       horizontal: 16,
                       vertical: 12,
                     ),
-                    decoration: const BoxDecoration(
-                      color: CupertinoColors.systemGrey6,
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF1C1C1E)
+                          : CupertinoColors.systemGrey6,
+                      borderRadius: const BorderRadius.all(Radius.circular(10)),
                     ),
                     child: Row(
                       children: [
@@ -610,17 +685,22 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                             children: [
                               Text(
                                 AppStrings.activatePinProtection,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
+                                  color: isDark
+                                      ? CupertinoColors.white
+                                      : CupertinoColors.black,
+                                  decoration: TextDecoration.none,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 AppStrings.protectProfileWithPin,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   color: CupertinoColors.systemGrey,
+                                  decoration: TextDecoration.none,
                                 ),
                               ),
                             ],
@@ -629,6 +709,8 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                         CupertinoSwitch(
                           value: _usePin,
                           onChanged: (value) => setState(() => _usePin = value),
+                          activeTrackColor:
+                              isDark ? AppColors.accent : AppColors.primary,
                         ),
                       ],
                     ),
@@ -645,6 +727,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                       ),
                       obscureText: true,
                       keyboardType: TextInputType.number,
+                      isDark: isDark,
                     ),
                     const SizedBox(height: 16),
                     _buildIOSTextField(
@@ -656,6 +739,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                       ),
                       obscureText: true,
                       keyboardType: TextInputType.number,
+                      isDark: isDark,
                     ),
                   ],
 
@@ -670,7 +754,12 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                           ? const CupertinoActivityIndicator(
                               color: CupertinoColors.white,
                             )
-                          : Text(AppStrings.createProfile),
+                          : Text(
+                              AppStrings.createProfile,
+                              style: const TextStyle(
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
                     ),
                   ),
 
@@ -680,10 +769,10 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.info.withOpacity(0.1),
+                      color: AppColors.info.withOpacity(isDark ? 0.15 : 0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: AppColors.info.withOpacity(0.3),
+                        color: AppColors.info.withOpacity(isDark ? 0.4 : 0.3),
                       ),
                     ),
                     child: Row(
@@ -697,9 +786,10 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                         Expanded(
                           child: Text(
                             AppStrings.canEditProfileLater,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               color: AppColors.info,
+                              decoration: TextDecoration.none,
                             ),
                           ),
                         ),
@@ -715,18 +805,18 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
     );
   }
 
-  // Helper Widget für iOS TextFields
   Widget _buildIOSTextField({
     required TextEditingController controller,
     required String placeholder,
+    required bool isDark,
     Widget? prefix,
     bool obscureText = false,
     TextInputType? keyboardType,
   }) {
     return Container(
-      decoration: const BoxDecoration(
-        color: CupertinoColors.systemGrey6,
-        borderRadius: BorderRadius.all(Radius.circular(10)),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.systemGrey6,
+        borderRadius: const BorderRadius.all(Radius.circular(10)),
       ),
       child: CupertinoTextField(
         controller: controller,
@@ -741,6 +831,14 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
               )
             : null,
         decoration: const BoxDecoration(),
+        style: TextStyle(
+          color: isDark ? CupertinoColors.white : CupertinoColors.black,
+          decoration: TextDecoration.none,
+        ),
+        placeholderStyle: TextStyle(
+          color: CupertinoColors.systemGrey,
+          decoration: TextDecoration.none,
+        ),
       ),
     );
   }

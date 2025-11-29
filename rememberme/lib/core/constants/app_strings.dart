@@ -278,20 +278,6 @@ class AppStrings {
   static const String download = 'Herunterladen';
   static const String dataExportStarted = 'Daten-Export wurde gestartet';
 
-  // Notifications Settings
-  static const String pushNotifications = 'Push-Benachrichtigungen';
-  static const String pushNotificationsSubtitle =
-      'Benachrichtigungen auf diesem Gerät';
-  static const String emailNotifications = 'E-Mail-Benachrichtigungen';
-  static const String emailNotificationsSubtitle =
-      'Benachrichtigungen per E-Mail';
-  static const String notificationTypes = 'Benachrichtigungstypen';
-  static const String memorialUpdates = 'Gedenkseiten-Updates';
-  static const String memorialUpdatesSubtitle = 'Neue Beiträge und Änderungen';
-  static const String groupInvites = 'Gruppen-Einladungen';
-  static const String groupInvitesSubtitle =
-      'Einladungen zu gemeinsamen Gedenkseiten';
-
   // Groups
   static const String groups = 'Gruppen';
   static const String inviteMembers = 'Mitglieder einladen';
@@ -376,5 +362,6 @@ class AppStrings {
   static const String alignment = 'Ausrichtung';
   static const String image = 'Bild';
   static const String images = 'Bilder';
-  static const String uploadedSuccessfully = ' erfolgreich hochgeladen! ✅';
+  static const String uploadedSuccessfully = ' erfolgreich hochgeladen!';
+  static const String apply = 'Übernehmen';
 }

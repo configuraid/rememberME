@@ -332,8 +332,6 @@ class ContentBlockWidget extends StatelessWidget {
         return _buildDividerContent(context);
       case ContentBlockType.video:
         return _buildVideoContent(context);
-      case ContentBlockType.date:
-        return _buildDateContent(context);
     }
   }
 
@@ -727,75 +725,6 @@ class ContentBlockWidget extends StatelessWidget {
           ),
         ],
       ],
-    );
-  }
-
-  Widget _buildDateContent(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = Platform.isIOS
-        ? brightness == Brightness.dark
-        : Theme.of(context).brightness == Brightness.dark;
-
-    final birthDate = block.getContent('birthDate', '');
-    final deathDate = block.getContent('deathDate', '');
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (birthDate.isNotEmpty) ...[
-            Icon(
-              Icons.cake_outlined,
-              size: 22,
-              color: isDark ? const Color(0xFF90CAF9) : AppColors.primary,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              birthDate,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color:
-                    isDark ? const Color(0xFFE0E0E0) : const Color(0xFF424242),
-              ),
-            ),
-          ],
-          if (birthDate.isNotEmpty && deathDate.isNotEmpty) ...[
-            const SizedBox(width: 16),
-            Text(
-              '–',
-              style: TextStyle(
-                fontSize: 20,
-                color:
-                    isDark ? const Color(0xFF707070) : const Color(0xFF9E9E9E),
-              ),
-            ),
-            const SizedBox(width: 16),
-          ],
-          if (deathDate.isNotEmpty) ...[
-            Text(
-              deathDate,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color:
-                    isDark ? const Color(0xFFE0E0E0) : const Color(0xFF424242),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.favorite_outline_rounded,
-              size: 22,
-              color: isDark ? const Color(0xFFEF5350) : const Color(0xFFE53935),
-            ),
-          ],
-        ],
-      ),
     );
   }
 

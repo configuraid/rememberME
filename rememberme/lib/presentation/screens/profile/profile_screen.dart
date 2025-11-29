@@ -50,49 +50,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return trimmedName[0].toUpperCase();
   }
 
-  void _showSuccessMessage(BuildContext context, String message) {
-    if (Platform.isAndroid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle_rounded, color: Colors.white),
-              const SizedBox(width: 12),
-              Expanded(child: Text(message)),
-            ],
-          ),
-          backgroundColor: const Color(0xFF4CAF50),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-    } else {
-      showCupertinoDialog(
-        context: context,
-        builder: (ctx) => CupertinoAlertDialog(
-          title: const Icon(
-            Icons.check_circle,
-            color: AppColors.success,
-            size: 48,
-          ),
-          content: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(message),
-          ),
-          actions: [
-            CupertinoDialogAction(
-              child: Text(AppStrings.ok),
-              onPressed: () => Navigator.of(ctx).pop(),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
   void _showErrorMessage(BuildContext context, String message) {
     if (Platform.isAndroid) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -143,9 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return BlocConsumer<ProfileBloc, ProfileState>(
       listener: (context, state) {
-        if (state.isSuccess && state.successMessage != null) {
-          _showSuccessMessage(context, state.successMessage!);
-        }
+        if (state.isSuccess && state.successMessage != null) {}
 
         if (state.hasError && state.errorMessage != null) {
           _showErrorMessage(context, state.errorMessage!);

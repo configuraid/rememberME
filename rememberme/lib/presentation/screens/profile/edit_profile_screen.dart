@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -55,6 +56,88 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _phoneController.dispose();
     _bioController.dispose();
     super.dispose();
+  }
+
+  // ============================================================
+  // Toast Implementierung (wie in IntuitivePageBuilderScreen)
+  // ============================================================
+  void _showToast(String message, {bool isSuccess = true}) {
+    if (Platform.isIOS) {
+      _showIOSToast(message, isSuccess: isSuccess);
+    } else {
+      _showAndroidSnackBar(message, isSuccess: isSuccess);
+    }
+  }
+
+  void _showIOSToast(String message, {bool isSuccess = true}) {
+    final overlay = Overlay.of(context);
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = brightness == Brightness.dark;
+
+    late OverlayEntry overlayEntry;
+    overlayEntry = OverlayEntry(
+      builder: (context) => _IOSBottomToast(
+        message: message,
+        isDark: isDark,
+        isSuccess: isSuccess,
+        onDismiss: () {
+          if (overlayEntry.mounted) {
+            overlayEntry.remove();
+          }
+        },
+      ),
+    );
+
+    overlay.insert(overlayEntry);
+
+    // Automatisch nach 2.5 Sekunden entfernen
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      if (overlayEntry.mounted) {
+        overlayEntry.remove();
+      }
+    });
+  }
+
+  void _showAndroidSnackBar(String message, {bool isSuccess = true}) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isSuccess ? Icons.check_rounded : Icons.error_rounded,
+                color: Colors.white,
+                size: 16,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isSuccess ? AppColors.success : AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+        elevation: 4,
+      ),
+    );
   }
 
   Future<void> _pickImage() async {
@@ -409,214 +492,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  void _showResultDialog({
-    required bool isSuccess,
-    required String message,
-    required bool isDark,
-  }) {
-    if (Platform.isIOS) {
-      _showResultDialogIOS(
-          isSuccess: isSuccess, message: message, isDark: isDark);
-    } else {
-      _showResultDialogAndroid(
-        isSuccess: isSuccess,
-        message: message,
-        isDark: isDark,
-      );
-    }
-  }
-
-  void _showResultDialogIOS({
-    required bool isSuccess,
-    required String message,
-    required bool isDark,
-  }) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isSuccess ? Icons.check_circle : Icons.error,
-              size: 64,
-              color: isSuccess ? AppColors.success : AppColors.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              isSuccess ? AppStrings.successTitle : AppStrings.errorTitle,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                color: isDark ? AppColors.textLight : AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              style: TextStyle(
-                fontSize: 13,
-                color:
-                    isDark ? AppColors.textSecondary : AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              if (isSuccess) {
-                Navigator.of(context).pop();
-              }
-            },
-            child: Text(
-              AppStrings.ok,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                color: isDark ? AppColors.accent : AppColors.primary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showResultDialogAndroid({
-    required bool isSuccess,
-    required String message,
-    required bool isDark,
-  }) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 340),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: isDark
-                    ? Colors.black.withOpacity(0.5)
-                    : Colors.black.withOpacity(0.15),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 32),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isSuccess
-                        ? [
-                            AppColors.success.withOpacity(0.2),
-                            AppColors.success.withOpacity(0.1),
-                          ]
-                        : [
-                            AppColors.error.withOpacity(0.2),
-                            AppColors.error.withOpacity(0.1),
-                          ],
-                  ),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSuccess
-                        ? AppColors.success.withOpacity(0.4)
-                        : AppColors.error.withOpacity(0.4),
-                    width: 2,
-                  ),
-                ),
-                child: Icon(
-                  isSuccess ? Icons.check_circle_rounded : Icons.error_rounded,
-                  size: 64,
-                  color: isSuccess ? AppColors.success : AppColors.error,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  isSuccess ? AppStrings.successTitle : AppStrings.errorTitle,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isDark
-                            ? AppColors.textLight
-                            : AppColors.textPrimary,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  message,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: isDark
-                            ? const Color(0xFFB0B0B0)
-                            : AppColors.textSecondary,
-                        height: 1.5,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 32),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(ctx).pop();
-                      if (isSuccess) {
-                        Navigator.of(context).pop();
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          isSuccess ? AppColors.success : AppColors.error,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      AppStrings.ok,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
-                          ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -624,19 +499,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return BlocConsumer<ProfileBloc, ProfileState>(
       listener: (context, state) {
         if (state.isSuccess && state.successMessage != null) {
-          _showResultDialog(
-            isSuccess: true,
-            message: state.successMessage!,
-            isDark: isDark,
-          );
+          // Toast anzeigen statt Dialog
+          _showToast(state.successMessage!, isSuccess: true);
+
+          // Nach kurzer Verzögerung zurück navigieren
+          Future.delayed(const Duration(milliseconds: 1200), () {
+            if (mounted && Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          });
         }
 
         if (state.hasError && state.errorMessage != null) {
-          _showResultDialog(
-            isSuccess: false,
-            message: state.errorMessage!,
-            isDark: isDark,
-          );
+          // Error Toast anzeigen
+          _showToast(state.errorMessage!, isSuccess: false);
         }
       },
       builder: (context, state) {
@@ -1375,6 +1251,176 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                 ],
               ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// iOS Native Bottom Toast (Pill-Style wie Apple)
+// ============================================================
+class _IOSBottomToast extends StatefulWidget {
+  final String message;
+  final bool isDark;
+  final bool isSuccess;
+  final VoidCallback onDismiss;
+
+  const _IOSBottomToast({
+    required this.message,
+    required this.isDark,
+    required this.isSuccess,
+    required this.onDismiss,
+  });
+
+  @override
+  State<_IOSBottomToast> createState() => _IOSBottomToastState();
+}
+
+class _IOSBottomToastState extends State<_IOSBottomToast>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutBack,
+      ),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.5),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+
+    _controller.forward();
+
+    // Haptic Feedback bei Erscheinen
+    HapticFeedback.lightImpact();
+
+    // Fade out nach 2 Sekunden
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (mounted) {
+        _controller.reverse().then((_) {
+          widget.onDismiss();
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+    return Positioned(
+      bottom: bottomPadding + 100,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: ScaleTransition(
+              scale: _scaleAnimation,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: widget.isDark
+                        ? const Color(0xFF2C2C2E).withOpacity(0.95)
+                        : CupertinoColors.white.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(50),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black
+                            .withOpacity(widget.isDark ? 0.4 : 0.12),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: widget.isDark
+                          ? const Color(0xFF48484A)
+                          : CupertinoColors.systemGrey5,
+                      width: 0.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: widget.isSuccess
+                              ? CupertinoColors.systemGreen
+                              : CupertinoColors.systemRed,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          widget.isSuccess
+                              ? CupertinoIcons.checkmark_alt
+                              : CupertinoIcons.xmark,
+                          color: CupertinoColors.white,
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: Text(
+                          widget.message,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: widget.isDark
+                                ? CupertinoColors.white
+                                : CupertinoColors.black,
+                            fontFamily: '.SF Pro Text',
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

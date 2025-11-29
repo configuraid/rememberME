@@ -261,14 +261,6 @@ class PageBuilderRepository {
       ),
       ContentBlock(
         id: _uuid.v4(),
-        type: ContentBlockType.date,
-        content: {
-          'birthDate': '',
-          'deathDate': '',
-        },
-      ),
-      ContentBlock(
-        id: _uuid.v4(),
         type: ContentBlockType.text,
         content: {
           'text': 'Hier kannst du die Geschichte erzählen...',
@@ -321,14 +313,6 @@ class PageBuilderRepository {
       ),
       ContentBlock(
         id: _uuid.v4(),
-        type: ContentBlockType.date,
-        content: {
-          'birthDate': '',
-          'deathDate': '',
-        },
-      ),
-      ContentBlock(
-        id: _uuid.v4(),
         type: ContentBlockType.divider,
         content: {
           'color': '#E0E0E0',
@@ -360,14 +344,6 @@ class PageBuilderRepository {
           'level': 2,
           'align': 'center',
           'color': '#000000',
-        },
-      ),
-      ContentBlock(
-        id: _uuid.v4(),
-        type: ContentBlockType.date,
-        content: {
-          'birthDate': '',
-          'deathDate': '',
         },
       ),
       ContentBlock(

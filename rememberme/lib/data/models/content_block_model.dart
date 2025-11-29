@@ -12,7 +12,6 @@ enum ContentBlockType {
   quote, // Zitat
   divider, // Trennlinie
   video, // Video
-  date, // Lebensdaten (Geboren - Gestorben)
 }
 
 /// Simplified content block for memorial pages
@@ -71,12 +70,6 @@ class ContentBlock {
         return {
           'url': '',
           'caption': '',
-        };
-      case ContentBlockType.date:
-        return {
-          'birthDate': '',
-          'deathDate': '',
-          'format': 'DD.MM.YYYY',
         };
     }
   }
@@ -151,8 +144,6 @@ class BlockTypeInfo {
         return 'Trennlinie';
       case ContentBlockType.video:
         return 'Video';
-      case ContentBlockType.date:
-        return 'Lebensdaten';
     }
   }
 
@@ -176,8 +167,6 @@ class BlockTypeInfo {
           return CupertinoIcons.minus_rectangle;
         case ContentBlockType.video:
           return CupertinoIcons.videocam;
-        case ContentBlockType.date:
-          return CupertinoIcons.calendar;
       }
     } else {
       switch (type) {
@@ -195,8 +184,6 @@ class BlockTypeInfo {
           return Icons.horizontal_rule_rounded;
         case ContentBlockType.video:
           return Icons.videocam_outlined;
-        case ContentBlockType.date:
-          return Icons.calendar_today_rounded;
       }
     }
   }
@@ -217,8 +204,6 @@ class BlockTypeInfo {
         return 'Visueller Trenner';
       case ContentBlockType.video:
         return 'Video einbetten';
-      case ContentBlockType.date:
-        return 'Geburts- und Sterbedatum';
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rememberme/data/models/content_block_model.dart';
 import 'package:rememberme/data/services/firebase_storage_service.dart';
@@ -27,16 +28,19 @@ class BlockSettingsBottomSheet extends StatefulWidget {
 class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
   late Map<String, TextEditingController> _controllers;
   late Map<String, dynamic> _localContent;
+  late Map<String, dynamic> _originalContent;
 
   final ImagePicker _imagePicker = ImagePicker();
   final FirebaseStorageService _storageService = FirebaseStorageService();
   bool _isUploading = false;
+  bool _hasChanges = false;
 
   @override
   void initState() {
     super.initState();
     _controllers = {};
     _localContent = Map.from(widget.block.content);
+    _originalContent = Map.from(widget.block.content);
   }
 
   @override
@@ -51,6 +55,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
     if (oldWidget.block != widget.block) {
       _localContent = Map.from(widget.block.content);
+      _originalContent = Map.from(widget.block.content);
 
       _controllers.forEach((key, controller) {
         final newValue = _localContent[key];
@@ -61,11 +66,248 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     }
   }
 
-  void _updateValue(String key, dynamic value) {
+  // Nur lokale Änderung - KEIN widget.onUpdate mehr!
+  void _updateLocalValue(String key, dynamic value) {
     setState(() {
       _localContent[key] = value;
+      _hasChanges = true;
     });
-    widget.onUpdate(key, value);
+  }
+
+  // Alle Änderungen übernehmen und Sheet schließen
+  void _confirmChanges() {
+    // Haptic Feedback
+    if (Platform.isIOS) {
+      HapticFeedback.mediumImpact();
+    } else {
+      HapticFeedback.lightImpact();
+    }
+
+    // Alle geänderten Werte übergeben
+    _localContent.forEach((key, value) {
+      widget.onUpdate(key, value);
+    });
+
+    Navigator.pop(context);
+  }
+
+  // Änderungen verwerfen
+  void _discardChanges() {
+    if (_hasChanges) {
+      _showDiscardDialog();
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
+  void _showDiscardDialog() {
+    if (Platform.isIOS) {
+      final brightness = MediaQuery.of(context).platformBrightness;
+      final isDark = brightness == Brightness.dark;
+
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: Text(
+            AppStrings.unsavedChanges,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              fontFamily: '.SF Pro Text',
+            ),
+          ),
+          content: Text(
+            AppStrings.unsavedChangesMessage,
+            style: TextStyle(
+              fontSize: 13,
+              color: CupertinoColors.systemGrey,
+              fontFamily: '.SF Pro Text',
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              child: Text(
+                AppStrings.cancel,
+                style: TextStyle(
+                  fontSize: 17,
+                  color: CupertinoColors.activeBlue,
+                  fontFamily: '.SF Pro Text',
+                ),
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              child: Text(
+                AppStrings.discardChanges,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: '.SF Pro Text',
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(context); // Dialog schließen
+                Navigator.pop(context); // Sheet schließen
+              },
+            ),
+          ],
+        ),
+      );
+    } else {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+
+      showDialog(
+        context: context,
+        builder: (ctx) => Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 340),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark
+                    ? AppColors.error.withOpacity(0.3)
+                    : Colors.grey.shade200,
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withOpacity(0.5)
+                      : Colors.black.withOpacity(0.15),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.error.withOpacity(0.2),
+                        AppColors.error.withOpacity(0.1),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.error.withOpacity(0.4),
+                      width: 2,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.warning_rounded,
+                    size: 56,
+                    color: AppColors.error,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    AppStrings.unsavedChanges,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? AppColors.textLight
+                              : AppColors.textPrimary,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    AppStrings.unsavedChangesMessage,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: isDark
+                              ? const Color(0xFFB0B0B0)
+                              : AppColors.textSecondary,
+                          height: 1.5,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(
+                              color: isDark
+                                  ? const Color(0xFF404040)
+                                  : Colors.grey.shade300,
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            AppStrings.cancel,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? AppColors.textLight
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(ctx); // Dialog schließen
+                            Navigator.pop(context); // Sheet schließen
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.error,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            AppStrings.discardChanges,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   T _getContent<T>(String key, T defaultValue) {
@@ -102,7 +344,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         imageFile: File(image.path),
       );
 
-      _updateValue('url', downloadUrl);
+      _updateLocalValue('url', downloadUrl);
 
       if (mounted) {
         _showSuccessSnackBar(AppStrings.imageUploadSuccess);
@@ -166,7 +408,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       );
 
       final updatedImages = [...currentImages, ...downloadUrls];
-      _updateValue('images', updatedImages);
+      _updateLocalValue('images', updatedImages);
 
       if (mounted) {
         _showSuccessSnackBar(
@@ -191,7 +433,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
     if (index >= 0 && index < currentImages.length) {
       currentImages.removeAt(index);
-      _updateValue('images', currentImages);
+      _updateLocalValue('images', currentImages);
     }
   }
 
@@ -470,6 +712,160 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    if (Platform.isIOS) {
+      return _buildIOSLayout(context);
+    }
+    return _buildAndroidLayout(context);
+  }
+
+  // ============================================================
+  // iOS Layout
+  // ============================================================
+  Widget _buildIOSLayout(BuildContext context) {
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = brightness == Brightness.dark;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF1C1C1E)
+                : CupertinoColors.systemBackground,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+          ),
+          child: Column(
+            children: [
+              // iOS-Style Handle
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: 36,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF48484A)
+                      : const Color(0xFFC7C7CC),
+                  borderRadius: BorderRadius.circular(2.5),
+                ),
+              ),
+
+              // iOS Navigation Bar Style Header
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isDark
+                          ? const Color(0xFF38383A)
+                          : const Color(0xFFC6C6C8),
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Abbrechen Button (X Icon)
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      minSize: 36,
+                      onPressed: _discardChanges,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF2C2C2E)
+                              : const Color(0xFFF2F2F7),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          CupertinoIcons.xmark,
+                          size: 18,
+                          color: isDark
+                              ? CupertinoColors.white
+                              : CupertinoColors.black,
+                        ),
+                      ),
+                    ),
+
+                    // Titel in der Mitte
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            BlockTypeInfo.getIcon(widget.block.type),
+                            size: 20,
+                            color: isDark
+                                ? CupertinoColors.activeBlue
+                                : AppColors.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              BlockTypeInfo.getTitle(widget.block.type),
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? CupertinoColors.white
+                                    : CupertinoColors.black,
+                                fontFamily: '.SF Pro Text',
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Bestätigen Button (Checkmark Icon)
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      minSize: 36,
+                      onPressed: _confirmChanges,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: CupertinoColors.activeBlue,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          CupertinoIcons.checkmark,
+                          size: 18,
+                          color: CupertinoColors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Content
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(16),
+                  children: _buildSettings(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ============================================================
+  // Android Layout
+  // ============================================================
+  Widget _buildAndroidLayout(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -503,7 +899,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                 ),
               ),
 
-              // Title
+              // Title Header
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 8, 16, 16),
                 child: Row(
@@ -566,7 +962,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                               ? const Color(0xFF909090)
                               : Colors.grey.shade600,
                         ),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: _discardChanges,
                       ),
                     ),
                   ],
@@ -579,11 +975,117 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                 color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
               ),
 
+              // Content
               Expanded(
                 child: ListView(
                   controller: scrollController,
                   padding: const EdgeInsets.all(20),
                   children: _buildSettings(),
+                ),
+              ),
+
+              // Bottom Action Bar mit Bestätigen-Button
+              Container(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  16,
+                  20,
+                  16 + MediaQuery.of(context).padding.bottom,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                  border: Border(
+                    top: BorderSide(
+                      color: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : Colors.grey.shade200,
+                      width: 1,
+                    ),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    // Abbrechen Button
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _discardChanges,
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                        label: Text(AppStrings.cancel),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: BorderSide(
+                            color: isDark
+                                ? const Color(0xFF404040)
+                                : Colors.grey.shade300,
+                            width: 1.5,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          foregroundColor: isDark
+                              ? AppColors.textLight
+                              : AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Übernehmen Button
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: isDark
+                                ? [
+                                    AppColors.success,
+                                    AppColors.success.withOpacity(0.85),
+                                  ]
+                                : [
+                                    AppColors.success,
+                                    AppColors.success.withOpacity(0.9),
+                                  ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.success.withOpacity(0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton.icon(
+                          onPressed: _confirmChanges,
+                          icon: const Icon(Icons.check_rounded, size: 22),
+                          label: Text(
+                            AppStrings.apply,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -609,8 +1111,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         return _buildDividerSettings();
       case ContentBlockType.video:
         return _buildVideoSettings();
-      case ContentBlockType.date:
-        return _buildDateSettings();
     }
   }
 
@@ -665,7 +1165,9 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
   List<Widget> _buildImageSettings() {
     final currentUrl = _getContent('url', '');
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Platform.isIOS
+        ? MediaQuery.of(context).platformBrightness == Brightness.dark
+        : Theme.of(context).brightness == Brightness.dark;
 
     return [
       if (currentUrl.isNotEmpty) ...[
@@ -737,7 +1239,12 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
-              : const Icon(Icons.upload_rounded, size: 22),
+              : Icon(
+                  Platform.isIOS
+                      ? CupertinoIcons.cloud_upload
+                      : Icons.upload_rounded,
+                  size: 22,
+                ),
           label: Text(
             _isUploading ? AppStrings.uploading : AppStrings.uploadImage,
             style: const TextStyle(
@@ -772,7 +1279,9 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     final List<String> images = List<String>.from(
       _getContent<List>('images', []),
     );
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Platform.isIOS
+        ? MediaQuery.of(context).platformBrightness == Brightness.dark
+        : Theme.of(context).brightness == Brightness.dark;
 
     return [
       if (images.isNotEmpty) ...[
@@ -852,8 +1361,10 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.close_rounded,
+                      child: Icon(
+                        Platform.isIOS
+                            ? CupertinoIcons.xmark
+                            : Icons.close_rounded,
                         size: 16,
                         color: Colors.white,
                       ),
@@ -915,7 +1426,12 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
-              : const Icon(Icons.add_photo_alternate_rounded, size: 22),
+              : Icon(
+                  Platform.isIOS
+                      ? CupertinoIcons.photo_on_rectangle
+                      : Icons.add_photo_alternate_rounded,
+                  size: 22,
+                ),
           label: Text(
             _isUploading
                 ? AppStrings.uploading
@@ -997,19 +1513,16 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     if (_isUploading) return;
 
     try {
-      // Video-Picker (verwendet image_picker für Videos)
       final XFile? video = await _imagePicker.pickVideo(
         source: ImageSource.gallery,
-        maxDuration: const Duration(seconds: 15), // Max 15 Sekunden
+        maxDuration: const Duration(seconds: 15),
       );
 
       if (video == null) return;
 
-      // Prüfe Video-Länge (falls verfügbar)
       final videoFile = File(video.path);
       final fileSize = await videoFile.length();
 
-      // Größen-Check (ca. 50MB für 15 Sekunden)
       if (fileSize > 50 * 1024 * 1024) {
         _showErrorDialog(
           AppStrings.uploadError,
@@ -1023,7 +1536,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         _videoUploadProgress = 0.0;
       });
 
-      // Upload mit Fortschrittsanzeige
       final String downloadUrl = await _storageService.uploadBlockVideo(
         memorialId: widget.memorialId,
         blockId: widget.block.id,
@@ -1037,7 +1549,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         },
       );
 
-      _updateValue('url', downloadUrl);
+      _updateLocalValue('url', downloadUrl);
 
       if (mounted) {
         _showSuccessSnackBar('Video erfolgreich hochgeladen!');
@@ -1058,11 +1570,12 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
   List<Widget> _buildVideoSettings() {
     final currentUrl = _getContent('url', '');
-    final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final isDark = Platform.isIOS
+        ? MediaQuery.of(context).platformBrightness == Brightness.dark
+        : Theme.of(context).brightness == Brightness.dark;
 
     if (Platform.isIOS) {
       return [
-        // Video-Vorschau mit iOS-Style
         if (currentUrl.isNotEmpty) ...[
           Container(
             decoration: BoxDecoration(
@@ -1090,7 +1603,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                         ),
                       ),
                     ),
-                    // Play Button Overlay
                     Container(
                       decoration: BoxDecoration(
                         color: CupertinoColors.black.withOpacity(0.3),
@@ -1118,8 +1630,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           ),
           const SizedBox(height: 16),
         ],
-
-        // iOS List-Style Upload Section
         Container(
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white,
@@ -1127,7 +1637,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           ),
           child: Column(
             children: [
-              // Upload Button
               CupertinoButton(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -1208,8 +1717,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   ],
                 ),
               ),
-
-              // Progress Bar (wenn Upload läuft)
               if (_isUploading)
                 Container(
                   height: 3,
@@ -1226,18 +1733,13 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                     ),
                   ),
                 ),
-
               if (_isUploading) const SizedBox(height: 12),
-
-              // Divider
               Container(
                 height: 0.5,
                 margin: const EdgeInsets.only(left: 60),
                 color:
                     isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8),
               ),
-
-              // Info Row
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1273,30 +1775,33 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
             ],
           ),
         ),
-
         const SizedBox(height: 24),
-
-        // Beschreibung mit iOS TextField
         Text(
           'Beschreibung',
           style: TextStyle(
             fontSize: 13,
-            color: CupertinoColors.systemGrey,
+            color:
+                isDark ? const Color(0xFF8E8E93) : CupertinoColors.systemGrey,
             fontFamily: '.SF Pro Text',
             fontWeight: FontWeight.w600,
+            letterSpacing: -0.08,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isDark ? const Color(0xFF38383A) : const Color(0xFFD1D1D6),
+              width: 1,
+            ),
           ),
           child: CupertinoTextField(
             controller: _getController('caption', ''),
             placeholder: 'Optional',
             maxLines: 3,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             style: TextStyle(
               fontSize: 17,
               color: isDark ? CupertinoColors.white : CupertinoColors.black,
@@ -1304,18 +1809,17 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
             ),
             placeholderStyle: TextStyle(
               fontSize: 17,
-              color: CupertinoColors.systemGrey3,
+              color: isDark
+                  ? const Color(0xFF636366)
+                  : CupertinoColors.systemGrey2,
               fontFamily: '.SF Pro Text',
             ),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white,
-              borderRadius: BorderRadius.circular(12),
+            decoration: const BoxDecoration(
+              color: Colors.transparent,
             ),
-            onChanged: (value) => _updateValue('caption', value),
+            onChanged: (value) => _updateLocalValue('caption', value),
           ),
         ),
-
-        // Video löschen (falls vorhanden)
         if (currentUrl.isNotEmpty) ...[
           const SizedBox(height: 24),
           CupertinoButton(
@@ -1366,7 +1870,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                         ),
                       ),
                       onPressed: () {
-                        _updateValue('url', '');
+                        _updateLocalValue('url', '');
                         _storageService.deleteBlockVideo(
                           memorialId: widget.memorialId,
                           blockId: widget.block.id,
@@ -1447,8 +1951,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           ),
           const SizedBox(height: 20),
         ],
-
-        // Upload-Button mit Fortschrittsanzeige
         Container(
           height: 56,
           decoration: BoxDecoration(
@@ -1540,9 +2042,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
             ],
           ),
         ),
-
         const SizedBox(height: 8),
-
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Row(
@@ -1566,21 +2066,18 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
             ],
           ),
         ),
-
         const SizedBox(height: 20),
-
         _buildTextField(
           label: AppStrings.description,
           key: 'caption',
           defaultValue: '',
           maxLines: 2,
         ),
-
         if (currentUrl.isNotEmpty) ...[
           const SizedBox(height: 20),
           OutlinedButton.icon(
             onPressed: () {
-              _updateValue('url', '');
+              _updateLocalValue('url', '');
               _storageService.deleteBlockVideo(
                 memorialId: widget.memorialId,
                 blockId: widget.block.id,
@@ -1602,24 +2099,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     }
   }
 
-  List<Widget> _buildDateSettings() {
-    return [
-      _buildTextField(
-        label: AppStrings.birthDate,
-        key: 'birthDate',
-        defaultValue: '',
-        hint: AppStrings.dateFormat,
-      ),
-      const SizedBox(height: 20),
-      _buildTextField(
-        label: AppStrings.deathDate,
-        key: 'deathDate',
-        defaultValue: '',
-        hint: AppStrings.dateFormat,
-      ),
-    ];
-  }
-
   Widget _buildTextField({
     required String label,
     required String key,
@@ -1627,7 +2106,62 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     int maxLines = 1,
     String? hint,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Platform.isIOS
+        ? MediaQuery.of(context).platformBrightness == Brightness.dark
+        : Theme.of(context).brightness == Brightness.dark;
+
+    if (Platform.isIOS) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color:
+                  isDark ? const Color(0xFF8E8E93) : CupertinoColors.systemGrey,
+              fontFamily: '.SF Pro Text',
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.08,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color:
+                    isDark ? const Color(0xFF38383A) : const Color(0xFFD1D1D6),
+                width: 1,
+              ),
+            ),
+            child: CupertinoTextField(
+              controller: _getController(key, defaultValue),
+              placeholder: hint ?? label,
+              maxLines: maxLines,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              style: TextStyle(
+                fontSize: 17,
+                color: isDark ? CupertinoColors.white : CupertinoColors.black,
+                fontFamily: '.SF Pro Text',
+              ),
+              placeholderStyle: TextStyle(
+                fontSize: 17,
+                color: isDark
+                    ? const Color(0xFF636366)
+                    : CupertinoColors.systemGrey2,
+                fontFamily: '.SF Pro Text',
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.transparent,
+              ),
+              onChanged: (value) => _updateLocalValue(key, value),
+            ),
+          ),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1696,7 +2230,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
               ),
             ),
             maxLines: maxLines,
-            onChanged: (value) => _updateValue(key, value),
+            onChanged: (value) => _updateLocalValue(key, value),
           ),
         ),
       ],
@@ -1709,18 +2243,27 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     required dynamic value,
     required Map<dynamic, String> items,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Platform.isIOS
+        ? MediaQuery.of(context).platformBrightness == Brightness.dark
+        : Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                letterSpacing: 0.15,
-              ),
+          style: Platform.isIOS
+              ? TextStyle(
+                  fontSize: 13,
+                  color: CupertinoColors.systemGrey,
+                  fontFamily: '.SF Pro Text',
+                  fontWeight: FontWeight.w600,
+                )
+              : Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                    letterSpacing: 0.15,
+                  ),
         ),
         const SizedBox(height: 8),
         Container(
@@ -1782,7 +2325,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
             }).toList(),
             onChanged: (newValue) {
               if (newValue != null) {
-                _updateValue(key, newValue);
+                _updateLocalValue(key, newValue);
               }
             },
           ),
@@ -1798,7 +2341,9 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     required double max,
     required double value,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Platform.isIOS
+        ? MediaQuery.of(context).platformBrightness == Brightness.dark
+        : Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1808,11 +2353,20 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           children: [
             Text(
               label,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                    letterSpacing: 0.15,
-                  ),
+              style: Platform.isIOS
+                  ? TextStyle(
+                      fontSize: 13,
+                      color: CupertinoColors.systemGrey,
+                      fontFamily: '.SF Pro Text',
+                      fontWeight: FontWeight.w600,
+                    )
+                  : Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? AppColors.textLight
+                            : AppColors.textPrimary,
+                        letterSpacing: 0.15,
+                      ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1869,7 +2423,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
             max: max,
             divisions: (max - min).round(),
             onChanged: (newValue) {
-              _updateValue(key, newValue);
+              _updateLocalValue(key, newValue);
             },
           ),
         ),
@@ -1879,30 +2433,60 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
   Widget _buildAlignmentPicker(String key) {
     final currentAlign = _getContent(key, 'left');
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Platform.isIOS
+        ? MediaQuery.of(context).platformBrightness == Brightness.dark
+        : Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppStrings.alignment,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                letterSpacing: 0.15,
-              ),
+          style: Platform.isIOS
+              ? TextStyle(
+                  fontSize: 13,
+                  color: CupertinoColors.systemGrey,
+                  fontFamily: '.SF Pro Text',
+                  fontWeight: FontWeight.w600,
+                )
+              : Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                    letterSpacing: 0.15,
+                  ),
         ),
         const SizedBox(height: 8),
         Row(
           children: [
-            _buildAlignButton('left', Icons.format_align_left_rounded,
-                currentAlign, key, isDark),
+            _buildAlignButton(
+              'left',
+              Platform.isIOS
+                  ? CupertinoIcons.text_alignleft
+                  : Icons.format_align_left_rounded,
+              currentAlign,
+              key,
+              isDark,
+            ),
             const SizedBox(width: 12),
-            _buildAlignButton('center', Icons.format_align_center_rounded,
-                currentAlign, key, isDark),
+            _buildAlignButton(
+              'center',
+              Platform.isIOS
+                  ? CupertinoIcons.text_aligncenter
+                  : Icons.format_align_center_rounded,
+              currentAlign,
+              key,
+              isDark,
+            ),
             const SizedBox(width: 12),
-            _buildAlignButton('right', Icons.format_align_right_rounded,
-                currentAlign, key, isDark),
+            _buildAlignButton(
+              'right',
+              Platform.isIOS
+                  ? CupertinoIcons.text_alignright
+                  : Icons.format_align_right_rounded,
+              currentAlign,
+              key,
+              isDark,
+            ),
           ],
         ),
       ],
@@ -1951,7 +2535,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () => _updateValue(key, value),
+            onTap: () => _updateLocalValue(key, value),
             borderRadius: BorderRadius.circular(12),
             child: Center(
               child: Icon(
@@ -1970,18 +2554,27 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
   Widget _buildColorPicker(String key, String label) {
     final currentColor = _getContent(key, '#000000');
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Platform.isIOS
+        ? MediaQuery.of(context).platformBrightness == Brightness.dark
+        : Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                letterSpacing: 0.15,
-              ),
+          style: Platform.isIOS
+              ? TextStyle(
+                  fontSize: 13,
+                  color: CupertinoColors.systemGrey,
+                  fontFamily: '.SF Pro Text',
+                  fontWeight: FontWeight.w600,
+                )
+              : Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                    letterSpacing: 0.15,
+                  ),
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -2032,7 +2625,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _updateValue(key, color),
+          onTap: () => _updateLocalValue(key, color),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             width: 48,
@@ -2048,7 +2641,13 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
               ),
             ),
             child: isSelected
-                ? const Icon(Icons.check_rounded, color: Colors.white, size: 24)
+                ? Icon(
+                    Platform.isIOS
+                        ? CupertinoIcons.checkmark
+                        : Icons.check_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  )
                 : null,
           ),
         ),
