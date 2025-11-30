@@ -12,6 +12,8 @@ import 'package:rememberme/core/constants/app_strings.dart';
 import '../../widgets/page_builder/content_block_widget.dart';
 import '../../widgets/page_builder/add_block_bottom_sheet.dart';
 import '../../widgets/page_builder/block_settings_bottom_sheet.dart';
+// NEU: Web Preview Imports
+import '../../widgets/preview/web_preview_mixin.dart';
 
 class IntuitivePageBuilderScreen extends StatefulWidget {
   final MemorialPageModel memorial;
@@ -27,7 +29,9 @@ class IntuitivePageBuilderScreen extends StatefulWidget {
 }
 
 class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WebPreviewMixin {
+  // ↑ NEU: WebPreviewMixin hinzugefügt
+
   List<ContentBlock> _blocks = [];
   String? _selectedBlockId;
   bool _hasUnsavedChanges = false;
@@ -1462,21 +1466,13 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
   }
 
   void _showPreview() {
-    Navigator.push(
-      context,
-      Platform.isIOS
-          ? CupertinoPageRoute(
-              builder: (context) => _PreviewScreen(
-                memorial: widget.memorial,
-                blocks: _blocks,
-              ),
-            )
-          : MaterialPageRoute(
-              builder: (context) => _PreviewScreen(
-                memorial: widget.memorial,
-                blocks: _blocks,
-              ),
-            ),
+    // Nutzt das WebPreviewMixin um die Blocks an den Server zu senden
+    // und dann im In-App WebView anzuzeigen
+    showWebPreview(
+      context: context,
+      memorialId: widget.memorial.id,
+      memorialName: widget.memorial.name,
+      blocks: _blocks,
     );
   }
 
@@ -1681,139 +1677,6 @@ class _IOSBottomToastState extends State<_IOSBottomToast>
           ),
         ),
       ),
-    );
-  }
-}
-
-// ============================================================
-// Preview Screen
-// ============================================================
-class _PreviewScreen extends StatelessWidget {
-  final MemorialPageModel memorial;
-  final List<ContentBlock> blocks;
-
-  const _PreviewScreen({
-    required this.memorial,
-    required this.blocks,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Platform.isIOS
-        ? MediaQuery.of(context).platformBrightness == Brightness.dark
-        : Theme.of(context).brightness == Brightness.dark;
-
-    if (Platform.isIOS) {
-      return CupertinoPageScaffold(
-        backgroundColor:
-            isDark ? const Color(0xFF000000) : CupertinoColors.systemBackground,
-        navigationBar: CupertinoNavigationBar(
-          middle: Text(
-            '${AppStrings.previewPrefix}${memorial.name}',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: isDark ? CupertinoColors.white : CupertinoColors.black,
-              fontFamily: '.SF Pro Text',
-            ),
-          ),
-          backgroundColor: isDark
-              ? const Color(0xFF1C1C1E).withOpacity(0.94)
-              : CupertinoColors.systemBackground.withOpacity(0.94),
-        ),
-        child: SafeArea(
-          child: blocks.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        CupertinoIcons.eye_slash,
-                        size: 64,
-                        color: CupertinoColors.systemGrey3,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        AppStrings.noBlocksAvailable,
-                        style: TextStyle(
-                          fontSize: 17,
-                          color: CupertinoColors.systemGrey,
-                          fontFamily: '.SF Pro Text',
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: blocks.length,
-                  itemBuilder: (context, index) {
-                    return ContentBlockWidget(
-                      block: blocks[index],
-                      isSelected: false,
-                      isPreview: true,
-                      onTap: () {},
-                      onEdit: () {},
-                      onDuplicate: () {},
-                      onDelete: () {},
-                      onContentChanged: (_, __) {},
-                    );
-                  },
-                ),
-        ),
-      );
-    }
-
-    // Android Layout
-    return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
-      appBar: AppBar(
-        title: Text('${AppStrings.previewPrefix}${memorial.name}'),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
-        foregroundColor: AppColors.textLight,
-      ),
-      body: blocks.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.preview_rounded,
-                    size: 64,
-                    color:
-                        isDark ? const Color(0xFF404040) : Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    AppStrings.noBlocksAvailable,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: isDark
-                              ? const Color(0xFF808080)
-                              : Colors.grey.shade600,
-                        ),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: blocks.length,
-              itemBuilder: (context, index) {
-                return ContentBlockWidget(
-                  block: blocks[index],
-                  isSelected: false,
-                  isPreview: true,
-                  onTap: () {},
-                  onEdit: () {},
-                  onDuplicate: () {},
-                  onDelete: () {},
-                  onContentChanged: (_, __) {},
-                );
-              },
-            ),
     );
   }
 }
