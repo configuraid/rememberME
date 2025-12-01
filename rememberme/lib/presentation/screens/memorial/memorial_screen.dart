@@ -7,6 +7,7 @@ import 'package:rememberme/business_logic/memorial/memorial_bloc.dart';
 import 'package:rememberme/business_logic/memorial/memorial_event.dart';
 import 'package:rememberme/business_logic/memorial/memorial_state.dart';
 import 'package:rememberme/presentation/widgets/memorial/paginatedContentPreview.dart';
+import 'package:rememberme/presentation/widgets/preview/web_preview_mixin.dart';
 import '../../../data/models/memorial_page_model.dart' hide MemorialStatus;
 import '../../../data/models/content_block_model.dart';
 import '../../../core/constants/app_colors.dart';
@@ -1379,49 +1380,13 @@ class MemorialDetailScreen extends StatelessWidget {
   }
 
   void _showPreview(BuildContext context, MemorialPageModel memorial) {
-    if (Platform.isIOS) {
-      final brightness = CupertinoTheme.brightnessOf(context);
-      final isDark = brightness == Brightness.dark;
+    // Navigator vorher capturen, bevor async-Calls passieren
+    final navigator = Navigator.of(context);
 
-      showCupertinoDialog(
-        context: context,
-        barrierDismissible: true,
-        builder: (ctx) => CupertinoAlertDialog(
-          content: Text(
-            AppStrings.previewLoading,
-            style: TextStyle(
-              fontSize: 13,
-              color: CupertinoColors.systemGrey,
-              fontFamily: '.SF Pro Text',
-            ),
-          ),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(
-                AppStrings.ok,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.primaryLight : AppColors.primary,
-                  fontFamily: '.SF Pro Text',
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppStrings.previewLoading),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
-    }
+    showWebPreviewStandalone(
+      context: context,
+      memorial: memorial,
+    );
   }
 
   void _showDeleteDialog(BuildContext context, String memorialId) {

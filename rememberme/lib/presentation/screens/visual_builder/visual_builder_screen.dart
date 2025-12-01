@@ -12,7 +12,6 @@ import 'package:rememberme/core/constants/app_strings.dart';
 import '../../widgets/page_builder/content_block_widget.dart';
 import '../../widgets/page_builder/add_block_bottom_sheet.dart';
 import '../../widgets/page_builder/block_settings_bottom_sheet.dart';
-// NEU: Web Preview Imports
 import '../../widgets/preview/web_preview_mixin.dart';
 
 class IntuitivePageBuilderScreen extends StatefulWidget {
@@ -1466,13 +1465,13 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
   }
 
   void _showPreview() {
-    // Nutzt das WebPreviewMixin um die Blocks an den Server zu senden
-    // und dann im In-App WebView anzuzeigen
+    final currentMemorial = widget.memorial.copyWith(
+      contentBlocks: _blocks,
+    );
+
     showWebPreview(
       context: context,
-      memorialId: widget.memorial.id,
-      memorialName: widget.memorial.name,
-      blocks: _blocks,
+      memorial: currentMemorial,
     );
   }
 

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/content_block_model.dart';
+import '../models/memorial_page_model.dart';
 
 /// Result class for preview operations
 class PreviewResult {
@@ -54,18 +55,16 @@ class PreviewService {
   factory PreviewService() => _instance;
   PreviewService._internal();
 
-  /// Sends content blocks to the preview endpoint and returns the preview URL
+  /// Sends memorial data to the preview endpoint and returns the preview URL
   ///
-  /// [memorialId] - The unique identifier for the memorial page
-  /// [blocks] - List of content blocks to preview
+  /// [memorial] - The memorial page model containing all data
   ///
   /// Returns a [PreviewResult] indicating success or failure
   Future<PreviewResult> createPreview({
-    required String memorialId,
-    required List<ContentBlock> blocks,
+    required MemorialPageModel memorial,
   }) async {
     // Check for empty blocks
-    if (blocks.isEmpty) {
+    if (memorial.contentBlocks.isEmpty) {
       return PreviewResult.failure(
         'Keine Inhaltsblöcke zum Anzeigen vorhanden.',
         PreviewErrorType.invalidResponse,
@@ -74,16 +73,20 @@ class PreviewService {
 
     try {
       // Serialize blocks to JSON
-      final blocksJson = blocks.map((block) => block.toJson()).toList();
+      final blocksJson =
+          memorial.contentBlocks.map((block) => block.toJson()).toList();
 
       final requestBody = {
-        'memorialId': memorialId,
+        'memorial': {
+          'name': memorial.name,
+          'subtitle': memorial.subtitle ?? '',
+        },
         'blocks': blocksJson,
-        'timestamp': DateTime.now().toIso8601String(),
       };
 
-      debugPrint('📤 Sending preview request for memorial: $memorialId');
-      debugPrint('📦 Blocks count: ${blocks.length}');
+      debugPrint('📤 Sending preview request for memorial: ${memorial.id}');
+      debugPrint('📦 Memorial: ${memorial.name}');
+      debugPrint('📦 Blocks count: ${memorial.contentBlocks.length}');
 
       // Send POST request to create preview
       final response = await http
@@ -92,6 +95,7 @@ class PreviewService {
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
+              'x-preview-secret': memorial.id,
             },
             body: jsonEncode(requestBody),
           )
@@ -102,9 +106,27 @@ class PreviewService {
 
       // Handle response
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final previewUrl = '$_baseUrl/preview/$memorialId';
-        debugPrint('✅ Preview URL: $previewUrl');
-        return PreviewResult.success(previewUrl);
+        try {
+          final responseJson = jsonDecode(response.body);
+          final previewId = responseJson['previewId'] as String?;
+
+          if (previewId == null) {
+            return PreviewResult.failure(
+              'Ungültige Server-Antwort: Keine Preview-ID erhalten.',
+              PreviewErrorType.invalidResponse,
+            );
+          }
+
+          final previewUrl = '$_baseUrl/preview/$previewId';
+          debugPrint('✅ Preview URL: $previewUrl');
+          return PreviewResult.success(previewUrl);
+        } catch (e) {
+          debugPrint('❌ Failed to parse response: $e');
+          return PreviewResult.failure(
+            'Ungültige Server-Antwort.',
+            PreviewErrorType.invalidResponse,
+          );
+        }
       } else if (response.statusCode >= 500) {
         return PreviewResult.failure(
           'Server ist momentan nicht erreichbar. Bitte versuche es später erneut.',

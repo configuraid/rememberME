@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:rememberme/presentation/screens/preview/webview_preview_screen.dart';
-import '../../../data/models/content_block_model.dart';
+import '../../../data/models/memorial_page_model.dart';
 import '../../../data/services/preview_service.dart';
 import 'preview_dialogs.dart';
 
@@ -15,9 +16,7 @@ import 'preview_dialogs.dart';
 ///   void _handlePreview() {
 ///     showWebPreview(
 ///       context: context,
-///       memorialId: 'your-memorial-id',
-///       memorialName: 'Memorial Name',
-///       blocks: yourBlocks,
+///       memorial: myMemorialPageModel,
 ///     );
 ///   }
 /// }
@@ -26,18 +25,16 @@ mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
   final PreviewService _previewService = PreviewService();
   bool _isPreviewLoading = false;
 
-  /// Shows the web preview by sending blocks to the server and opening WebView
+  /// Shows the web preview by sending memorial data to the server and opening WebView
   Future<void> showWebPreview({
     required BuildContext context,
-    required String memorialId,
-    required String memorialName,
-    required List<ContentBlock> blocks,
+    required MemorialPageModel memorial,
   }) async {
     // Prevent double-tap
     if (_isPreviewLoading) return;
 
     // Check for empty blocks
-    if (blocks.isEmpty) {
+    if (memorial.contentBlocks.isEmpty) {
       _showEmptyBlocksWarning(context);
       return;
     }
@@ -55,10 +52,9 @@ mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
     PreviewLoadingDialog.show(context);
 
     try {
-      // Send blocks to server
+      // Send memorial to server
       final result = await _previewService.createPreview(
-        memorialId: memorialId,
-        blocks: blocks,
+        memorial: memorial,
       );
 
       // Hide loading dialog
@@ -72,7 +68,7 @@ mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
           _navigateToWebView(
             context: context,
             previewUrl: result.previewUrl!,
-            memorialName: memorialName,
+            memorialName: memorial.name,
           );
         }
       } else {
@@ -85,9 +81,7 @@ mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
                 'Ein unbekannter Fehler ist aufgetreten.',
             onRetry: () => showWebPreview(
               context: context,
-              memorialId: memorialId,
-              memorialName: memorialName,
-              blocks: blocks,
+              memorial: memorial,
             ),
           );
         }
@@ -106,9 +100,7 @@ mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
           message: 'Ein unerwarteter Fehler ist aufgetreten: ${e.toString()}',
           onRetry: () => showWebPreview(
             context: context,
-            memorialId: memorialId,
-            memorialName: memorialName,
-            blocks: blocks,
+            memorial: memorial,
           ),
         );
       }
@@ -214,27 +206,14 @@ mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
   }
 }
 
-/// Standalone function for use without mixin
-///
-/// Usage:
-/// ```dart
-/// await showWebPreviewStandalone(
-///   context: context,
-///   memorialId: 'your-memorial-id',
-///   memorialName: 'Memorial Name',
-///   blocks: yourBlocks,
-/// );
-/// ```
 Future<void> showWebPreviewStandalone({
   required BuildContext context,
-  required String memorialId,
-  required String memorialName,
-  required List<ContentBlock> blocks,
+  required MemorialPageModel memorial,
 }) async {
   final previewService = PreviewService();
 
   // Check for empty blocks
-  if (blocks.isEmpty) {
+  if (memorial.contentBlocks.isEmpty) {
     if (Platform.isIOS) {
       showCupertinoDialog(
         context: context,
@@ -270,76 +249,68 @@ Future<void> showWebPreviewStandalone({
     HapticFeedback.mediumImpact();
   }
 
-  // Show loading dialog
-  PreviewLoadingDialog.show(context);
+  unawaited(PreviewLoadingDialog.show(context));
+
+  await Future.delayed(const Duration(milliseconds: 50));
+
+  final navigator = Navigator.of(context, rootNavigator: true);
 
   try {
-    // Send blocks to server
+    // Send memorial to server
     final result = await previewService.createPreview(
-      memorialId: memorialId,
-      blocks: blocks,
+      memorial: memorial,
     );
 
     // Hide loading dialog
-    if (context.mounted) {
-      PreviewLoadingDialog.hide(context);
+    if (navigator.canPop()) {
+      navigator.pop();
     }
 
     if (result.success && result.previewUrl != null) {
       // Success - open WebView
-      if (context.mounted) {
-        if (Platform.isIOS) {
-          Navigator.push(
-            context,
-            CupertinoPageRoute(
-              builder: (ctx) => WebViewPreviewScreen(
-                previewUrl: result.previewUrl!,
-                memorialName: memorialName,
-              ),
+      if (Platform.isIOS) {
+        navigator.push(
+          CupertinoPageRoute(
+            builder: (ctx) => WebViewPreviewScreen(
+              previewUrl: result.previewUrl!,
+              memorialName: memorial.name,
             ),
-          );
-        } else {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (ctx) => WebViewPreviewScreen(
-                previewUrl: result.previewUrl!,
-                memorialName: memorialName,
-              ),
+          ),
+        );
+      } else {
+        navigator.push(
+          MaterialPageRoute(
+            builder: (ctx) => WebViewPreviewScreen(
+              previewUrl: result.previewUrl!,
+              memorialName: memorial.name,
             ),
-          );
-        }
-      }
-    } else {
-      // Error - show error dialog
-      if (context.mounted) {
-        PreviewErrorDialog.show(
-          context,
-          title: 'Vorschau fehlgeschlagen',
-          message:
-              result.errorMessage ?? 'Ein unbekannter Fehler ist aufgetreten.',
-          onRetry: () => showWebPreviewStandalone(
-            context: context,
-            memorialId: memorialId,
-            memorialName: memorialName,
-            blocks: blocks,
           ),
         );
       }
+    } else {
+      // Error - show error dialog
+      PreviewErrorDialog.show(
+        context,
+        title: 'Vorschau fehlgeschlagen',
+        message:
+            result.errorMessage ?? 'Ein unbekannter Fehler ist aufgetreten.',
+        onRetry: () => showWebPreviewStandalone(
+          context: context,
+          memorial: memorial,
+        ),
+      );
     }
   } catch (e) {
     // Hide loading dialog
-    if (context.mounted) {
-      PreviewLoadingDialog.hide(context);
+    if (navigator.canPop()) {
+      navigator.pop();
     }
 
     // Show error dialog
-    if (context.mounted) {
-      PreviewErrorDialog.show(
-        context,
-        title: 'Fehler',
-        message: 'Ein unerwarteter Fehler ist aufgetreten.',
-      );
-    }
+    PreviewErrorDialog.show(
+      context,
+      title: 'Fehler',
+      message: 'Ein unerwarteter Fehler ist aufgetreten.',
+    );
   }
 }
