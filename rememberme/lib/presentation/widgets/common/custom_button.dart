@@ -44,7 +44,7 @@ class CustomButton extends StatelessWidget {
       return Container(
         height: 56,
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300,
+          color: isDark ? AppColors.cardBorderDark : AppColors.greyLight,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Center(
@@ -71,9 +71,7 @@ class CustomButton extends StatelessWidget {
             boxShadow: onPressed != null
                 ? [
                     BoxShadow(
-                      color: isDark
-                          ? Colors.black.withOpacity(0.2)
-                          : Colors.black.withOpacity(0.04),
+                      color: isDark ? AppColors.shadowDark : AppColors.shadow,
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -88,13 +86,16 @@ class CustomButton extends StatelessWidget {
               side: BorderSide(
                 color: onPressed != null
                     ? buttonColor
-                    : (isDark ? const Color(0xFF404040) : Colors.grey.shade300),
+                    : (isDark
+                        ? AppColors.borderDarkSubtle
+                        : AppColors.greyLight),
                 width: 2,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              backgroundColor:
+                  isDark ? AppColors.surfaceDark : AppColors.surface,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -105,9 +106,7 @@ class CustomButton extends StatelessWidget {
                     size: 22,
                     color: onPressed != null
                         ? buttonColor
-                        : (isDark
-                            ? const Color(0xFF808080)
-                            : Colors.grey.shade400),
+                        : (isDark ? AppColors.grey : AppColors.greyLight),
                   ),
                   const SizedBox(width: 12),
                 ],
@@ -117,9 +116,7 @@ class CustomButton extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     color: onPressed != null
                         ? buttonColor
-                        : (isDark
-                            ? const Color(0xFF808080)
-                            : Colors.grey.shade400),
+                        : (isDark ? AppColors.grey : AppColors.greyLight),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -147,9 +144,7 @@ class CustomButton extends StatelessWidget {
                   size: 22,
                   color: onPressed != null
                       ? buttonColor
-                      : (isDark
-                          ? const Color(0xFF808080)
-                          : Colors.grey.shade400),
+                      : (isDark ? AppColors.grey : AppColors.greyLight),
                 ),
                 const SizedBox(width: 12),
               ],
@@ -159,9 +154,7 @@ class CustomButton extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   color: onPressed != null
                       ? buttonColor
-                      : (isDark
-                          ? const Color(0xFF808080)
-                          : Colors.grey.shade400),
+                      : (isDark ? AppColors.grey : AppColors.greyLight),
                   letterSpacing: 0.5,
                 ),
               ),
@@ -185,7 +178,7 @@ class CustomButton extends StatelessWidget {
                   )
                 : null,
             color: onPressed == null
-                ? (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300)
+                ? (isDark ? AppColors.cardBorderDark : AppColors.greyLight)
                 : null,
             borderRadius: BorderRadius.circular(16),
             boxShadow: onPressed != null
@@ -203,10 +196,10 @@ class CustomButton extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,
               shadowColor: Colors.transparent,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.textLight,
               disabledBackgroundColor: Colors.transparent,
               disabledForegroundColor:
-                  isDark ? const Color(0xFF808080) : Colors.grey.shade500,
+                  isDark ? AppColors.grey : AppColors.textSecondary,
               minimumSize: const Size(double.infinity, 56),
               padding: const EdgeInsets.symmetric(horizontal: 24),
               shape: RoundedRectangleBorder(
@@ -225,10 +218,8 @@ class CustomButton extends StatelessWidget {
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: onPressed != null
-                        ? Colors.white
-                        : (isDark
-                            ? const Color(0xFF808080)
-                            : Colors.grey.shade500),
+                        ? AppColors.textLight
+                        : (isDark ? AppColors.grey : AppColors.textSecondary),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -240,37 +231,61 @@ class CustomButton extends StatelessWidget {
   }
 
   Widget _buildCupertinoButton(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (isLoading) {
       return Container(
         height: 50,
         alignment: Alignment.center,
-        child: const CupertinoActivityIndicator(),
+        child: CupertinoActivityIndicator(
+          color: isDark ? AppColors.textLight : AppColors.textPrimary,
+        ),
       );
     }
 
-    final buttonColor = isDanger ? CupertinoColors.systemRed : null;
-
-    return CupertinoButton.filled(
-      onPressed: onPressed,
-      disabledColor: CupertinoColors.quaternarySystemFill,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-      borderRadius: BorderRadius.circular(12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 20),
-            const SizedBox(width: 8),
-          ],
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
+    // Für iOS: Cupertino Button mit angepassten Farben
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: onPressed != null
+            ? (isDanger
+                ? AppColors.error
+                : (isDark ? AppColors.primaryLight : AppColors.primary))
+            : (isDark ? AppColors.borderDarkSubtle : AppColors.greyLight),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: CupertinoButton(
+        onPressed: onPressed,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.transparent,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                size: 20,
+                color: onPressed != null
+                    ? AppColors.textLight
+                    : (isDark ? AppColors.grey : AppColors.textSecondary),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              text,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+                color: onPressed != null
+                    ? AppColors.textLight
+                    : (isDark ? AppColors.grey : AppColors.textSecondary),
+                fontFamily: '.SF Pro Text',
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -86,10 +86,9 @@ class MemorialDetailScreen extends StatelessWidget {
   }
 
   void _showErrorSnackBar(BuildContext context, String message) {
-    if (Platform.isIOS) {
-      final brightness = CupertinoTheme.brightnessOf(context);
-      final isDark = brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (Platform.isIOS) {
       showCupertinoDialog(
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
@@ -98,7 +97,7 @@ class MemorialDetailScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
-              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -106,7 +105,7 @@ class MemorialDetailScreen extends StatelessWidget {
             message,
             style: TextStyle(
               fontSize: 13,
-              color: CupertinoColors.systemGrey,
+              color: AppColors.grey,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -129,8 +128,11 @@ class MemorialDetailScreen extends StatelessWidget {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message),
-          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Text(
+            message,
+            style: const TextStyle(color: AppColors.textLight),
+          ),
+          backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -146,8 +148,11 @@ class MemorialDetailScreen extends StatelessWidget {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.green,
+          content: Text(
+            message,
+            style: const TextStyle(color: AppColors.textLight),
+          ),
+          backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -162,31 +167,34 @@ class MemorialDetailScreen extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     if (Platform.isIOS) {
-      final brightness = CupertinoTheme.brightnessOf(context);
-      final iosDark = brightness == Brightness.dark;
-
       return CupertinoPageScaffold(
         backgroundColor:
-            iosDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7),
+            isDark ? AppColors.backgroundDark : AppColors.background,
         navigationBar: CupertinoNavigationBar(
           middle: Text(
             AppStrings.myMemorialPage,
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
-              color: iosDark ? CupertinoColors.white : CupertinoColors.black,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: '.SF Pro Text',
             ),
           ),
+          backgroundColor:
+              isDark ? AppColors.backgroundDarkElevated.withOpacity(0.8) : null,
         ),
-        child: const Center(
-          child: CupertinoActivityIndicator(radius: 20),
+        child: Center(
+          child: CupertinoActivityIndicator(
+            radius: 20,
+            color: isDark ? AppColors.grey : null,
+          ),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : null,
+      backgroundColor:
+          isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
       appBar: AppBar(
         title: Text(AppStrings.myMemorialPage),
         elevation: 0,
@@ -208,7 +216,8 @@ class MemorialDetailScreen extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : null,
+      backgroundColor:
+          isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
       appBar: AppBar(
         title: Text(AppStrings.myMemorialPage),
         elevation: 0,
@@ -266,30 +275,28 @@ class MemorialDetailScreen extends StatelessWidget {
   }
 
   Widget _buildIOSView(BuildContext context, MemorialPageModel memorial) {
-    final brightness = CupertinoTheme.brightnessOf(context);
-    final isDark = brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return CupertinoPageScaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7),
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
       navigationBar: CupertinoNavigationBar(
         middle: Text(
           AppStrings.myMemorialPage,
           style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w600,
-            color: isDark ? CupertinoColors.white : CupertinoColors.black,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
             fontFamily: '.SF Pro Text',
           ),
         ),
         backgroundColor:
-            isDark ? const Color(0xFF1C1C1E).withOpacity(0.8) : null,
+            isDark ? AppColors.backgroundDarkElevated.withOpacity(0.8) : null,
       ),
       child: SafeArea(
         child: DefaultTextStyle(
           style: TextStyle(
             fontSize: 17,
-            color: isDark ? CupertinoColors.white : CupertinoColors.black,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
             fontFamily: '.SF Pro Text',
           ),
           child: CustomScrollView(
@@ -332,8 +339,8 @@ class MemorialDetailScreen extends StatelessWidget {
                           CupertinoButton(
                             onPressed: () => _showPreview(context, memorial),
                             color: isDark
-                                ? const Color(0xFF2C2C2E)
-                                : CupertinoColors.systemGrey6,
+                                ? AppColors.toastBackgroundDark
+                                : AppColors.greyLighter,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -399,16 +406,17 @@ class MemorialDetailScreen extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: isDark ? const Color(0xFF2A2A2A) : AppColors.primary,
+          backgroundColor:
+              isDark ? AppColors.cardBorderDark : AppColors.primary,
           foregroundColor:
-              isDark ? const Color(0xFFD0D0D0) : AppColors.textLight,
+              isDark ? AppColors.textDarkSecondary : AppColors.textLight,
           padding: const EdgeInsets.symmetric(vertical: 16),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: isDark
-                ? const BorderSide(
-                    color: Color(0xFF404040),
+                ? BorderSide(
+                    color: AppColors.borderDarkSubtle,
                     width: 1.5,
                   )
                 : BorderSide.none,
@@ -443,10 +451,11 @@ class MemorialDetailScreen extends StatelessWidget {
     return OutlinedButton(
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
-        foregroundColor: isDark ? const Color(0xFFB0B0B0) : AppColors.primary,
+        foregroundColor:
+            isDark ? AppColors.textDarkSecondary : AppColors.primary,
         padding: const EdgeInsets.symmetric(vertical: 16),
         side: BorderSide(
-          color: isDark ? const Color(0xFF404040) : AppColors.primary,
+          color: isDark ? AppColors.borderDarkSubtle : AppColors.primary,
           width: 2,
         ),
         shape: RoundedRectangleBorder(
@@ -485,8 +494,8 @@ class MemorialDetailScreen extends StatelessWidget {
           end: Alignment.bottomCenter,
           colors: isDark
               ? [
-                  const Color(0xFF1E1E1E),
-                  const Color(0xFF121212),
+                  AppColors.backgroundDark,
+                  AppColors.backgroundDark,
                 ]
               : [
                   AppColors.primary.withOpacity(0.1),
@@ -503,13 +512,9 @@ class MemorialDetailScreen extends StatelessWidget {
                 height: 120,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isDark
-                      ? const Color(0xFF2A2A2A)
-                      : AppColors.accent.withOpacity(0.1),
+                  color: AppColors.accent.withOpacity(0.1),
                   border: Border.all(
-                    color: isDark
-                        ? const Color(0xFF404040)
-                        : AppColors.accent.withOpacity(0.4),
+                    color: AppColors.accent.withOpacity(0.4),
                     width: 3,
                   ),
                   boxShadow: isDark
@@ -526,7 +531,7 @@ class MemorialDetailScreen extends StatelessWidget {
                 child: Icon(
                   isIOS ? CupertinoIcons.heart_fill : Icons.favorite_rounded,
                   size: 56,
-                  color: isDark ? const Color(0xFF707070) : AppColors.accent,
+                  color: isDark ? AppColors.accent : AppColors.greyDark,
                 ),
               ),
               Positioned(
@@ -536,13 +541,15 @@ class MemorialDetailScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: memorial.isPublic
-                        ? Colors.green
+                        ? AppColors.accent
                         : (isDark
-                            ? const Color(0xFF404040)
+                            ? AppColors.borderDarkSubtle
                             : AppColors.primary),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isDark ? const Color(0xFF121212) : Colors.white,
+                      color: isDark
+                          ? AppColors.accent.withOpacity(0.4)
+                          : AppColors.surface,
                       width: 2,
                     ),
                   ),
@@ -553,7 +560,7 @@ class MemorialDetailScreen extends StatelessWidget {
                             ? CupertinoIcons.lock_fill
                             : Icons.lock_rounded),
                     size: 14,
-                    color: Colors.white,
+                    color: AppColors.textLight,
                   ),
                 ),
               ),
@@ -566,8 +573,7 @@ class MemorialDetailScreen extends StatelessWidget {
                 ? TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color:
-                        isDark ? CupertinoColors.white : CupertinoColors.black,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
                     letterSpacing: -0.5,
                     fontFamily: '.SF Pro Display',
                   )
@@ -582,17 +588,16 @@ class MemorialDetailScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              color: isDark ? AppColors.surfaceDark : AppColors.surface,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: isDark ? const Color(0xFF404040) : Colors.grey.shade300,
+                color:
+                    isDark ? AppColors.borderDarkSubtle : AppColors.greyLight,
                 width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: isDark
-                      ? Colors.black.withOpacity(0.3)
-                      : Colors.black.withOpacity(0.05),
+                  color: isDark ? AppColors.shadowDark : AppColors.shadow,
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -606,7 +611,7 @@ class MemorialDetailScreen extends StatelessWidget {
                       ? CupertinoIcons.calendar
                       : Icons.calendar_today_rounded,
                   size: 16,
-                  color: isDark ? const Color(0xFF909090) : AppColors.primary,
+                  color: isDark ? AppColors.grey : AppColors.primary,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -615,14 +620,14 @@ class MemorialDetailScreen extends StatelessWidget {
                       ? TextStyle(
                           fontSize: 15,
                           color: isDark
-                              ? const Color(0xFFD0D0D0)
-                              : CupertinoColors.black,
+                              ? AppColors.textDarkSecondary
+                              : AppColors.textPrimary,
                           fontWeight: FontWeight.w600,
                           fontFamily: '.SF Pro Text',
                         )
                       : theme.textTheme.bodyMedium?.copyWith(
                           color: isDark
-                              ? const Color(0xFFD0D0D0)
+                              ? AppColors.textDarkSecondary
                               : AppColors.textPrimary,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.25,
@@ -644,17 +649,15 @@ class MemorialDetailScreen extends StatelessWidget {
     if (memorial.contentBlocks.isEmpty) {
       return Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          color: isDark ? AppColors.surfaceDark : AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+            color: isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: isDark
-                  ? Colors.black.withOpacity(0.3)
-                  : Colors.black.withOpacity(0.04),
+              color: isDark ? AppColors.shadowDark : AppColors.shadow,
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -667,12 +670,12 @@ class MemorialDetailScreen extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF2A2A2A)
+                    ? AppColors.cardBorderDark
                     : AppColors.primary.withOpacity(0.08),
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isDark
-                      ? const Color(0xFF404040)
+                      ? AppColors.borderDarkSubtle
                       : AppColors.primary.withOpacity(0.2),
                   width: 1.5,
                 ),
@@ -682,7 +685,7 @@ class MemorialDetailScreen extends StatelessWidget {
                     ? CupertinoIcons.photo
                     : Icons.add_photo_alternate_outlined,
                 size: 56,
-                color: isDark ? const Color(0xFF909090) : AppColors.primary,
+                color: isDark ? AppColors.grey : AppColors.primary,
               ),
             ),
             const SizedBox(height: 24),
@@ -692,9 +695,8 @@ class MemorialDetailScreen extends StatelessWidget {
                   ? TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: isDark
-                          ? CupertinoColors.white
-                          : CupertinoColors.black,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
                       fontFamily: '.SF Pro Display',
                     )
                   : theme.textTheme.titleLarge?.copyWith(
@@ -710,14 +712,12 @@ class MemorialDetailScreen extends StatelessWidget {
               style: isIOS
                   ? TextStyle(
                       fontSize: 15,
-                      color: CupertinoColors.systemGrey,
+                      color: AppColors.grey,
                       height: 1.5,
                       fontFamily: '.SF Pro Text',
                     )
                   : theme.textTheme.bodyMedium?.copyWith(
-                      color: isDark
-                          ? const Color(0xFF909090)
-                          : AppColors.textSecondary,
+                      color: isDark ? AppColors.grey : AppColors.textSecondary,
                       height: 1.5,
                     ),
               textAlign: TextAlign.center,
@@ -751,17 +751,15 @@ class MemorialDetailScreen extends StatelessWidget {
   ) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+          color: isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: isDark
-                ? Colors.black.withOpacity(0.3)
-                : Colors.black.withOpacity(0.04),
+            color: isDark ? AppColors.shadowDark : AppColors.shadow,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -814,12 +812,12 @@ class MemorialDetailScreen extends StatelessWidget {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF2A2A2A)
+                    ? AppColors.cardBorderDark
                     : AppColors.primary.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isDark
-                      ? const Color(0xFF404040)
+                      ? AppColors.borderDarkSubtle
                       : AppColors.primary.withOpacity(0.2),
                   width: 1.5,
                 ),
@@ -827,7 +825,7 @@ class MemorialDetailScreen extends StatelessWidget {
               child: Icon(
                 isIOS ? CupertinoIcons.square_grid_2x2 : Icons.widgets_rounded,
                 size: 20,
-                color: isDark ? const Color(0xFF909090) : AppColors.primary,
+                color: isDark ? AppColors.grey : AppColors.primary,
               ),
             ),
             const SizedBox(width: 12),
@@ -837,9 +835,8 @@ class MemorialDetailScreen extends StatelessWidget {
                   ? TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: isDark
-                          ? CupertinoColors.white
-                          : CupertinoColors.black,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
                       fontFamily: '.SF Pro Display',
                     )
                   : theme.textTheme.titleLarge?.copyWith(
@@ -858,12 +855,12 @@ class MemorialDetailScreen extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: isDark
-                ? const Color(0xFF2A2A2A)
+                ? AppColors.cardBorderDark
                 : AppColors.primary.withOpacity(0.12),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isDark
-                  ? const Color(0xFF404040)
+                  ? AppColors.borderDarkSubtle
                   : AppColors.primary.withOpacity(0.3),
               width: 1,
             ),
@@ -873,7 +870,7 @@ class MemorialDetailScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: isDark ? const Color(0xFFB0B0B0) : AppColors.primary,
+              color: isDark ? AppColors.textDarkSecondary : AppColors.primary,
               fontFamily: isIOS ? '.SF Pro Text' : null,
             ),
           ),
@@ -895,10 +892,10 @@ class MemorialDetailScreen extends StatelessWidget {
         vertical: 12,
       ),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF252525) : Colors.grey.shade50,
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.background,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark ? const Color(0xFF383838) : Colors.grey.shade300,
+          color: isDark ? AppColors.borderDarkLight : AppColors.greyLight,
           width: 1.5,
         ),
       ),
@@ -909,7 +906,7 @@ class MemorialDetailScreen extends StatelessWidget {
             height: 24,
             decoration: BoxDecoration(
               color: isDark
-                  ? const Color(0xFF383838)
+                  ? AppColors.borderDarkLight
                   : AppColors.primary.withOpacity(0.12),
               shape: BoxShape.circle,
             ),
@@ -919,7 +916,8 @@ class MemorialDetailScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? const Color(0xFFB0B0B0) : AppColors.primary,
+                  color:
+                      isDark ? AppColors.textDarkSecondary : AppColors.primary,
                   decoration: TextDecoration.none,
                   fontFamily: isIOS ? '.SF Pro Text' : null,
                 ),
@@ -930,7 +928,7 @@ class MemorialDetailScreen extends StatelessWidget {
           Icon(
             _getBlockIcon(block.type, isIOS),
             size: 16,
-            color: isDark ? const Color(0xFF909090) : AppColors.primary,
+            color: isDark ? AppColors.grey : AppColors.primary,
           ),
           const SizedBox(width: 6),
           Expanded(
@@ -941,15 +939,15 @@ class MemorialDetailScreen extends StatelessWidget {
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: isDark
-                          ? const Color(0xFFD0D0D0)
-                          : CupertinoColors.black,
+                          ? AppColors.textDarkSecondary
+                          : AppColors.textPrimary,
                       fontFamily: '.SF Pro Text',
                     )
                   : theme.textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                       color: isDark
-                          ? const Color(0xFFD0D0D0)
+                          ? AppColors.textDarkSecondary
                           : AppColors.textPrimary,
                     ),
               overflow: TextOverflow.ellipsis,
@@ -976,12 +974,12 @@ class MemorialDetailScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? const Color(0xFF2A2A2A)
+                      ? AppColors.cardBorderDark
                       : AppColors.primary.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isDark
-                        ? const Color(0xFF404040)
+                        ? AppColors.borderDarkSubtle
                         : AppColors.primary.withOpacity(0.2),
                     width: 1.5,
                   ),
@@ -989,7 +987,7 @@ class MemorialDetailScreen extends StatelessWidget {
                 child: Icon(
                   isIOS ? CupertinoIcons.settings : Icons.settings_rounded,
                   size: 18,
-                  color: isDark ? const Color(0xFF909090) : AppColors.primary,
+                  color: isDark ? AppColors.grey : AppColors.primary,
                 ),
               ),
               const SizedBox(width: 12),
@@ -1000,8 +998,8 @@ class MemorialDetailScreen extends StatelessWidget {
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: isDark
-                            ? CupertinoColors.white
-                            : CupertinoColors.black,
+                            ? AppColors.textLight
+                            : AppColors.textPrimary,
                         fontFamily: '.SF Pro Display',
                       )
                     : theme.textTheme.titleLarge?.copyWith(
@@ -1041,17 +1039,15 @@ class MemorialDetailScreen extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+          color: isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: isDark
-                ? Colors.black.withOpacity(0.3)
-                : Colors.black.withOpacity(0.04),
+            color: isDark ? AppColors.shadowDark : AppColors.shadow,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1065,16 +1061,16 @@ class MemorialDetailScreen extends StatelessWidget {
             height: 48,
             decoration: BoxDecoration(
               color: memorial.isPublic
-                  ? Colors.green.withOpacity(0.12)
+                  ? AppColors.accent.withOpacity(0.4)
                   : (isDark
-                      ? const Color(0xFF2A2A2A)
+                      ? AppColors.cardBorderDark
                       : AppColors.primary.withOpacity(0.08)),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: memorial.isPublic
-                    ? Colors.green.withOpacity(0.3)
+                    ? AppColors.accent
                     : (isDark
-                        ? const Color(0xFF404040)
+                        ? AppColors.borderDarkSubtle
                         : AppColors.primary.withOpacity(0.2)),
                 width: 1.5,
               ),
@@ -1084,8 +1080,8 @@ class MemorialDetailScreen extends StatelessWidget {
                   ? (isIOS ? CupertinoIcons.globe : Icons.public_rounded)
                   : (isIOS ? CupertinoIcons.lock_fill : Icons.lock_rounded),
               color: memorial.isPublic
-                  ? Colors.green
-                  : (isDark ? const Color(0xFF909090) : AppColors.primary),
+                  ? AppColors.accent
+                  : (isDark ? AppColors.grey : AppColors.primary),
               size: 24,
             ),
           ),
@@ -1101,8 +1097,8 @@ class MemorialDetailScreen extends StatelessWidget {
                           fontSize: 17,
                           fontWeight: FontWeight.w600,
                           color: isDark
-                              ? CupertinoColors.white
-                              : CupertinoColors.black,
+                              ? AppColors.textLight
+                              : AppColors.textPrimary,
                           fontFamily: '.SF Pro Text',
                         )
                       : theme.textTheme.titleMedium?.copyWith(
@@ -1121,14 +1117,13 @@ class MemorialDetailScreen extends StatelessWidget {
                   style: isIOS
                       ? TextStyle(
                           fontSize: 15,
-                          color: CupertinoColors.systemGrey,
+                          color: AppColors.grey,
                           height: 1.4,
                           fontFamily: '.SF Pro Text',
                         )
                       : theme.textTheme.bodyMedium?.copyWith(
-                          color: isDark
-                              ? const Color(0xFF909090)
-                              : AppColors.textSecondary,
+                          color:
+                              isDark ? AppColors.grey : AppColors.textSecondary,
                           height: 1.4,
                         ),
                 ),
@@ -1147,7 +1142,7 @@ class MemorialDetailScreen extends StatelessWidget {
                           ),
                         );
                   },
-                  activeTrackColor: CupertinoColors.systemGreen,
+                  activeTrackColor: AppColors.accent,
                 )
               : Switch(
                   value: memorial.isPublic,
@@ -1159,12 +1154,12 @@ class MemorialDetailScreen extends StatelessWidget {
                           ),
                         );
                   },
-                  activeColor: Colors.green,
-                  activeTrackColor: Colors.green.withOpacity(0.3),
+                  activeColor: AppColors.success,
+                  activeTrackColor: AppColors.success.withOpacity(0.3),
                   inactiveThumbColor:
-                      isDark ? const Color(0xFF606060) : Colors.grey.shade400,
+                      isDark ? AppColors.greyDark : AppColors.grey,
                   inactiveTrackColor:
-                      isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300,
+                      isDark ? AppColors.cardBorderDark : AppColors.greyLight,
                 ),
         ],
       ),
@@ -1191,28 +1186,26 @@ class MemorialDetailScreen extends StatelessWidget {
         splashColor: isDestructive
             ? AppColors.error.withOpacity(0.1)
             : (isDark
-                ? Colors.white.withOpacity(0.05)
+                ? AppColors.textLight.withOpacity(0.05)
                 : AppColors.primary.withOpacity(0.08)),
         highlightColor: isDestructive
             ? AppColors.error.withOpacity(0.05)
             : (isDark
-                ? Colors.white.withOpacity(0.03)
+                ? AppColors.textLight.withOpacity(0.03)
                 : AppColors.primary.withOpacity(0.04)),
         child: Container(
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            color: isDark ? AppColors.surfaceDark : AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isDestructive
                   ? AppColors.error.withOpacity(0.3)
-                  : (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200),
+                  : (isDark ? AppColors.cardBorderDark : AppColors.greyLighter),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: isDark
-                    ? Colors.black.withOpacity(0.3)
-                    : Colors.black.withOpacity(0.04),
+                color: isDark ? AppColors.shadowDark : AppColors.shadow,
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1228,14 +1221,14 @@ class MemorialDetailScreen extends StatelessWidget {
                   color: isDestructive
                       ? AppColors.error.withOpacity(0.12)
                       : (isDark
-                          ? const Color(0xFF2A2A2A)
+                          ? AppColors.cardBorderDark
                           : AppColors.primary.withOpacity(0.08)),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isDestructive
                         ? AppColors.error.withOpacity(0.3)
                         : (isDark
-                            ? const Color(0xFF404040)
+                            ? AppColors.borderDarkSubtle
                             : AppColors.primary.withOpacity(0.2)),
                     width: 1.5,
                   ),
@@ -1244,7 +1237,7 @@ class MemorialDetailScreen extends StatelessWidget {
                   icon,
                   color: isDestructive
                       ? AppColors.error
-                      : (isDark ? const Color(0xFF909090) : AppColors.primary),
+                      : (isDark ? AppColors.grey : AppColors.primary),
                   size: 24,
                 ),
               ),
@@ -1262,8 +1255,8 @@ class MemorialDetailScreen extends StatelessWidget {
                               color: isDestructive
                                   ? AppColors.error
                                   : (isDark
-                                      ? CupertinoColors.white
-                                      : CupertinoColors.black),
+                                      ? AppColors.textLight
+                                      : AppColors.textPrimary),
                               fontFamily: '.SF Pro Text',
                             )
                           : theme.textTheme.titleMedium?.copyWith(
@@ -1282,13 +1275,13 @@ class MemorialDetailScreen extends StatelessWidget {
                       style: isIOS
                           ? TextStyle(
                               fontSize: 15,
-                              color: CupertinoColors.systemGrey,
+                              color: AppColors.grey,
                               height: 1.4,
                               fontFamily: '.SF Pro Text',
                             )
                           : theme.textTheme.bodyMedium?.copyWith(
                               color: isDark
-                                  ? const Color(0xFF909090)
+                                  ? AppColors.grey
                                   : AppColors.textSecondary,
                               height: 1.4,
                             ),
@@ -1300,8 +1293,9 @@ class MemorialDetailScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color:
-                      isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100,
+                  color: isDark
+                      ? AppColors.error.withOpacity(0.3)
+                      : AppColors.greyLighter,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -1309,8 +1303,7 @@ class MemorialDetailScreen extends StatelessWidget {
                       ? CupertinoIcons.chevron_right
                       : Icons.arrow_forward_ios_rounded,
                   size: 14,
-                  color:
-                      isDark ? const Color(0xFF707070) : Colors.grey.shade600,
+                  color: isDark ? AppColors.error : AppColors.greyDark,
                 ),
               ),
             ],
@@ -1380,9 +1373,6 @@ class MemorialDetailScreen extends StatelessWidget {
   }
 
   void _showPreview(BuildContext context, MemorialPageModel memorial) {
-    // Navigator vorher capturen, bevor async-Calls passieren
-    final navigator = Navigator.of(context);
-
     showWebPreviewStandalone(
       context: context,
       memorial: memorial,
@@ -1393,9 +1383,6 @@ class MemorialDetailScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (Platform.isIOS) {
-      final brightness = CupertinoTheme.brightnessOf(context);
-      final iosDark = brightness == Brightness.dark;
-
       showCupertinoDialog(
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
@@ -1404,7 +1391,7 @@ class MemorialDetailScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
-              color: iosDark ? CupertinoColors.white : CupertinoColors.black,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -1412,7 +1399,7 @@ class MemorialDetailScreen extends StatelessWidget {
             AppStrings.confirmDelete,
             style: TextStyle(
               fontSize: 13,
-              color: CupertinoColors.systemGrey,
+              color: AppColors.grey,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -1423,9 +1410,7 @@ class MemorialDetailScreen extends StatelessWidget {
                 AppStrings.cancel,
                 style: TextStyle(
                   fontSize: 17,
-                  color: iosDark
-                      ? CupertinoColors.systemBlue
-                      : CupertinoColors.systemBlue,
+                  color: AppColors.interactive,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -1460,7 +1445,7 @@ class MemorialDetailScreen extends StatelessWidget {
           child: Container(
             constraints: const BoxConstraints(maxWidth: 400),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              color: isDark ? AppColors.surfaceDark : AppColors.surface,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: AppColors.error.withOpacity(0.3),
@@ -1469,8 +1454,8 @@ class MemorialDetailScreen extends StatelessWidget {
               boxShadow: [
                 BoxShadow(
                   color: isDark
-                      ? Colors.black.withOpacity(0.5)
-                      : Colors.black.withOpacity(0.15),
+                      ? AppColors.shadowDark
+                      : AppColors.shadow.withOpacity(0.4),
                   blurRadius: 24,
                   offset: const Offset(0, 8),
                 ),
@@ -1537,7 +1522,7 @@ class MemorialDetailScreen extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           height: 1.6,
                           color: isDark
-                              ? const Color(0xFFB0B0B0)
+                              ? AppColors.textDarkSecondary
                               : AppColors.textSecondary,
                           letterSpacing: 0.25,
                         ),
@@ -1557,8 +1542,8 @@ class MemorialDetailScreen extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             side: BorderSide(
                               color: isDark
-                                  ? const Color(0xFF404040)
-                                  : Colors.grey.shade300,
+                                  ? AppColors.borderDarkSubtle
+                                  : AppColors.greyLight,
                               width: 1.5,
                             ),
                             shape: RoundedRectangleBorder(

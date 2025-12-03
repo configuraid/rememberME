@@ -6,42 +6,20 @@ class AppStrings {
   // Auth
   static const String login = 'Anmelden';
   static const String logout = 'Abmelden';
-  static const String authKeyLabel = 'Authentifizierungs-Schlüssel';
-  static const String authKeyHint = 'Geben Sie Ihren Auth-Key ein';
-  static const String scanQRCode = 'QR-Code scannen';
   static const String or = 'oder';
-  static const String welcome = 'Willkommen';
-  static const String welcomeMessage =
-      'Bitte melden Sie sich mit Ihrem Auth-Key oder QR-Code an';
-
-  // Dashboard
-  static const String dashboard = 'Übersicht';
-  static const String myMemorials = 'Meine Gedenkseiten';
-  static const String createMemorial = 'Neue Gedenkseite erstellen';
-  static const String recentActivity = 'Letzte Aktivitäten';
-  static const String quickActions = 'Schnellzugriff';
 
   // Memorial
-  static const String memorial = 'Gedenkseite';
-  static const String memorialList = 'Gedenkseiten';
-  static const String memorialDetails = 'Details';
   static const String myMemorialPage = 'Meine Gedenkseite';
   static const String editMemorial = 'Bearbeiten';
   static const String editMemorialPage = 'Gedenkseite bearbeiten';
   static const String deleteMemorial = 'Löschen';
   static const String deleteMemorialPage = 'Gedenkseite entfernen';
-  static const String publishMemorial = 'Veröffentlichen';
-  static const String publishMemorialMessage =
-      'Möchtest du deine Gedenkseite jetzt veröffentlichen? Sie wird dann für andere sichtbar.';
-  static const String previewMemorial = 'Vorschau';
   static const String viewPreview = 'Vorschau ansehen';
-  static const String previewLoading = 'Vorschau wird geladen...';
   static const String confirmDeleteTitle = 'Löschen bestätigen';
   static const String noContentYetMemorial = 'Noch keine Inhalte';
   static const String addContentHint = 'Füge Texte, Bilder oder Videos hinzu';
   static const String contents = 'Inhalte';
   static const String block = 'Block';
-  static const String blocks = 'Blöcke';
   static const String moreOptions = 'Weitere Optionen';
   static const String blockTypeText = 'Text';
   static const String blockTypeVideo = 'Video';
@@ -118,15 +96,7 @@ class AppStrings {
   static const String canEditProfileLater =
       'Du kannst dein Profil später jederzeit bearbeiten';
 
-  // Login
   static const String digitalMemorials = 'Digitale Gedenkseiten';
-  static const String authKey = 'Auth-Key';
-  static const String enterYourAuthKey = 'Gib deinen Auth-Key ein';
-  static const String scanQrCode = 'QR-Code scannen';
-  static const String qrScannerNotImplemented =
-      'QR-Code Scanner noch nicht implementiert';
-  static const String noAuthKey =
-      'Keinen Auth-Key? Kontaktiere deinen Administrator';
 
   // Templates
   static const String templateClassic = 'Klassisch';
@@ -150,10 +120,8 @@ class AppStrings {
   static const String featureHarmonious = 'Harmonisch';
 
   // Page Builder
-  static const String pageBuilder = 'Seiten-Builder';
   static const String addContent = 'Inhalt hinzufügen';
   static const String addBlock = 'Block hinzufügen';
-  static const String contentBlocks = 'Inhalts-Bausteine';
   static const String saveChanges = 'Änderungen speichern';
   static const String discardChanges = 'Verwerfen';
   static const String noContentYet = 'Noch keine Inhalte';
@@ -163,39 +131,13 @@ class AppStrings {
   static const String deleteBlockMessage =
       'Möchtest du diesen Block wirklich löschen?';
   static const String preview = 'Vorschau';
-  static const String previewPrefix = 'Vorschau - ';
-  static const String noBlocksAvailable = 'Keine Blöcke vorhanden';
-
-  // Content Blocks
-  static const String heroSection = 'Hero-Sektion';
-  static const String textBlock = 'Text-Block';
-  static const String imageGallery = 'Bildgalerie';
-  static const String quoteSection = 'Zitate';
-  static const String videoCollage = 'Video-Collage';
-  static const String audioPlayer = 'Audio-Player';
-  static const String timeline = 'Zeitleiste';
-  static const String guestbook = 'Gästebuch';
-  static const String memoryMap = 'Erinnerungs-Karte';
-  static const String photoGallery3D = '3D-Fotogalerie';
-
-  // License
-  static const String licenseType = 'Lizenztyp';
-  static const String basicLicense = 'Basis-Lizenz';
-  static const String lifetimeLicense = 'Lifetime-Lizenz';
-  static const String upgradeLicense = 'Lizenz upgraden';
-  static const String licenseDetails = 'Lizenz-Details';
-  static const String storageUsed = 'Speicher genutzt';
-  static const String storageLimit = 'Speicher-Limit';
 
   // Profile
   static const String profile = 'Profil';
-  static const String settings = 'Einstellungen';
   static const String account = 'Konto';
   static const String accountSection = 'Account';
   static const String editProfile = 'Profil bearbeiten';
-  static const String notifications = 'Benachrichtigungen';
   static const String privacy = 'Datenschutz';
-  static const String privacyAndSecurity = 'Datenschutz & Sicherheit';
   static const String about = 'Über';
   static const String aboutTheApp = 'Über die App';
   static const String unknown = 'Unbekannt';
@@ -237,7 +179,6 @@ class AppStrings {
   static const String changeProfileImage = 'Profilbild ändern';
   static const String chooseFromGallery = 'Aus Galerie wählen';
   static const String takePhoto = 'Foto aufnehmen';
-  static const String successTitle = 'Erfolgreich!';
   static const String errorTitle = 'Fehler';
   static const String name = 'Name';
   static const String enterName = 'Bitte geben Sie einen Namen ein';
@@ -248,62 +189,17 @@ class AppStrings {
   static const String phoneOptional = 'Telefon (optional)';
   static const String aboutMeOptional = 'Über mich (optional)';
 
-  // Privacy Settings
-  static const String profileVisibility = 'Profil-Sichtbarkeit';
-  static const String publicProfile = 'Öffentliches Profil';
-  static const String publicProfileSubtitle =
-      'Ihr Profil kann von anderen Nutzern gefunden werden';
-  static const String showEmailAddress = 'E-Mail-Adresse anzeigen';
-  static const String showEmailSubtitle =
-      'Andere können Ihre E-Mail-Adresse sehen';
-  static const String searchEngines = 'Suchmaschinen';
-  static const String searchableInEngines = 'In Suchmaschinen auffindbar';
-  static const String searchableSubtitle =
-      'Ihre Gedenkseiten können über Google gefunden werden';
-  static const String dataAndDownloads = 'Daten & Downloads';
-  static const String downloadMyData = 'Meine Daten herunterladen';
-  static const String downloadDataSubtitle = 'Export aller Ihrer Daten';
-  static const String activityLog = 'Aktivitätsprotokoll';
-  static const String activityLogSubtitle = 'Ihre letzten Aktivitäten ansehen';
-  static const String security = 'Sicherheit';
-  static const String twoFactorAuth = 'Zwei-Faktor-Authentifizierung';
-  static const String notActivated = 'Nicht aktiviert';
-  static const String activeDevices = 'Aktive Geräte';
-  static const String manageDevices = 'Geräte verwalten';
-  static const String appPermissions = 'App-Berechtigungen';
-  static const String permissionsSubtitle = 'Kamera, Speicher, etc.';
-  static const String downloadData = 'Daten herunterladen';
-  static const String downloadDataMessage =
-      'Wir erstellen ein Archiv mit all Ihren Daten. Sie erhalten eine E-Mail, sobald der Download bereit ist.';
-  static const String download = 'Herunterladen';
-  static const String dataExportStarted = 'Daten-Export wurde gestartet';
-
-  // Groups
-  static const String groups = 'Gruppen';
-  static const String inviteMembers = 'Mitglieder einladen';
-  static const String groupMembers = 'Gruppenmitglieder';
-  static const String owner = 'Besitzer';
-  static const String coAdmin = 'Co-Admin';
-  static const String editor = 'Bearbeiter';
-  static const String viewer = 'Betrachter';
-
   // Actions
   static const String save = 'Speichern';
   static const String cancel = 'Abbrechen';
   static const String delete = 'Löschen';
   static const String edit = 'Bearbeiten';
   static const String add = 'Hinzufügen';
-  static const String remove = 'Entfernen';
-  static const String back = 'Zurück';
-  static const String next = 'Weiter';
   static const String upload = 'Hochladen';
   static const String duplicate = 'Duplizieren';
 
   // Messages
-  static const String loading = 'Lädt...';
-  static const String noData = 'Keine Daten verfügbar';
   static const String error = 'Fehler';
-  static const String success = 'Erfolgreich';
   static const String confirmDelete = 'Möchten Sie dies wirklich löschen?';
   static const String unsavedChanges = 'Sie haben ungespeicherte Änderungen';
   static const String unsavedChangesMessage =

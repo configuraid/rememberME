@@ -48,19 +48,20 @@ class PreviewLoadingDialog extends StatelessWidget {
   }
 
   Widget _buildIOSDialog(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Center(
       child: Container(
         margin: const EdgeInsets.all(32),
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF2C2C2E) : CupertinoColors.white,
+          color: isDark ? AppColors.toastBackgroundDark : AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
+              color: isDark
+                  ? AppColors.shadowDark
+                  : AppColors.shadow.withOpacity(0.15),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -69,14 +70,17 @@ class PreviewLoadingDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CupertinoActivityIndicator(radius: 14),
+            CupertinoActivityIndicator(
+              radius: 14,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            ),
             const SizedBox(height: 20),
             Text(
               message,
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: isDark ? CupertinoColors.white : CupertinoColors.black,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
                 fontFamily: '.SF Pro Text',
                 decoration: TextDecoration.none,
               ),
@@ -96,11 +100,13 @@ class PreviewLoadingDialog extends StatelessWidget {
         margin: const EdgeInsets.all(32),
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          color: isDark ? AppColors.surfaceDark : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.5 : 0.15),
+              color: isDark
+                  ? AppColors.shadowDark
+                  : AppColors.shadow.withOpacity(0.15),
               blurRadius: 24,
               offset: const Offset(0, 8),
             ),
@@ -184,16 +190,15 @@ class PreviewErrorDialog extends StatelessWidget {
   }
 
   Widget _buildIOSDialog(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return CupertinoAlertDialog(
       title: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             CupertinoIcons.exclamationmark_triangle_fill,
-            color: CupertinoColors.systemOrange,
+            color: AppColors.warning,
             size: 20,
           ),
           const SizedBox(width: 8),
@@ -203,7 +208,7 @@ class PreviewErrorDialog extends StatelessWidget {
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
-                color: isDark ? CupertinoColors.white : CupertinoColors.black,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
                 fontFamily: '.SF Pro Text',
               ),
             ),
@@ -216,7 +221,7 @@ class PreviewErrorDialog extends StatelessWidget {
           message,
           style: TextStyle(
             fontSize: 13,
-            color: CupertinoColors.systemGrey,
+            color: AppColors.grey,
             fontFamily: '.SF Pro Text',
           ),
         ),
@@ -227,7 +232,7 @@ class PreviewErrorDialog extends StatelessWidget {
             'Schließen',
             style: TextStyle(
               fontSize: 17,
-              color: CupertinoColors.activeBlue,
+              color: AppColors.interactive,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -241,7 +246,7 @@ class PreviewErrorDialog extends StatelessWidget {
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
-                color: CupertinoColors.activeBlue,
+                color: AppColors.interactive,
                 fontFamily: '.SF Pro Text',
               ),
             ),
@@ -263,18 +268,19 @@ class PreviewErrorDialog extends StatelessWidget {
       child: Container(
         constraints: const BoxConstraints(maxWidth: 340),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          color: isDark ? AppColors.surfaceDark : AppColors.surface,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color:
-                isDark ? Colors.orange.withOpacity(0.3) : Colors.grey.shade200,
+            color: isDark
+                ? AppColors.warning.withOpacity(0.3)
+                : AppColors.greyLighter,
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
               color: isDark
-                  ? Colors.black.withOpacity(0.5)
-                  : Colors.black.withOpacity(0.15),
+                  ? AppColors.shadowDark
+                  : AppColors.shadow.withOpacity(0.15),
               blurRadius: 24,
               offset: const Offset(0, 8),
             ),
@@ -291,20 +297,20 @@ class PreviewErrorDialog extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.orange.withOpacity(0.2),
-                    Colors.orange.withOpacity(0.1),
+                    AppColors.warning.withOpacity(0.2),
+                    AppColors.warning.withOpacity(0.1),
                   ],
                 ),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Colors.orange.withOpacity(0.4),
+                  color: AppColors.warning.withOpacity(0.4),
                   width: 2,
                 ),
               ),
               child: const Icon(
                 Icons.warning_rounded,
                 size: 48,
-                color: Colors.orange,
+                color: AppColors.warning,
               ),
             ),
             const SizedBox(height: 24),
@@ -327,7 +333,7 @@ class PreviewErrorDialog extends StatelessWidget {
                 message,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: isDark
-                          ? const Color(0xFFB0B0B0)
+                          ? AppColors.textDarkSecondary
                           : AppColors.textSecondary,
                       height: 1.5,
                     ),
@@ -346,8 +352,8 @@ class PreviewErrorDialog extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         side: BorderSide(
                           color: isDark
-                              ? const Color(0xFF404040)
-                              : Colors.grey.shade300,
+                              ? AppColors.borderDarkSubtle
+                              : AppColors.greyLight,
                           width: 1.5,
                         ),
                         shape: RoundedRectangleBorder(
@@ -377,7 +383,7 @@ class PreviewErrorDialog extends StatelessWidget {
                           backgroundColor: isDark
                               ? AppColors.primaryLight
                               : AppColors.primary,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppColors.textLight,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           elevation: 0,
                           shape: RoundedRectangleBorder(

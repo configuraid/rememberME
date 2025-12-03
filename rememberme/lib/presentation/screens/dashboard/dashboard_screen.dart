@@ -65,16 +65,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return CupertinoTabScaffold(
         tabBar: CupertinoTabBar(
           activeColor: isDark ? AppColors.accent : AppColors.primary,
-          inactiveColor: isDark
-              ? CupertinoColors.systemGrey
-              : CupertinoColors.inactiveGray,
+          inactiveColor: AppColors.grey,
           backgroundColor: isDark
-              ? const Color(0xFF1C1C1E).withOpacity(0.94)
-              : CupertinoColors.systemBackground.withOpacity(0.94),
+              ? AppColors.backgroundDarkElevated.withOpacity(0.94)
+              : AppColors.surface.withOpacity(0.94),
           border: Border(
             top: BorderSide(
-              color:
-                  isDark ? const Color(0xFF38383A) : CupertinoColors.separator,
+              color: isDark ? AppColors.borderDark : AppColors.divider,
               width: 0.5,
             ),
           ),
@@ -108,9 +105,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         selectedItemColor: isDark ? AppColors.primaryLight : AppColors.primary,
-        unselectedItemColor:
-            isDark ? const Color(0xFF909090) : Colors.grey.shade600,
-        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        unselectedItemColor: isDark ? AppColors.grey : AppColors.greyDark,
+        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
         selectedLabelStyle: const TextStyle(
@@ -138,38 +134,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildMemorialsTab() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return BlocBuilder<MemorialBloc, MemorialState>(
       builder: (context, memorialState) {
         if (memorialState.isLoading) {
           return Scaffold(
+            backgroundColor: isDark
+                ? AppColors.backgroundDarkSecondary
+                : AppColors.background,
             appBar: AppBar(
               title: Text(AppStrings.myMemorialPage),
+              backgroundColor:
+                  isDark ? AppColors.surfaceDark : AppColors.primary,
+              foregroundColor: AppColors.textLight,
             ),
-            body: const Center(
-              child: CircularProgressIndicator(),
+            body: Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isDark ? AppColors.primaryLight : AppColors.primary,
+                ),
+              ),
             ),
           );
         }
 
         if (memorialState.hasError) {
           return Scaffold(
+            backgroundColor: isDark
+                ? AppColors.backgroundDarkSecondary
+                : AppColors.background,
             appBar: AppBar(
               title: Text(AppStrings.myMemorialPage),
+              backgroundColor:
+                  isDark ? AppColors.surfaceDark : AppColors.primary,
+              foregroundColor: AppColors.textLight,
             ),
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline,
-                      size: 64, color: AppColors.error),
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: isDark ? AppColors.errorLight : AppColors.error,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     memorialState.errorMessage ?? AppStrings.errorOccurred,
                     textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => _loadData(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          isDark ? AppColors.primaryLight : AppColors.primary,
+                      foregroundColor: AppColors.textLight,
+                    ),
                     child: Text(AppStrings.tryAgain),
                   ),
                 ],
@@ -181,8 +207,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // Keine Gedenkseite vorhanden
         if (memorialState.memorials.isEmpty) {
           return Scaffold(
+            backgroundColor: isDark
+                ? AppColors.backgroundDarkSecondary
+                : AppColors.background,
             appBar: AppBar(
               title: Text(AppStrings.myMemorialPage),
+              backgroundColor:
+                  isDark ? AppColors.surfaceDark : AppColors.primary,
+              foregroundColor: AppColors.textLight,
             ),
             body: Center(
               child: Padding(
@@ -193,20 +225,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Icon(
                       Icons.favorite_border,
                       size: 80,
-                      color: AppColors.accent.withOpacity(0.5),
+                      color: isDark
+                          ? AppColors.accent.withOpacity(0.5)
+                          : AppColors.accent.withOpacity(0.5),
                     ),
                     const SizedBox(height: 24),
                     Text(
                       AppStrings.noMemorialYet,
-                      style: const TextStyle(
-                          fontSize: 24, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? AppColors.textLight
+                            : AppColors.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       AppStrings.createYourPersonalMemorial,
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.grey[600],
+                        color: isDark
+                            ? AppColors.textDarkSecondary
+                            : AppColors.greyDark,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -223,6 +264,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         style: const TextStyle(fontSize: 16),
                       ),
                       style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            isDark ? AppColors.primaryLight : AppColors.primary,
+                        foregroundColor: AppColors.textLight,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 32,
                           vertical: 16,
@@ -250,7 +294,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildStatCard(BuildContext context, String title, String value,
       IconData icon, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
+      color: isDark ? AppColors.surfaceDark : AppColors.surface,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -267,7 +314,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             Text(
               title,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: isDark
+                        ? AppColors.textDarkSecondary
+                        : AppColors.textSecondary,
+                  ),
             ),
           ],
         ),
@@ -307,15 +358,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildActionButton(BuildContext context, String label, IconData icon,
       Color color, VoidCallback onTap) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withOpacity(isDark ? 0.15 : 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(
+            color: color.withOpacity(isDark ? 0.4 : 0.3),
+          ),
         ),
         child: Column(
           children: [

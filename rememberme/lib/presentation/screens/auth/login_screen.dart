@@ -34,27 +34,27 @@ class _LoginScreenState extends State<LoginScreen> {
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
-              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: '.SF Pro Text',
             ),
           ),
           content: Text(
             message,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: CupertinoColors.systemGrey,
+              color: AppColors.grey,
               fontFamily: '.SF Pro Text',
             ),
           ),
           actions: [
             CupertinoDialogAction(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text(
+              child: Text(
                 AppStrings.ok,
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
-                  color: CupertinoColors.activeBlue,
+                  color: AppColors.interactive,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -65,7 +65,10 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message),
+          content: Text(
+            message,
+            style: const TextStyle(color: AppColors.textLight),
+          ),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -157,231 +160,226 @@ class _LoginScreenState extends State<LoginScreen> {
       },
       child: Scaffold(
         backgroundColor:
-            isDark ? const Color(0xFF121212) : AppColors.background,
+            isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
         body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 40),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              children: [
+                const Spacer(flex: 2),
 
-                  // Logo Container
-                  Container(
-                    width: 140,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: AppColors.accentGradient,
+                // Logo Container
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: AppColors.accentGradient,
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.accent.withOpacity(0.4),
+                        blurRadius: 24,
+                        offset: const Offset(0, 12),
                       ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.accent.withOpacity(0.4),
-                          blurRadius: 24,
-                          offset: const Offset(0, 12),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.favorite_rounded,
-                      size: 72,
-                      color: Colors.white,
-                    ),
+                    ],
                   ),
-
-                  const SizedBox(height: 40),
-
-                  // App Name
-                  Text(
-                    AppStrings.appNameRememberMe,
-                    style: theme.textTheme.displaySmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color:
-                          isDark ? AppColors.textLight : AppColors.textPrimary,
-                      letterSpacing: -0.5,
-                    ),
-                    textAlign: TextAlign.center,
+                  child: const Icon(
+                    Icons.favorite_rounded,
+                    size: 60,
+                    color: AppColors.textLight,
                   ),
+                ),
 
-                  const SizedBox(height: 12),
+                const SizedBox(height: 24),
 
-                  // Subtitle
-                  Text(
-                    AppStrings.digitalMemorials,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: isDark
-                          ? const Color(0xFFB0B0B0)
-                          : AppColors.textSecondary,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    textAlign: TextAlign.center,
+                // App Name
+                Text(
+                  AppStrings.appNameRememberMe,
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                    letterSpacing: -0.5,
                   ),
+                  textAlign: TextAlign.center,
+                ),
 
-                  const SizedBox(height: 80),
+                const SizedBox(height: 8),
 
-                  // QR Scanner Card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(32),
-                    decoration: BoxDecoration(
-                      color:
-                          isDark ? const Color(0xFF1E1E1E) : AppColors.surface,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
+                // Subtitle
+                Text(
+                  AppStrings.digitalMemorials,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: isDark
+                        ? AppColors.textDarkSecondary
+                        : AppColors.textSecondary,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const Spacer(flex: 1),
+
+                // QR Scanner Card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceDark : AppColors.surface,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDark
+                            ? AppColors.shadowDark
+                            : AppColors.shadow.withOpacity(0.3),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // QR Icon
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
                           color: isDark
-                              ? Colors.black.withOpacity(0.3)
-                              : Colors.black.withOpacity(0.08),
-                          blurRadius: 16,
-                          offset: const Offset(0, 8),
+                              ? AppColors.primary.withOpacity(0.15)
+                              : AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        // QR Icon
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.primary.withOpacity(0.15)
-                                : AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Icon(
-                            Icons.qr_code_scanner_rounded,
-                            size: 44,
-                            color: isDark
+                        child: Icon(
+                          Icons.qr_code_scanner_rounded,
+                          size: 36,
+                          color: isDark
+                              ? AppColors.primaryLight
+                              : AppColors.primary,
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Title
+                      Text(
+                        'QR-Code scannen',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? AppColors.textLight
+                              : AppColors.textPrimary,
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Description
+                      Text(
+                        'Scanne den QR-Code deiner\nOrganisation zum Anmelden',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: isDark
+                              ? AppColors.textDarkSecondary
+                              : AppColors.textSecondary,
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Scan Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _openQRScanner,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isDark
                                 ? AppColors.primaryLight
                                 : AppColors.primary,
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Title
-                        Text(
-                          'QR-Code scannen',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? AppColors.textLight
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        // Description
-                        Text(
-                          'Scanne den QR-Code deiner\nOrganisation zum Anmelden',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: isDark
-                                ? const Color(0xFFB0B0B0)
-                                : AppColors.textSecondary,
-                            height: 1.5,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-
-                        const SizedBox(height: 32),
-
-                        // Scan Button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _openQRScanner,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: isDark
-                                  ? AppColors.primaryLight
-                                  : AppColors.primary,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
+                            foregroundColor: AppColors.textLight,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
                             ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      AppColors.textLight,
+                                    ),
+                                  ),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.camera_alt_rounded,
+                                      size: 22,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      'Scanner öffnen',
+                                      style:
+                                          theme.textTheme.titleMedium?.copyWith(
+                                        color: AppColors.textLight,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                  )
-                                : Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.camera_alt_rounded,
-                                        size: 24,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        'Scanner öffnen',
-                                        style: theme.textTheme.titleMedium
-                                            ?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
+                                  ],
+                                ),
                         ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Info Box
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.info.withOpacity(isDark ? 0.15 : 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.info.withOpacity(isDark ? 0.4 : 0.3),
-                        width: 1,
                       ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(
-                          Icons.info_outline_rounded,
-                          color: AppColors.info,
-                          size: 22,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Den QR-Code findest du in deinen Unterlagen oder bei deinem Administrator.',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: isDark
-                                  ? AppColors.info.withOpacity(0.9)
-                                  : AppColors.info,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ],
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Info Box
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.info.withOpacity(isDark ? 0.15 : 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.info.withOpacity(isDark ? 0.4 : 0.3),
+                      width: 1,
                     ),
                   ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.info_outline_rounded,
+                        color: AppColors.info,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Den QR-Code findest du in deinen Unterlagen oder bei deinem Administrator.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: isDark
+                                ? AppColors.info.withOpacity(0.9)
+                                : AppColors.info,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
-                  const SizedBox(height: 40),
-                ],
-              ),
+                const Spacer(flex: 1),
+              ],
             ),
           ),
         ),
@@ -425,7 +423,7 @@ class _LoginScreenState extends State<LoginScreen> {
       },
       child: CupertinoPageScaffold(
         backgroundColor:
-            isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7),
+            isDark ? AppColors.backgroundDark : AppColors.background,
         // Material Wrapper entfernt gelbe Unterstriche
         child: Material(
           type: MaterialType.transparency,
@@ -459,7 +457,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: const Icon(
                       CupertinoIcons.heart_fill,
                       size: 60,
-                      color: Colors.white,
+                      color: AppColors.textLight,
                     ),
                   ),
 
@@ -471,9 +469,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: isDark
-                          ? CupertinoColors.white
-                          : CupertinoColors.black,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
                       letterSpacing: -0.5,
                       fontFamily: '.SF Pro Display',
                     ),
@@ -487,7 +484,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     AppStrings.digitalMemorials,
                     style: TextStyle(
                       fontSize: 17,
-                      color: CupertinoColors.systemGrey,
+                      color: AppColors.grey,
                       fontWeight: FontWeight.w400,
                       fontFamily: '.SF Pro Text',
                     ),
@@ -502,14 +499,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       color: isDark
-                          ? const Color(0xFF1C1C1E)
-                          : CupertinoColors.white,
+                          ? AppColors.backgroundDarkElevated
+                          : AppColors.surface,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
                           color: isDark
-                              ? Colors.black.withOpacity(0.3)
-                              : Colors.black.withOpacity(0.08),
+                              ? AppColors.shadowDark
+                              : AppColors.shadow.withOpacity(0.3),
                           blurRadius: 16,
                           offset: const Offset(0, 8),
                         ),
@@ -545,8 +542,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: isDark
-                                ? CupertinoColors.white
-                                : CupertinoColors.black,
+                                ? AppColors.textLight
+                                : AppColors.textPrimary,
                             fontFamily: '.SF Pro Display',
                           ),
                         ),
@@ -558,7 +555,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           'Scanne den QR-Code deiner\nOrganisation zum Anmelden',
                           style: TextStyle(
                             fontSize: 15,
-                            color: CupertinoColors.systemGrey,
+                            color: AppColors.grey,
                             height: 1.5,
                             fontFamily: '.SF Pro Text',
                           ),
@@ -579,8 +576,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(14),
                             onPressed: _isLoading ? null : _openQRScanner,
                             child: _isLoading
-                                ? const CupertinoActivityIndicator(
-                                    color: CupertinoColors.white,
+                                ? CupertinoActivityIndicator(
+                                    color: AppColors.textLight,
                                   )
                                 : Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -588,7 +585,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       const Icon(
                                         CupertinoIcons.camera_fill,
                                         size: 22,
-                                        color: CupertinoColors.white,
+                                        color: AppColors.textLight,
                                       ),
                                       const SizedBox(width: 10),
                                       Text(
@@ -596,7 +593,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         style: TextStyle(
                                           fontSize: 17,
                                           fontWeight: FontWeight.w600,
-                                          color: CupertinoColors.white,
+                                          color: AppColors.textLight,
                                           fontFamily: '.SF Pro Text',
                                         ),
                                       ),
@@ -769,23 +766,23 @@ class _QRScannerScreenState extends State<_QRScannerScreen>
     final isDark = brightness == Brightness.dark;
 
     return CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.black,
+      backgroundColor: AppColors.backgroundDark,
       navigationBar: CupertinoNavigationBar(
-        backgroundColor: Colors.black.withOpacity(0.8),
+        backgroundColor: AppColors.backgroundDark.withOpacity(0.8),
         border: null,
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () => Navigator.of(context).pop(),
           child: const Icon(
             CupertinoIcons.xmark,
-            color: CupertinoColors.white,
+            color: AppColors.textLight,
             size: 24,
           ),
         ),
-        middle: const Text(
+        middle: Text(
           'QR-Code scannen',
           style: TextStyle(
-            color: CupertinoColors.white,
+            color: AppColors.textLight,
             fontWeight: FontWeight.w600,
             fontFamily: '.SF Pro Text',
           ),
@@ -797,9 +794,7 @@ class _QRScannerScreenState extends State<_QRScannerScreen>
             _isTorchOn
                 ? CupertinoIcons.bolt_fill
                 : CupertinoIcons.bolt_slash_fill,
-            color: _isTorchOn
-                ? CupertinoColors.systemYellow
-                : CupertinoColors.white,
+            color: _isTorchOn ? AppColors.warning : AppColors.textLight,
             size: 24,
           ),
         ),
@@ -831,15 +826,15 @@ class _QRScannerScreenState extends State<_QRScannerScreen>
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
+                      color: AppColors.backgroundDark.withOpacity(0.6),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       _hasScanned
                           ? '✓ Code erkannt!'
                           : 'Halte die Kamera auf den QR-Code',
-                      style: const TextStyle(
-                        color: CupertinoColors.white,
+                      style: TextStyle(
+                        color: AppColors.textLight,
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                         fontFamily: '.SF Pro Text',
@@ -863,18 +858,18 @@ class _QRScannerScreenState extends State<_QRScannerScreen>
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
-        backgroundColor: Colors.black.withOpacity(0.8),
+        backgroundColor: AppColors.backgroundDark.withOpacity(0.8),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded, color: Colors.white),
+          icon: const Icon(Icons.close_rounded, color: AppColors.textLight),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'QR-Code scannen',
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.textLight,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -883,7 +878,7 @@ class _QRScannerScreenState extends State<_QRScannerScreen>
           IconButton(
             icon: Icon(
               _isTorchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
-              color: _isTorchOn ? Colors.yellow : Colors.white,
+              color: _isTorchOn ? AppColors.warning : AppColors.textLight,
             ),
             onPressed: _toggleTorch,
           ),
@@ -913,15 +908,15 @@ class _QRScannerScreenState extends State<_QRScannerScreen>
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
+                    color: AppColors.backgroundDark.withOpacity(0.6),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     _hasScanned
                         ? '✓ Code erkannt!'
                         : 'Halte die Kamera auf den QR-Code',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: AppColors.textLight,
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
                     ),
@@ -948,7 +943,7 @@ class _QRScannerScreenState extends State<_QRScannerScreen>
             // Dunkle Überlagerung mit Ausschnitt
             ColorFiltered(
               colorFilter: ColorFilter.mode(
-                Colors.black.withOpacity(0.6),
+                AppColors.backgroundDark.withOpacity(0.6),
                 BlendMode.srcOut,
               ),
               child: Stack(
@@ -965,7 +960,7 @@ class _QRScannerScreenState extends State<_QRScannerScreen>
                       height: scanAreaSize,
                       margin: const EdgeInsets.only(bottom: 80),
                       decoration: BoxDecoration(
-                        color: Colors.black,
+                        color: AppColors.backgroundDark,
                         borderRadius: BorderRadius.circular(24),
                       ),
                     ),
@@ -1048,7 +1043,7 @@ class _QRScannerScreenState extends State<_QRScannerScreen>
                             Platform.isIOS
                                 ? CupertinoIcons.checkmark_alt
                                 : Icons.check_rounded,
-                            color: Colors.white,
+                            color: AppColors.textLight,
                             size: 48,
                           ),
                         ),

@@ -29,17 +29,13 @@ class IntuitivePageBuilderScreen extends StatefulWidget {
 
 class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
     with TickerProviderStateMixin, WebPreviewMixin {
-  // ↑ NEU: WebPreviewMixin hinzugefügt
-
   List<ContentBlock> _blocks = [];
   String? _selectedBlockId;
   bool _hasUnsavedChanges = false;
   bool _isSaving = false;
 
-  // Scroll Controller für automatisches Scrollen
   final ScrollController _scrollController = ScrollController();
 
-  // Animation für Wackel-Effekt
   String? _shakingBlockId;
   AnimationController? _shakeController;
   Animation<double>? _shakeAnimation;
@@ -117,7 +113,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
   }
 
   // ============================================================
-  // Native Toast Implementierung - UNTEN angezeigt
+  // Native Toast Implementierung
   // ============================================================
   void _showSuccessToast(String message) {
     if (Platform.isIOS) {
@@ -129,8 +125,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
 
   void _showIOSToast(String message) {
     final overlay = Overlay.of(context);
-    final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     late OverlayEntry overlayEntry;
     overlayEntry = OverlayEntry(
@@ -147,7 +142,6 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
 
     overlay.insert(overlayEntry);
 
-    // Automatisch nach 2.5 Sekunden entfernen
     Future.delayed(const Duration(milliseconds: 2500), () {
       if (overlayEntry.mounted) {
         overlayEntry.remove();
@@ -164,12 +158,12 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: AppColors.textLight.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.check_rounded,
-                color: Colors.white,
+                color: AppColors.textLight,
                 size: 16,
               ),
             ),
@@ -180,6 +174,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 style: const TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: 14,
+                  color: AppColors.textLight,
                 ),
               ),
             ),
@@ -202,10 +197,9 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
       return true;
     }
 
-    if (Platform.isIOS) {
-      final brightness = MediaQuery.of(context).platformBrightness;
-      final isDark = brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (Platform.isIOS) {
       final shouldPop = await showCupertinoDialog<bool>(
         context: context,
         builder: (context) => CupertinoAlertDialog(
@@ -214,7 +208,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
-              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -222,7 +216,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             AppStrings.unsavedChangesMessage,
             style: TextStyle(
               fontSize: 13,
-              color: CupertinoColors.systemGrey,
+              color: AppColors.grey,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -232,7 +226,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 AppStrings.cancel,
                 style: TextStyle(
                   fontSize: 17,
-                  color: CupertinoColors.activeBlue,
+                  color: AppColors.interactive,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -242,7 +236,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
               isDestructiveAction: true,
               child: Text(
                 AppStrings.discardChanges,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
                   fontFamily: '.SF Pro Text',
@@ -255,8 +249,6 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
       );
       return shouldPop ?? false;
     } else {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-
       final shouldPop = await showDialog<bool>(
         context: context,
         builder: (ctx) => Dialog(
@@ -265,19 +257,17 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
           child: Container(
             constraints: const BoxConstraints(maxWidth: 340),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              color: isDark ? AppColors.surfaceDark : AppColors.surface,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: isDark
                     ? AppColors.error.withOpacity(0.3)
-                    : Colors.grey.shade200,
+                    : AppColors.greyLighter,
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: isDark
-                      ? Colors.black.withOpacity(0.5)
-                      : Colors.black.withOpacity(0.15),
+                  color: isDark ? AppColors.shadowDark : AppColors.shadow,
                   blurRadius: 24,
                   offset: const Offset(0, 8),
                 ),
@@ -331,7 +321,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                     AppStrings.unsavedChangesMessage,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: isDark
-                              ? const Color(0xFFB0B0B0)
+                              ? AppColors.textDarkSecondary
                               : AppColors.textSecondary,
                           height: 1.5,
                         ),
@@ -350,8 +340,8 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             side: BorderSide(
                               color: isDark
-                                  ? const Color(0xFF404040)
-                                  : Colors.grey.shade300,
+                                  ? AppColors.borderDarkSubtle
+                                  : AppColors.greyLight,
                               width: 1.5,
                             ),
                             shape: RoundedRectangleBorder(
@@ -375,7 +365,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                           onPressed: () => Navigator.pop(ctx, true),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.error,
-                            foregroundColor: Colors.white,
+                            foregroundColor: AppColors.textLight,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             elevation: 0,
                             shape: RoundedRectangleBorder(
@@ -389,7 +379,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                                 .titleMedium
                                 ?.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                                  color: AppColors.textLight,
                                 ),
                           ),
                         ),
@@ -417,18 +407,16 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
   }
 
   // ============================================================
-  // iOS Native Layout mit CupertinoPageScaffold
+  // iOS Native Layout
   // ============================================================
   Widget _buildIOSLayout(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return WillPopScope(
       onWillPop: _onWillPop,
       child: CupertinoPageScaffold(
-        backgroundColor: isDark
-            ? const Color(0xFF000000)
-            : CupertinoColors.systemGroupedBackground,
+        backgroundColor:
+            isDark ? AppColors.backgroundDark : AppColors.background,
         navigationBar: CupertinoNavigationBar(
           middle: Row(
             mainAxisSize: MainAxisSize.min,
@@ -439,8 +427,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
-                    color:
-                        isDark ? CupertinoColors.white : CupertinoColors.black,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
                     fontFamily: '.SF Pro Text',
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -452,7 +439,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                   width: 8,
                   height: 8,
                   decoration: const BoxDecoration(
-                    color: CupertinoColors.systemOrange,
+                    color: AppColors.warning,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -460,12 +447,11 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             ],
           ),
           backgroundColor: isDark
-              ? const Color(0xFF1C1C1E).withOpacity(0.94)
-              : CupertinoColors.systemBackground.withOpacity(0.94),
+              ? AppColors.backgroundDarkElevated.withOpacity(0.94)
+              : AppColors.surface.withOpacity(0.94),
           border: Border(
             bottom: BorderSide(
-              color:
-                  isDark ? const Color(0xFF38383A) : CupertinoColors.separator,
+              color: isDark ? AppColors.borderDark : AppColors.divider,
               width: 0.5,
             ),
           ),
@@ -479,7 +465,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             },
             child: Icon(
               CupertinoIcons.back,
-              color: CupertinoColors.activeBlue,
+              color: AppColors.interactive,
               size: 28,
             ),
           ),
@@ -492,7 +478,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 onPressed: _showPreview,
                 child: Icon(
                   CupertinoIcons.eye,
-                  color: CupertinoColors.activeBlue,
+                  color: AppColors.interactive,
                   size: 24,
                 ),
               ),
@@ -502,15 +488,17 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 minSize: 0,
                 onPressed: _isSaving ? null : _save,
                 child: _isSaving
-                    ? const CupertinoActivityIndicator()
+                    ? CupertinoActivityIndicator(
+                        color: AppColors.interactive,
+                      )
                     : Text(
                         AppStrings.save,
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w600,
                           color: _hasUnsavedChanges
-                              ? CupertinoColors.activeBlue
-                              : CupertinoColors.systemGrey3,
+                              ? AppColors.interactive
+                              : AppColors.greyLight,
                           fontFamily: '.SF Pro Text',
                         ),
                       ),
@@ -524,7 +512,6 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
               _blocks.isEmpty
                   ? _buildIOSEmptyState(isDark)
                   : _buildIOSBlockList(isDark),
-              // Floating Action Button für iOS
               Positioned(
                 right: 16,
                 bottom: 16,
@@ -537,11 +524,11 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                       vertical: 14,
                     ),
                     decoration: BoxDecoration(
-                      color: CupertinoColors.activeBlue,
+                      color: AppColors.interactive,
                       borderRadius: BorderRadius.circular(25),
                       boxShadow: [
                         BoxShadow(
-                          color: CupertinoColors.activeBlue.withOpacity(0.3),
+                          color: AppColors.interactive.withOpacity(0.3),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -552,7 +539,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                       children: [
                         const Icon(
                           CupertinoIcons.add,
-                          color: CupertinoColors.white,
+                          color: AppColors.textLight,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
@@ -561,7 +548,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: CupertinoColors.white,
+                            color: AppColors.textLight,
                             fontFamily: '.SF Pro Text',
                           ),
                         ),
@@ -587,11 +574,13 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white,
+                color: isDark
+                    ? AppColors.backgroundDarkElevated
+                    : AppColors.surface,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+                    color: isDark ? AppColors.shadowDark : AppColors.shadow,
                     blurRadius: 20,
                     offset: const Offset(0, 4),
                   ),
@@ -600,9 +589,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
               child: Icon(
                 CupertinoIcons.doc_text,
                 size: 64,
-                color: isDark
-                    ? CupertinoColors.systemGrey
-                    : CupertinoColors.activeBlue,
+                color: isDark ? AppColors.grey : AppColors.interactive,
               ),
             ),
             const SizedBox(height: 32),
@@ -611,7 +598,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: isDark ? CupertinoColors.white : CupertinoColors.black,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
                 fontFamily: '.SF Pro Display',
               ),
             ),
@@ -620,7 +607,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
               AppStrings.noContentMessage,
               style: TextStyle(
                 fontSize: 15,
-                color: CupertinoColors.systemGrey,
+                color: AppColors.grey,
                 height: 1.5,
                 fontFamily: '.SF Pro Text',
               ),
@@ -629,7 +616,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             const SizedBox(height: 40),
             CupertinoButton(
               onPressed: _showAddBlockSheet,
-              color: CupertinoColors.activeBlue,
+              color: AppColors.interactive,
               borderRadius: BorderRadius.circular(12),
               padding: const EdgeInsets.symmetric(
                 horizontal: 32,
@@ -637,19 +624,19 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
+                children: const [
+                  Icon(
                     CupertinoIcons.add,
-                    color: CupertinoColors.white,
+                    color: AppColors.textLight,
                     size: 22,
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Text(
                     AppStrings.addBlock,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
-                      color: CupertinoColors.white,
+                      color: AppColors.textLight,
                       fontFamily: '.SF Pro Text',
                     ),
                   ),
@@ -735,13 +722,13 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
   // Android Layout
   // ============================================================
   Widget _buildAndroidLayout(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey.shade50,
+        backgroundColor:
+            isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
         appBar: AppBar(
           title: Text(widget.memorial.name),
           centerTitle: true,
@@ -759,28 +746,28 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.2),
+                      color: AppColors.warning.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.orange.withOpacity(0.5),
+                        color: AppColors.warning.withOpacity(0.5),
                         width: 1,
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: [
+                      children: const [
                         Icon(
                           Icons.circle,
-                          color: Colors.orange,
+                          color: AppColors.warning,
                           size: 8,
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         Text(
                           AppStrings.notSaved,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: Colors.orange,
+                            color: AppColors.warning,
                           ),
                         ),
                       ],
@@ -791,7 +778,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             Container(
               margin: const EdgeInsets.only(right: 4),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: AppColors.textLight.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: IconButton(
@@ -818,14 +805,14 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.textLight),
                         ),
                       )
                     : const Icon(Icons.check_rounded),
                 onPressed: _isSaving ? null : _save,
                 tooltip: AppStrings.save,
-                color: Colors.white,
+                color: AppColors.textLight,
               ),
             ),
           ],
@@ -836,9 +823,9 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _showAddBlockSheet,
           icon: const Icon(Icons.add_rounded),
-          label: Text(AppStrings.addBlock),
+          label: const Text(AppStrings.addBlock),
           backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.textLight,
           elevation: 4,
         ),
       ),
@@ -895,7 +882,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
               AppStrings.noContentMessage,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: isDark
-                        ? const Color(0xFFB0B0B0)
+                        ? AppColors.textDarkSecondary
                         : AppColors.textSecondary,
                     height: 1.5,
                   ),
@@ -931,9 +918,9 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
               child: ElevatedButton.icon(
                 onPressed: _showAddBlockSheet,
                 icon: const Icon(Icons.add_rounded, size: 24),
-                label: Text(
+                label: const Text(
                   AppStrings.addBlock,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
@@ -942,7 +929,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.textLight,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 32,
                     vertical: 16,
@@ -1041,7 +1028,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                    color: AppColors.shadow,
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -1182,10 +1169,9 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
   }
 
   void _deleteBlock(String blockId) {
-    if (Platform.isIOS) {
-      final brightness = MediaQuery.of(context).platformBrightness;
-      final isDark = brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (Platform.isIOS) {
       showCupertinoDialog(
         context: context,
         builder: (context) => CupertinoAlertDialog(
@@ -1194,7 +1180,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
-              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -1202,7 +1188,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             AppStrings.deleteBlockMessage,
             style: TextStyle(
               fontSize: 13,
-              color: CupertinoColors.systemGrey,
+              color: AppColors.grey,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -1212,7 +1198,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 AppStrings.cancel,
                 style: TextStyle(
                   fontSize: 17,
-                  color: CupertinoColors.activeBlue,
+                  color: AppColors.interactive,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -1220,7 +1206,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             ),
             CupertinoDialogAction(
               isDestructiveAction: true,
-              child: Text(
+              child: const Text(
                 AppStrings.delete,
                 style: TextStyle(
                   fontSize: 17,
@@ -1244,8 +1230,6 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
         ),
       );
     } else {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-
       showDialog(
         context: context,
         builder: (ctx) => Dialog(
@@ -1254,19 +1238,17 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
           child: Container(
             constraints: const BoxConstraints(maxWidth: 340),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              color: isDark ? AppColors.surfaceDark : AppColors.surface,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: isDark
                     ? AppColors.error.withOpacity(0.3)
-                    : Colors.grey.shade200,
+                    : AppColors.greyLighter,
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: isDark
-                      ? Colors.black.withOpacity(0.5)
-                      : Colors.black.withOpacity(0.15),
+                  color: isDark ? AppColors.shadowDark : AppColors.shadow,
                   blurRadius: 24,
                   offset: const Offset(0, 8),
                 ),
@@ -1320,7 +1302,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                     AppStrings.deleteBlockMessage,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: isDark
-                              ? const Color(0xFFB0B0B0)
+                              ? AppColors.textDarkSecondary
                               : AppColors.textSecondary,
                           height: 1.5,
                         ),
@@ -1339,8 +1321,8 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             side: BorderSide(
                               color: isDark
-                                  ? const Color(0xFF404040)
-                                  : Colors.grey.shade300,
+                                  ? AppColors.borderDarkSubtle
+                                  : AppColors.greyLight,
                               width: 1.5,
                             ),
                             shape: RoundedRectangleBorder(
@@ -1373,7 +1355,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.error,
-                            foregroundColor: Colors.white,
+                            foregroundColor: AppColors.textLight,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             elevation: 0,
                             shape: RoundedRectangleBorder(
@@ -1387,7 +1369,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                                 .titleMedium
                                 ?.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                                  color: AppColors.textLight,
                                 ),
                           ),
                         ),
@@ -1465,6 +1447,8 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
   }
 
   void _showPreview() {
+    debugPrint('🔘 _showPreview() called at ${DateTime.now()}');
+
     final currentMemorial = widget.memorial.copyWith(
       contentBlocks: _blocks,
     );
@@ -1475,9 +1459,6 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
     );
   }
 
-  // ============================================================
-  // Save Methode - nur eine Navigation
-  // ============================================================
   void _save() {
     if (_isSaving) return;
 
@@ -1497,10 +1478,8 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
       _hasUnsavedChanges = false;
     });
 
-    // Toast anzeigen (unten)
     _showSuccessToast(AppStrings.pageSaved);
 
-    // Nur einmal zurück navigieren
     Future.delayed(const Duration(milliseconds: 1200), () {
       if (mounted) {
         setState(() {
@@ -1515,7 +1494,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
 }
 
 // ============================================================
-// iOS Native Bottom Toast (Pill-Style wie Apple)
+// iOS Native Bottom Toast
 // ============================================================
 class _IOSBottomToast extends StatefulWidget {
   final String message;
@@ -1573,10 +1552,8 @@ class _IOSBottomToastState extends State<_IOSBottomToast>
 
     _controller.forward();
 
-    // Haptic Feedback bei Erscheinen
     HapticFeedback.lightImpact();
 
-    // Fade out nach 2 Sekunden
     Future.delayed(const Duration(milliseconds: 2000), () {
       if (mounted) {
         _controller.reverse().then((_) {
@@ -1597,7 +1574,7 @@ class _IOSBottomToastState extends State<_IOSBottomToast>
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Positioned(
-      bottom: bottomPadding + 100, // Über dem FAB
+      bottom: bottomPadding + 100,
       left: 0,
       right: 0,
       child: Center(
@@ -1616,40 +1593,39 @@ class _IOSBottomToastState extends State<_IOSBottomToast>
                     vertical: 14,
                   ),
                   decoration: BoxDecoration(
-                    // iOS-typischer Blur-Hintergrund Effekt simuliert
                     color: widget.isDark
-                        ? const Color(0xFF2C2C2E).withOpacity(0.95)
-                        : CupertinoColors.white.withOpacity(0.95),
-                    borderRadius: BorderRadius.circular(50), // Pill-Form
+                        ? AppColors.toastBackgroundDark.withOpacity(0.95)
+                        : AppColors.toastBackgroundLight.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(50),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black
-                            .withOpacity(widget.isDark ? 0.4 : 0.12),
+                        color: widget.isDark
+                            ? AppColors.shadowDark
+                            : AppColors.shadow,
                         blurRadius: 20,
                         offset: const Offset(0, 6),
                       ),
                     ],
                     border: Border.all(
                       color: widget.isDark
-                          ? const Color(0xFF48484A)
-                          : CupertinoColors.systemGrey5,
+                          ? AppColors.borderDarkLight
+                          : AppColors.greyLighter,
                       width: 0.5,
                     ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Grüner Checkmark Circle
                       Container(
                         width: 28,
                         height: 28,
                         decoration: const BoxDecoration(
-                          color: CupertinoColors.systemGreen,
+                          color: AppColors.success,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           CupertinoIcons.checkmark_alt,
-                          color: CupertinoColors.white,
+                          color: AppColors.textLight,
                           size: 16,
                         ),
                       ),
@@ -1661,8 +1637,8 @@ class _IOSBottomToastState extends State<_IOSBottomToast>
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: widget.isDark
-                                ? CupertinoColors.white
-                                : CupertinoColors.black,
+                                ? AppColors.textLight
+                                : AppColors.textPrimary,
                             fontFamily: '.SF Pro Text',
                             letterSpacing: -0.2,
                           ),

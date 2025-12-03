@@ -74,16 +74,33 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
   }
 
   void _showError(String message) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (Platform.isIOS) {
       showCupertinoDialog(
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
-          title: Text(AppStrings.errorTitle),
-          content: Text(message),
+          title: Text(
+            AppStrings.errorTitle,
+            style: TextStyle(
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            ),
+          ),
+          content: Text(
+            message,
+            style: TextStyle(
+              color: AppColors.grey,
+            ),
+          ),
           actions: [
             CupertinoDialogAction(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(AppStrings.ok),
+              child: Text(
+                AppStrings.ok,
+                style: TextStyle(
+                  color: AppColors.interactive,
+                ),
+              ),
             ),
           ],
         ),
@@ -91,8 +108,11 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message),
-          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Text(
+            message,
+            style: const TextStyle(color: AppColors.textLight),
+          ),
+          backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -183,6 +203,8 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
         }
       },
       child: Scaffold(
+        backgroundColor:
+            isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
         appBar: AppBar(
           title: Text(AppStrings.createProfile),
           elevation: 0,
@@ -253,7 +275,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                               widget.organization.name,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: isDark
-                                    ? const Color(0xFFB0B0B0)
+                                    ? AppColors.textDarkSecondary
                                     : AppColors.textSecondary,
                                 decoration: TextDecoration.none,
                               ),
@@ -270,6 +292,9 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                           // Formular Card
                           Card(
                             elevation: isDark ? 2 : 1,
+                            color: isDark
+                                ? AppColors.surfaceDark
+                                : AppColors.surface,
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Column(
@@ -280,6 +305,9 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                     controller: _nameController,
                                     validator: Validators.validateName,
                                     style: theme.textTheme.bodyLarge?.copyWith(
+                                      color: isDark
+                                          ? AppColors.textLight
+                                          : AppColors.textPrimary,
                                       decoration: TextDecoration.none,
                                     ),
                                     decoration: _buildInputDecoration(
@@ -302,6 +330,9 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                     controller: _emailController,
                                     keyboardType: TextInputType.emailAddress,
                                     style: theme.textTheme.bodyLarge?.copyWith(
+                                      color: isDark
+                                          ? AppColors.textLight
+                                          : AppColors.textPrimary,
                                       decoration: TextDecoration.none,
                                     ),
                                     decoration: _buildInputDecoration(
@@ -331,13 +362,13 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                       ),
                                       decoration: BoxDecoration(
                                         color: isDark
-                                            ? const Color(0xFF1E1E1E)
+                                            ? AppColors.surfaceDark
                                             : AppColors.primary
                                                 .withOpacity(0.05),
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
                                           color: isDark
-                                              ? const Color(0xFF404040)
+                                              ? AppColors.borderDarkSubtle
                                               : AppColors.primary
                                                   .withOpacity(0.2),
                                         ),
@@ -376,8 +407,8 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                                       .textTheme.bodySmall
                                                       ?.copyWith(
                                                     color: isDark
-                                                        ? const Color(
-                                                            0xFFB0B0B0)
+                                                        ? AppColors
+                                                            .textDarkSecondary
                                                         : AppColors
                                                             .textSecondary,
                                                     fontSize: 12,
@@ -395,6 +426,17 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                             activeColor: isDark
                                                 ? AppColors.primaryLight
                                                 : AppColors.primary,
+                                            activeTrackColor: isDark
+                                                ? AppColors.primaryLight
+                                                    .withOpacity(0.3)
+                                                : AppColors.primary
+                                                    .withOpacity(0.3),
+                                            inactiveThumbColor: isDark
+                                                ? AppColors.greyDark
+                                                : AppColors.grey,
+                                            inactiveTrackColor: isDark
+                                                ? AppColors.cardBorderDark
+                                                : AppColors.greyLight,
                                           ),
                                         ],
                                       ),
@@ -419,6 +461,9 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                             maxLength: 4,
                                             style: theme.textTheme.bodyLarge
                                                 ?.copyWith(
+                                              color: isDark
+                                                  ? AppColors.textLight
+                                                  : AppColors.textPrimary,
                                               decoration: TextDecoration.none,
                                             ),
                                             decoration: _buildInputDecoration(
@@ -453,6 +498,9 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                             maxLength: 4,
                                             style: theme.textTheme.bodyLarge
                                                 ?.copyWith(
+                                              color: isDark
+                                                  ? AppColors.textLight
+                                                  : AppColors.textPrimary,
                                               decoration: TextDecoration.none,
                                             ),
                                             decoration: _buildInputDecoration(
@@ -546,7 +594,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                             ),
                             child: Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.info_outline_rounded,
                                   color: AppColors.info,
                                   size: 18,
@@ -599,8 +647,18 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
         }
       },
       child: CupertinoPageScaffold(
+        backgroundColor:
+            isDark ? AppColors.backgroundDark : AppColors.background,
         navigationBar: CupertinoNavigationBar(
-          middle: Text(AppStrings.createProfile),
+          middle: Text(
+            AppStrings.createProfile,
+            style: TextStyle(
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            ),
+          ),
+          backgroundColor: isDark
+              ? AppColors.backgroundDarkElevated.withOpacity(0.94)
+              : AppColors.surface.withOpacity(0.94),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
@@ -621,9 +679,8 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: isDark
-                          ? CupertinoColors.white
-                          : CupertinoColors.black,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
                       decoration: TextDecoration.none,
                     ),
                     textAlign: TextAlign.center,
@@ -633,7 +690,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                     '${AppStrings.createYourPersonalProfile}\n${widget.organization.name}',
                     style: TextStyle(
                       fontSize: 16,
-                      color: CupertinoColors.systemGrey,
+                      color: AppColors.grey,
                       decoration: TextDecoration.none,
                     ),
                     textAlign: TextAlign.center,
@@ -644,9 +701,9 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                   _buildIOSTextField(
                     controller: _nameController,
                     placeholder: AppStrings.yourFullName,
-                    prefix: const Icon(
+                    prefix: Icon(
                       CupertinoIcons.person,
-                      color: CupertinoColors.systemGrey,
+                      color: AppColors.grey,
                     ),
                     isDark: isDark,
                   ),
@@ -656,9 +713,9 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                   _buildIOSTextField(
                     controller: _emailController,
                     placeholder: '${AppStrings.emailExample} (optional)',
-                    prefix: const Icon(
+                    prefix: Icon(
                       CupertinoIcons.mail,
-                      color: CupertinoColors.systemGrey,
+                      color: AppColors.grey,
                     ),
                     keyboardType: TextInputType.emailAddress,
                     isDark: isDark,
@@ -673,8 +730,8 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: isDark
-                          ? const Color(0xFF1C1C1E)
-                          : CupertinoColors.systemGrey6,
+                          ? AppColors.backgroundDarkElevated
+                          : AppColors.greyLighter,
                       borderRadius: const BorderRadius.all(Radius.circular(10)),
                     ),
                     child: Row(
@@ -689,8 +746,8 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                   color: isDark
-                                      ? CupertinoColors.white
-                                      : CupertinoColors.black,
+                                      ? AppColors.textLight
+                                      : AppColors.textPrimary,
                                   decoration: TextDecoration.none,
                                 ),
                               ),
@@ -699,7 +756,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                 AppStrings.protectProfileWithPin,
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: CupertinoColors.systemGrey,
+                                  color: AppColors.grey,
                                   decoration: TextDecoration.none,
                                 ),
                               ),
@@ -721,9 +778,9 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                     _buildIOSTextField(
                       controller: _pinController,
                       placeholder: AppStrings.fourDigitPin,
-                      prefix: const Icon(
+                      prefix: Icon(
                         CupertinoIcons.lock,
-                        color: CupertinoColors.systemGrey,
+                        color: AppColors.grey,
                       ),
                       obscureText: true,
                       keyboardType: TextInputType.number,
@@ -733,9 +790,9 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                     _buildIOSTextField(
                       controller: _confirmPinController,
                       placeholder: AppStrings.enterPinAgain,
-                      prefix: const Icon(
+                      prefix: Icon(
                         CupertinoIcons.lock,
-                        color: CupertinoColors.systemGrey,
+                        color: AppColors.grey,
                       ),
                       obscureText: true,
                       keyboardType: TextInputType.number,
@@ -751,12 +808,13 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                     child: CupertinoButton.filled(
                       onPressed: _isLoading ? null : _handleCreateProfile,
                       child: _isLoading
-                          ? const CupertinoActivityIndicator(
-                              color: CupertinoColors.white,
+                          ? CupertinoActivityIndicator(
+                              color: AppColors.textLight,
                             )
                           : Text(
                               AppStrings.createProfile,
                               style: const TextStyle(
+                                color: AppColors.textLight,
                                 decoration: TextDecoration.none,
                               ),
                             ),
@@ -788,7 +846,9 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                             AppStrings.canEditProfileLater,
                             style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.info,
+                              color: isDark
+                                  ? AppColors.info.withOpacity(0.9)
+                                  : AppColors.info,
                               decoration: TextDecoration.none,
                             ),
                           ),
@@ -815,7 +875,8 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.systemGrey6,
+        color:
+            isDark ? AppColors.backgroundDarkElevated : AppColors.greyLighter,
         borderRadius: const BorderRadius.all(Radius.circular(10)),
       ),
       child: CupertinoTextField(
@@ -832,11 +893,11 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
             : null,
         decoration: const BoxDecoration(),
         style: TextStyle(
-          color: isDark ? CupertinoColors.white : CupertinoColors.black,
+          color: isDark ? AppColors.textLight : AppColors.textPrimary,
           decoration: TextDecoration.none,
         ),
         placeholderStyle: TextStyle(
-          color: CupertinoColors.systemGrey,
+          color: AppColors.grey,
           decoration: TextDecoration.none,
         ),
       ),

@@ -24,7 +24,6 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // Animation Setup
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -49,7 +48,6 @@ class _SplashScreenState extends State<SplashScreen>
       } else if (authState.status == AuthStatus.unauthenticated) {
         Navigator.of(context).pushReplacementNamed(AppRoutes.login);
       }
-      // Falls noch loading, wartet der BlocListener
     });
   }
 
@@ -61,12 +59,22 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    final backgroundColor =
+        isDarkMode ? AppColors.surfaceDark : AppColors.primary;
+    final containerColor = isDarkMode ? AppColors.primaryDark : Colors.white;
+    final iconColor = isDarkMode ? AppColors.accentLight : AppColors.accent;
+    final titleColor = isDarkMode ? AppColors.textLight : Colors.white;
+    final taglineColor = isDarkMode
+        ? AppColors.textLight.withOpacity(0.7)
+        : Colors.white.withOpacity(0.9);
+    final loaderColor = isDarkMode ? AppColors.accent : Colors.white;
+
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        // Nur navigieren wenn Animation fertig ist (nach 2 Sekunden)
         if (state.isAuthenticated ||
             state.status == AuthStatus.unauthenticated) {
-          // Warte bis Animation fertig ist
           Future.delayed(const Duration(seconds: 2), () {
             if (!mounted) return;
 
@@ -79,69 +87,59 @@ class _SplashScreenState extends State<SplashScreen>
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.primary,
+        backgroundColor: backgroundColor,
         body: Center(
           child: FadeTransition(
             opacity: _fadeAnimation,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // App Icon/Logo
                 Container(
                   width: 120,
                   height: 120,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: containerColor,
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: AppColors.shadow,
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.favorite,
                     size: 60,
-                    color: AppColors.accent,
+                    color: iconColor,
                   ),
                 ),
-
                 const SizedBox(height: 32),
-
-                // App Name
-                const Text(
+                Text(
                   AppStrings.appName,
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: titleColor,
                   ),
                 ),
-
                 const SizedBox(height: 8),
-
-                // Tagline
                 Text(
                   AppStrings.appTagline,
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.white.withOpacity(0.9),
+                    color: taglineColor,
                   ),
                 ),
-
                 const SizedBox(height: 48),
-
-                // Loading Indicator
                 if (Platform.isIOS)
-                  const CupertinoActivityIndicator(
-                    color: Colors.white,
+                  CupertinoActivityIndicator(
+                    color: loaderColor,
                     radius: 16,
                   )
                 else
-                  const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(loaderColor),
                   ),
               ],
             ),

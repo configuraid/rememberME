@@ -59,7 +59,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   // ============================================================
-  // Toast Implementierung (wie in IntuitivePageBuilderScreen)
+  // Toast Implementierung
   // ============================================================
   void _showToast(String message, {bool isSuccess = true}) {
     if (Platform.isIOS) {
@@ -71,8 +71,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void _showIOSToast(String message, {bool isSuccess = true}) {
     final overlay = Overlay.of(context);
-    final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     late OverlayEntry overlayEntry;
     overlayEntry = OverlayEntry(
@@ -90,7 +89,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     overlay.insert(overlayEntry);
 
-    // Automatisch nach 2.5 Sekunden entfernen
     Future.delayed(const Duration(milliseconds: 2500), () {
       if (overlayEntry.mounted) {
         overlayEntry.remove();
@@ -107,12 +105,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: AppColors.textLight.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 isSuccess ? Icons.check_rounded : Icons.error_rounded,
-                color: Colors.white,
+                color: AppColors.textLight,
                 size: 16,
               ),
             ),
@@ -123,6 +121,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 style: const TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: 14,
+                  color: AppColors.textLight,
                 ),
               ),
             ),
@@ -207,7 +206,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       builder: (ctx) {
         return Container(
           decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : Colors.white,
+            color: isDark ? AppColors.surfaceDark : AppColors.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
           ),
           child: SafeArea(
@@ -236,10 +235,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 const SizedBox(height: 8),
                 Divider(
-                    height: 1,
-                    color: isDark
-                        ? AppColors.divider.withOpacity(0.2)
-                        : AppColors.divider),
+                  height: 1,
+                  color: isDark
+                      ? AppColors.divider.withOpacity(0.2)
+                      : AppColors.divider,
+                ),
                 _buildIOSActionSheetOption(
                   icon: Icons.photo_library_outlined,
                   title: AppStrings.chooseFromGallery,
@@ -250,12 +250,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   },
                 ),
                 Divider(
-                    height: 1,
-                    indent: 16,
-                    endIndent: 16,
-                    color: isDark
-                        ? AppColors.divider.withOpacity(0.2)
-                        : AppColors.divider),
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: isDark
+                      ? AppColors.divider.withOpacity(0.2)
+                      : AppColors.divider,
+                ),
                 _buildIOSActionSheetOption(
                   icon: Icons.camera_alt_outlined,
                   title: AppStrings.takePhoto,
@@ -266,10 +267,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   },
                 ),
                 Divider(
-                    height: 1,
-                    color: isDark
-                        ? AppColors.divider.withOpacity(0.2)
-                        : AppColors.divider),
+                  height: 1,
+                  color: isDark
+                      ? AppColors.divider.withOpacity(0.2)
+                      : AppColors.divider,
+                ),
                 const SizedBox(height: 8),
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -284,7 +286,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.accent : AppColors.primary,
+                        color:
+                            isDark ? AppColors.accent : AppColors.interactive,
                       ),
                     ),
                   ),
@@ -314,14 +317,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             Icon(
               icon,
               size: 22,
-              color: isDark ? AppColors.accent : AppColors.primary,
+              color: isDark ? AppColors.accent : AppColors.interactive,
             ),
             const SizedBox(width: 12),
             Text(
               title,
               style: TextStyle(
                 fontSize: 17,
-                color: isDark ? AppColors.accent : AppColors.primary,
+                color: isDark ? AppColors.accent : AppColors.interactive,
               ),
             ),
           ],
@@ -338,7 +341,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : Colors.white,
+          color: isDark ? AppColors.surfaceDark : AppColors.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SafeArea(
@@ -351,7 +354,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 height: 4,
                 decoration: BoxDecoration(
                   color:
-                      isDark ? const Color(0xFF404040) : Colors.grey.shade300,
+                      isDark ? AppColors.borderDarkSubtle : AppColors.greyLight,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -405,9 +408,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: isDark
-                            ? const Color(0xFF909090)
-                            : Colors.grey.shade600,
+                        color: isDark ? AppColors.grey : AppColors.greyDark,
                       ),
                     ),
                   ),
@@ -499,10 +500,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return BlocConsumer<ProfileBloc, ProfileState>(
       listener: (context, state) {
         if (state.isSuccess && state.successMessage != null) {
-          // Toast anzeigen statt Dialog
           _showToast(state.successMessage!, isSuccess: true);
 
-          // Nach kurzer Verzögerung zurück navigieren
           Future.delayed(const Duration(milliseconds: 1200), () {
             if (mounted && Navigator.canPop(context)) {
               Navigator.pop(context);
@@ -511,7 +510,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         }
 
         if (state.hasError && state.errorMessage != null) {
-          // Error Toast anzeigen
           _showToast(state.errorMessage!, isSuccess: false);
         }
       },
@@ -529,7 +527,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget _buildIOSLayout(
       BuildContext context, ProfileState state, bool isDark) {
     return Scaffold(
-      backgroundColor: isDark ? AppColors.primaryDark : AppColors.background,
+      backgroundColor:
+          isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
       appBar: AppBar(
         title: const Text(AppStrings.editProfile),
         centerTitle: true,
@@ -623,7 +622,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow,
+            color: isDark ? AppColors.shadowDark : AppColors.shadow,
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -709,7 +708,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     child: const Icon(
                       Icons.camera_alt,
                       size: 16,
-                      color: Colors.white,
+                      color: AppColors.textLight,
                     ),
                   ),
                 ),
@@ -767,7 +766,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow,
+            color: isDark ? AppColors.shadowDark : AppColors.shadow,
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -815,7 +814,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           Icon(
             icon,
             size: 22,
-            color: isDark ? AppColors.accent : AppColors.primary,
+            color: isDark ? AppColors.accent : AppColors.interactive,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -857,7 +856,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: state.isLoading
-              ? [Colors.grey.shade400, Colors.grey.shade500]
+              ? [AppColors.grey, AppColors.greyDark]
               : (isDark
                   ? [AppColors.accent, AppColors.accentLight]
                   : [AppColors.primary, AppColors.primaryLight]),
@@ -879,7 +878,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.textLight,
           disabledBackgroundColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -891,15 +890,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 width: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(AppColors.textLight),
                 ),
               )
-            : Text(
+            : const Text(
                 AppStrings.saveChanges,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
                   letterSpacing: -0.4,
+                  color: AppColors.textLight,
                 ),
               ),
       ),
@@ -910,7 +911,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget _buildAndroidLayout(
       BuildContext context, ProfileState state, bool isDark) {
     return Scaffold(
-      backgroundColor: isDark ? AppColors.primaryDark : null,
+      backgroundColor:
+          isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
       appBar: AppBar(
         title: const Text(AppStrings.editProfile),
         elevation: 0,
@@ -1011,12 +1013,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isDark ? AppColors.surfaceDark : Colors.white,
+                    color: isDark ? AppColors.surfaceDark : AppColors.surface,
                     width: 4,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.shadow,
+                      color: isDark ? AppColors.shadowDark : AppColors.shadow,
                       blurRadius: 16,
                       offset: const Offset(0, 4),
                     ),
@@ -1072,7 +1074,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isDark ? AppColors.surfaceDark : Colors.white,
+                    color: isDark ? AppColors.surfaceDark : AppColors.surface,
                     width: 3,
                   ),
                   boxShadow: [
@@ -1087,7 +1089,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 child: const Icon(
                   Icons.camera_alt_rounded,
                   size: 22,
-                  color: Colors.white,
+                  color: AppColors.textLight,
                 ),
               ),
             ),
@@ -1110,12 +1112,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: isDark ? AppColors.surfaceDark : Colors.white,
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: isDark
-                ? Colors.black.withOpacity(0.4)
-                : AppColors.shadow.withOpacity(0.15),
+            color: isDark ? AppColors.shadowDark : AppColors.shadow,
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -1133,7 +1133,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: TextStyle(
+          labelStyle: const TextStyle(
             color: AppColors.textSecondary,
             fontSize: 15,
           ),
@@ -1187,7 +1187,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: state.isLoading
-              ? [Colors.grey.shade400, Colors.grey.shade500]
+              ? [AppColors.grey, AppColors.greyDark]
               : (isDark
                   ? [
                       AppColors.accent,
@@ -1215,7 +1215,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.textLight,
           disabledBackgroundColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -1227,9 +1227,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 width: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Colors.white,
-                  ),
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(AppColors.textLight),
                 ),
               )
             : Row(
@@ -1238,6 +1237,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   const Icon(
                     Icons.save_rounded,
                     size: 22,
+                    color: AppColors.textLight,
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -1245,7 +1245,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppColors.textLight,
                           letterSpacing: 0.5,
                         ),
                   ),
@@ -1257,7 +1257,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 }
 
 // ============================================================
-// iOS Native Bottom Toast (Pill-Style wie Apple)
+// iOS Native Bottom Toast
 // ============================================================
 class _IOSBottomToast extends StatefulWidget {
   final String message;
@@ -1317,10 +1317,8 @@ class _IOSBottomToastState extends State<_IOSBottomToast>
 
     _controller.forward();
 
-    // Haptic Feedback bei Erscheinen
     HapticFeedback.lightImpact();
 
-    // Fade out nach 2 Sekunden
     Future.delayed(const Duration(milliseconds: 2000), () {
       if (mounted) {
         _controller.reverse().then((_) {
@@ -1361,21 +1359,22 @@ class _IOSBottomToastState extends State<_IOSBottomToast>
                   ),
                   decoration: BoxDecoration(
                     color: widget.isDark
-                        ? const Color(0xFF2C2C2E).withOpacity(0.95)
-                        : CupertinoColors.white.withOpacity(0.95),
+                        ? AppColors.toastBackgroundDark.withOpacity(0.95)
+                        : AppColors.toastBackgroundLight.withOpacity(0.95),
                     borderRadius: BorderRadius.circular(50),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black
-                            .withOpacity(widget.isDark ? 0.4 : 0.12),
+                        color: widget.isDark
+                            ? AppColors.shadowDark
+                            : AppColors.shadow,
                         blurRadius: 20,
                         offset: const Offset(0, 6),
                       ),
                     ],
                     border: Border.all(
                       color: widget.isDark
-                          ? const Color(0xFF48484A)
-                          : CupertinoColors.systemGrey5,
+                          ? AppColors.borderDarkLight
+                          : AppColors.greyLighter,
                       width: 0.5,
                     ),
                   ),
@@ -1387,15 +1386,15 @@ class _IOSBottomToastState extends State<_IOSBottomToast>
                         height: 28,
                         decoration: BoxDecoration(
                           color: widget.isSuccess
-                              ? CupertinoColors.systemGreen
-                              : CupertinoColors.systemRed,
+                              ? AppColors.success
+                              : AppColors.error,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           widget.isSuccess
                               ? CupertinoIcons.checkmark_alt
                               : CupertinoIcons.xmark,
-                          color: CupertinoColors.white,
+                          color: AppColors.textLight,
                           size: 16,
                         ),
                       ),
@@ -1407,8 +1406,8 @@ class _IOSBottomToastState extends State<_IOSBottomToast>
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: widget.isDark
-                                ? CupertinoColors.white
-                                : CupertinoColors.black,
+                                ? AppColors.textLight
+                                : AppColors.textPrimary,
                             fontFamily: '.SF Pro Text',
                             letterSpacing: -0.2,
                           ),

@@ -33,7 +33,8 @@ class _AboutScreenState extends State<AboutScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : null,
+      backgroundColor:
+          isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
       appBar: AppBar(
         title: const Text(AppStrings.aboutTheApp),
         elevation: 0,
@@ -54,7 +55,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   colors: isDark
                       ? [
                           AppColors.primaryLight.withOpacity(0.2),
-                          const Color(0xFF121212),
+                          AppColors.backgroundDarkSecondary,
                         ]
                       : [
                           AppColors.primary.withOpacity(0.1),
@@ -117,13 +118,13 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: isDark
-                          ? const Color(0xFF1E1E1E)
-                          : Colors.grey.shade100,
+                          ? AppColors.surfaceDark
+                          : AppColors.greyLighter,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: isDark
                             ? AppColors.primaryLight.withOpacity(0.3)
-                            : Colors.grey.shade300,
+                            : AppColors.greyLight,
                       ),
                     ),
                     child: Text(
@@ -147,12 +148,13 @@ class _AboutScreenState extends State<AboutScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Card(
                 elevation: 0,
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                color: isDark ? AppColors.surfaceDark : AppColors.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                   side: BorderSide(
-                    color:
-                        isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+                    color: isDark
+                        ? AppColors.cardBorderDark
+                        : AppColors.greyLighter,
                     width: 1,
                   ),
                 ),
@@ -177,8 +179,8 @@ class _AboutScreenState extends State<AboutScreen> {
                       indent: 84,
                       endIndent: 20,
                       color: isDark
-                          ? const Color(0xFF2A2A2A)
-                          : Colors.grey.shade200,
+                          ? AppColors.cardBorderDark
+                          : AppColors.greyLighter,
                     ),
                     _buildListTile(
                       context,
@@ -194,8 +196,8 @@ class _AboutScreenState extends State<AboutScreen> {
                       indent: 84,
                       endIndent: 20,
                       color: isDark
-                          ? const Color(0xFF2A2A2A)
-                          : Colors.grey.shade200,
+                          ? AppColors.cardBorderDark
+                          : AppColors.greyLighter,
                     ),
                     _buildListTile(
                       context,
@@ -217,12 +219,13 @@ class _AboutScreenState extends State<AboutScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Card(
                 elevation: 0,
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                color: isDark ? AppColors.surfaceDark : AppColors.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                   side: BorderSide(
-                    color:
-                        isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+                    color: isDark
+                        ? AppColors.cardBorderDark
+                        : AppColors.greyLighter,
                     width: 1,
                   ),
                 ),
@@ -244,8 +247,8 @@ class _AboutScreenState extends State<AboutScreen> {
                       indent: 84,
                       endIndent: 20,
                       color: isDark
-                          ? const Color(0xFF2A2A2A)
-                          : Colors.grey.shade200,
+                          ? AppColors.cardBorderDark
+                          : AppColors.greyLighter,
                     ),
                     _buildListTile(
                       context,
@@ -314,9 +317,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     AppStrings.copyright,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: isDark
-                          ? const Color(0xFF808080)
-                          : Colors.grey.shade600,
+                      color: isDark ? AppColors.grey : AppColors.greyDark,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -327,9 +328,7 @@ class _AboutScreenState extends State<AboutScreen> {
                       Text(
                         AppStrings.madeWith,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: isDark
-                              ? const Color(0xFF808080)
-                              : Colors.grey.shade600,
+                          color: isDark ? AppColors.grey : AppColors.greyDark,
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -344,9 +343,7 @@ class _AboutScreenState extends State<AboutScreen> {
                       Text(
                         AppStrings.inGermany,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: isDark
-                              ? const Color(0xFF808080)
-                              : Colors.grey.shade600,
+                          color: isDark ? AppColors.grey : AppColors.greyDark,
                         ),
                       ),
                     ],
@@ -449,7 +446,7 @@ class _AboutScreenState extends State<AboutScreen> {
                         subtitle,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: isDark
-                              ? const Color(0xFFA0A0A0)
+                              ? AppColors.textDarkSecondary
                               : AppColors.textSecondary,
                           height: 1.4,
                         ),
@@ -463,15 +460,15 @@ class _AboutScreenState extends State<AboutScreen> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color:
-                        isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100,
+                    color: isDark
+                        ? AppColors.cardBorderDark
+                        : AppColors.greyLighter,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     trailing,
                     size: 16,
-                    color:
-                        isDark ? const Color(0xFF909090) : Colors.grey.shade600,
+                    color: isDark ? AppColors.greyDark : AppColors.greyDark,
                   ),
                 ),
               ],
@@ -494,7 +491,7 @@ class _AboutScreenState extends State<AboutScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isDark
-              ? const Color(0xFF1E1E1E)
+              ? AppColors.surfaceDark
               : AppColors.primary.withOpacity(0.1),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
@@ -529,19 +526,17 @@ class _AboutScreenState extends State<AboutScreen> {
         child: Container(
           constraints: const BoxConstraints(maxWidth: 400),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            color: isDark ? AppColors.surfaceDark : AppColors.surface,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: isDark
                   ? AppColors.primaryLight.withOpacity(0.2)
-                  : Colors.grey.shade200,
+                  : AppColors.greyLighter,
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: isDark
-                    ? Colors.black.withOpacity(0.5)
-                    : Colors.black.withOpacity(0.15),
+                color: isDark ? AppColors.shadowDark : AppColors.shadow,
                 blurRadius: 24,
                 offset: const Offset(0, 8),
               ),
@@ -639,7 +634,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         height: 1.6,
                         color: isDark
-                            ? const Color(0xFFB0B0B0)
+                            ? AppColors.textDarkSecondary
                             : AppColors.textSecondary,
                         letterSpacing: 0.25,
                       ),
@@ -689,7 +684,7 @@ class _AboutScreenState extends State<AboutScreen> {
           SnackBar(
             content: Text(
                 '${AppStrings.couldNotOpen}$urlString${AppStrings.notOpen}'),
-            backgroundColor: Theme.of(context).colorScheme.error,
+            backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),

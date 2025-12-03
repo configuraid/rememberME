@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:rememberme/core/constants/app_strings.dart';
 import 'package:rememberme/data/models/auth/organization_model.dart';
 import 'package:rememberme/presentation/screens/auth/user_selection_screen.dart';
 import 'package:rememberme/presentation/screens/auth/profile_creation_screen.dart';
@@ -21,7 +22,7 @@ class MemorialApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Digital Memorial',
+      title: AppStrings.appName,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,

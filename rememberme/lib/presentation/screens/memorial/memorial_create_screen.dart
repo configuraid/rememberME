@@ -78,6 +78,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
   }
 
   void _selectBirthDate() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (Platform.isIOS) {
       _showIOSDatePicker(
         initialDate: _birthDate ?? DateTime(1950),
@@ -93,7 +95,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         lastDate: DateTime.now(),
         builder: (context, child) {
           final theme = Theme.of(context);
-          final isDark = theme.brightness == Brightness.dark;
           return Theme(
             data: theme.copyWith(
               colorScheme: theme.colorScheme.copyWith(
@@ -111,6 +112,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
   }
 
   void _selectDeathDate() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (Platform.isIOS) {
       _showIOSDatePicker(
         initialDate: _deathDate ?? DateTime.now(),
@@ -126,7 +129,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         lastDate: DateTime.now(),
         builder: (context, child) {
           final theme = Theme.of(context);
-          final isDark = theme.brightness == Brightness.dark;
           return Theme(
             data: theme.copyWith(
               colorScheme: theme.colorScheme.copyWith(
@@ -147,24 +149,31 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     required DateTime initialDate,
     required Function(DateTime) onDateChanged,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     DateTime tempDate = initialDate;
 
     showCupertinoModalPopup(
       context: context,
       builder: (context) => Container(
         height: 300,
-        color: CupertinoColors.systemBackground.resolveFrom(context),
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
         child: Column(
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 CupertinoButton(
-                  child: Text(AppStrings.cancel),
+                  child: Text(
+                    AppStrings.cancel,
+                    style: TextStyle(color: AppColors.interactive),
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
                 CupertinoButton(
-                  child: Text(AppStrings.done),
+                  child: Text(
+                    AppStrings.done,
+                    style: TextStyle(color: AppColors.interactive),
+                  ),
                   onPressed: () {
                     onDateChanged(tempDate);
                     Navigator.pop(context);
@@ -227,15 +236,32 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
   }
 
   void _showError(String message) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (Platform.isIOS) {
       showCupertinoDialog(
         context: context,
         builder: (context) => CupertinoAlertDialog(
-          title: Text(AppStrings.errorTitle),
-          content: Text(message),
+          title: Text(
+            AppStrings.errorTitle,
+            style: TextStyle(
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            ),
+          ),
+          content: Text(
+            message,
+            style: TextStyle(
+              color: isDark
+                  ? AppColors.textDarkSecondary
+                  : AppColors.textSecondary,
+            ),
+          ),
           actions: [
             CupertinoDialogAction(
-              child: Text(AppStrings.ok),
+              child: Text(
+                AppStrings.ok,
+                style: TextStyle(color: AppColors.interactive),
+              ),
               onPressed: () => Navigator.pop(context),
             ),
           ],
@@ -244,8 +270,11 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message),
-          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Text(
+            message,
+            style: const TextStyle(color: AppColors.textLight),
+          ),
+          backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -274,6 +303,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor:
+          isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
       appBar: AppBar(
         title: Text(AppStrings.createMemorialPage),
         elevation: 0,
@@ -301,7 +332,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                     AppStrings.creatingMemorial,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: isDark
-                          ? const Color(0xFFB0B0B0)
+                          ? AppColors.textDarkSecondary
                           : AppColors.textSecondary,
                     ),
                   ),
@@ -329,7 +360,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         color: isDark ? AppColors.surfaceDark : AppColors.primary,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: AppColors.shadow,
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -363,15 +394,15 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     if (!_isFormValid()) {
       return FloatingActionButton.extended(
         onPressed: null,
-        backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+        backgroundColor: isDark ? AppColors.greyDark : AppColors.greyLight,
         icon: Icon(
           Icons.check_rounded,
-          color: Colors.grey.shade600,
+          color: AppColors.grey,
         ),
         label: Text(
           AppStrings.create,
           style: TextStyle(
-            color: Colors.grey.shade600,
+            color: AppColors.grey,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -383,9 +414,9 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
       backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
       elevation: 4,
       icon: const Icon(Icons.check_rounded, color: AppColors.textLight),
-      label: Text(
+      label: const Text(
         AppStrings.create,
-        style: const TextStyle(
+        style: TextStyle(
           color: AppColors.textLight,
           fontWeight: FontWeight.w600,
           fontSize: 16,
@@ -395,25 +426,35 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
   }
 
   // ============================================================
-  // iOS View - Mit Material Wrapper für korrekte Text-Darstellung
+  // iOS View
   // ============================================================
   Widget _buildIOSView() {
-    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return CupertinoPageScaffold(
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
       navigationBar: CupertinoNavigationBar(
-        middle: Text(AppStrings.createMemorialPage),
-        backgroundColor: CupertinoColors.systemBackground.resolveFrom(context),
+        middle: Text(
+          AppStrings.createMemorialPage,
+          style: TextStyle(
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+          ),
+        ),
+        backgroundColor: isDark
+            ? AppColors.backgroundDarkElevated.withOpacity(0.94)
+            : AppColors.surface.withOpacity(0.94),
       ),
-      // Material Wrapper entfernt gelbe Unterstriche
       child: Material(
         type: MaterialType.transparency,
         child: SafeArea(
           child: BlocBuilder<MemorialBloc, MemorialState>(
             builder: (context, state) {
               if (state.status == MemorialStatus.creating) {
-                return const Center(
-                  child: CupertinoActivityIndicator(radius: 20),
+                return Center(
+                  child: CupertinoActivityIndicator(
+                    radius: 20,
+                    color: isDark ? AppColors.grey : null,
+                  ),
                 );
               }
 
@@ -421,7 +462,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(16),
-                    child: _buildIOSSegmentedControl(),
+                    child: _buildIOSSegmentedControl(isDark),
                   ),
                   Expanded(
                     child: _currentTab == CreateTab.details
@@ -434,16 +475,16 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                       width: double.infinity,
                       child: CupertinoButton.filled(
                         onPressed: _isFormValid() ? _createMemorial : null,
-                        disabledColor: CupertinoColors.quaternarySystemFill
-                            .resolveFrom(context),
+                        disabledColor: isDark
+                            ? AppColors.borderDarkSubtle
+                            : AppColors.greyLighter,
                         child: Text(
                           AppStrings.createMemorialPage,
                           style: TextStyle(
                             fontSize: 16,
                             color: _isFormValid()
-                                ? CupertinoColors.white
-                                : CupertinoColors.systemGrey
-                                    .resolveFrom(context),
+                                ? AppColors.textLight
+                                : AppColors.grey,
                           ),
                         ),
                       ),
@@ -458,22 +499,24 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     );
   }
 
-  Widget _buildIOSSegmentedControl() {
+  Widget _buildIOSSegmentedControl(bool isDark) {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: CupertinoColors.systemGrey5.resolveFrom(context),
+        color: isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
         borderRadius: BorderRadius.circular(12),
       ),
       child: CupertinoSlidingSegmentedControl<CreateTab>(
         groupValue: _currentTab,
-        backgroundColor: CupertinoColors.systemGrey5.resolveFrom(context),
-        thumbColor: CupertinoColors.white,
+        backgroundColor:
+            isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
+        thumbColor: isDark ? AppColors.surfaceDark : AppColors.surface,
         padding: const EdgeInsets.all(0),
         children: {
           CreateTab.details:
-              _buildSegment(AppStrings.details, CreateTab.details),
-          CreateTab.design: _buildSegment(AppStrings.design, CreateTab.design),
+              _buildSegment(AppStrings.details, CreateTab.details, isDark),
+          CreateTab.design:
+              _buildSegment(AppStrings.design, CreateTab.design, isDark),
         },
         onValueChanged: (value) {
           if (value != null) {
@@ -484,7 +527,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     );
   }
 
-  Widget _buildSegment(String text, CreateTab tab) {
+  Widget _buildSegment(String text, CreateTab tab, bool isDark) {
     final isSelected = _currentTab == tab;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -494,8 +537,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           fontSize: 15,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
           color: isSelected
-              ? CupertinoColors.black
-              : CupertinoColors.systemGrey.resolveFrom(context),
+              ? (isDark ? AppColors.textLight : AppColors.textPrimary)
+              : AppColors.grey,
         ),
       ),
     );
@@ -517,14 +560,25 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
             CupertinoTextField(
               controller: _nameController,
               placeholder: AppStrings.personName,
-              prefix: const Padding(
-                padding: EdgeInsets.only(left: 8),
-                child: Icon(CupertinoIcons.person, size: 20),
+              placeholderStyle: TextStyle(color: AppColors.grey),
+              style: TextStyle(
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              ),
+              prefix: Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Icon(
+                  CupertinoIcons.person,
+                  size: 20,
+                  color: isDark ? AppColors.accent : AppColors.interactive,
+                ),
               ),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.backgroundDarkElevated
+                    : AppColors.surface,
                 border: Border.all(
-                  color: CupertinoColors.separator.resolveFrom(context),
+                  color: isDark ? AppColors.borderDark : AppColors.divider,
                 ),
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -623,7 +677,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           child: Icon(
             CupertinoIcons.heart_fill,
             size: 48,
-            color: isDark ? AppColors.accent : AppColors.accent,
+            color: AppColors.accent,
           ),
         ),
         const SizedBox(height: 20),
@@ -632,7 +686,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: isDark ? CupertinoColors.white : CupertinoColors.black,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
             fontFamily: '.SF Pro Display',
           ),
           textAlign: TextAlign.center,
@@ -642,7 +696,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           AppStrings.preserveMemoriesForever,
           style: TextStyle(
             fontSize: 15,
-            color: CupertinoColors.systemGrey,
+            color: AppColors.grey,
             fontFamily: '.SF Pro Text',
           ),
           textAlign: TextAlign.center,
@@ -663,9 +717,9 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white,
+          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
           border: Border.all(
-            color: CupertinoColors.separator.resolveFrom(context),
+            color: isDark ? AppColors.borderDark : AppColors.divider,
           ),
           borderRadius: BorderRadius.circular(8),
         ),
@@ -674,7 +728,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
             Icon(
               icon,
               size: 20,
-              color: CupertinoColors.systemGrey,
+              color: AppColors.grey,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -685,7 +739,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                     label,
                     style: TextStyle(
                       fontSize: 12,
-                      color: CupertinoColors.systemGrey.resolveFrom(context),
+                      color: AppColors.grey,
                       fontFamily: '.SF Pro Text',
                     ),
                   ),
@@ -698,9 +752,9 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                       fontSize: 16,
                       color: date != null
                           ? (isDark
-                              ? CupertinoColors.white
-                              : CupertinoColors.black)
-                          : CupertinoColors.systemGrey.resolveFrom(context),
+                              ? AppColors.textLight
+                              : AppColors.textPrimary)
+                          : AppColors.grey,
                       fontFamily: '.SF Pro Text',
                     ),
                   ),
@@ -710,7 +764,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
             Icon(
               CupertinoIcons.chevron_right,
               size: 20,
-              color: CupertinoColors.systemGrey.resolveFrom(context),
+              color: AppColors.grey,
             ),
           ],
         ),
@@ -723,10 +777,10 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
       onTap: () => setState(() => _isPublic = !_isPublic),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white,
+          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: CupertinoColors.separator.resolveFrom(context),
+            color: isDark ? AppColors.borderDark : AppColors.divider,
           ),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -735,9 +789,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
             Icon(
               _isPublic ? CupertinoIcons.globe : CupertinoIcons.lock_fill,
               size: 20,
-              color: _isPublic
-                  ? CupertinoColors.systemGreen
-                  : CupertinoColors.systemBlue,
+              color: _isPublic ? AppColors.success : AppColors.interactive,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -749,9 +801,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? CupertinoColors.white
-                          : CupertinoColors.black,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
                       fontFamily: '.SF Pro Text',
                     ),
                   ),
@@ -761,7 +812,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                         : 'Nur eingeladene Personen',
                     style: TextStyle(
                       fontSize: 12,
-                      color: CupertinoColors.systemGrey,
+                      color: AppColors.grey,
                       fontFamily: '.SF Pro Text',
                     ),
                   ),
@@ -773,7 +824,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               child: CupertinoSwitch(
                 value: _isPublic,
                 onChanged: (value) => setState(() => _isPublic = value),
-                activeTrackColor: CupertinoColors.systemGreen,
+                activeTrackColor: AppColors.success,
               ),
             ),
           ],
@@ -796,7 +847,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: '.SF Pro Display',
             ),
           ),
@@ -805,7 +856,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
             AppStrings.designCanBeChangedLater,
             style: TextStyle(
               fontSize: 15,
-              color: CupertinoColors.systemGrey,
+              color: AppColors.grey,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -835,15 +886,13 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           color: isSelected
               ? (isDark
                   ? AppColors.primaryLight.withOpacity(0.1)
-                  : Colors.black)
-              : (isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white),
+                  : AppColors.textPrimary)
+              : (isDark ? AppColors.backgroundDarkElevated : AppColors.surface),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
-                ? (isDark ? AppColors.primaryLight : Colors.black)
-                : (isDark
-                    ? const Color(0xFF38383A)
-                    : CupertinoColors.separator.resolveFrom(context)),
+                ? (isDark ? AppColors.primaryLight : AppColors.textPrimary)
+                : (isDark ? AppColors.borderDark : AppColors.divider),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: [
@@ -851,14 +900,14 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               BoxShadow(
                 color: isDark
                     ? AppColors.primaryLight.withOpacity(0.3)
-                    : Colors.black.withOpacity(0.3),
+                    : AppColors.shadowDark,
                 blurRadius: 24,
                 offset: const Offset(0, 8),
                 spreadRadius: 0,
               )
             else
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: AppColors.shadow,
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -878,17 +927,17 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                               AppColors.primaryLight.withOpacity(0.1),
                             ]
                           : [
-                              Colors.black,
-                              Colors.grey.shade900,
+                              AppColors.textPrimary,
+                              AppColors.primaryDark,
                             ])
                       : (isDark
                           ? [
-                              const Color(0xFF1C1C1E),
-                              const Color(0xFF2C2C2E),
+                              AppColors.backgroundDarkElevated,
+                              AppColors.toastBackgroundDark,
                             ]
                           : [
-                              CupertinoColors.systemGrey6.color,
-                              CupertinoColors.systemGrey5.color,
+                              AppColors.greyLighter,
+                              AppColors.greyLight,
                             ]),
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -908,11 +957,11 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                         size: 56,
                         color: isSelected
                             ? (isDark
-                                ? CupertinoColors.white.withOpacity(0.3)
-                                : CupertinoColors.white.withOpacity(0.2))
+                                ? AppColors.textLight.withOpacity(0.3)
+                                : AppColors.textLight.withOpacity(0.2))
                             : (isDark
-                                ? CupertinoColors.white.withOpacity(0.1)
-                                : CupertinoColors.systemGrey3.color),
+                                ? AppColors.textLight.withOpacity(0.1)
+                                : AppColors.grey),
                       ),
                     ),
                   ),
@@ -938,11 +987,11 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                           decoration: BoxDecoration(
                             color: isDark
                                 ? AppColors.primaryLight
-                                : CupertinoColors.white,
+                                : AppColors.surface,
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
+                                color: AppColors.shadow,
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -954,17 +1003,15 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                               Icon(
                                 CupertinoIcons.checkmark_circle_fill,
                                 color: isDark
-                                    ? CupertinoColors.black
-                                    : CupertinoColors.black,
+                                    ? AppColors.textPrimary
+                                    : AppColors.textPrimary,
                                 size: 16,
                               ),
                               const SizedBox(width: 6),
                               Text(
                                 AppStrings.selected,
                                 style: TextStyle(
-                                  color: isDark
-                                      ? CupertinoColors.black
-                                      : CupertinoColors.black,
+                                  color: AppColors.textPrimary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                   fontFamily: '.SF Pro Text',
@@ -985,10 +1032,10 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                 color: isSelected
                     ? (isDark
                         ? AppColors.primaryLight.withOpacity(0.1)
-                        : Colors.black)
+                        : AppColors.textPrimary)
                     : (isDark
-                        ? const Color(0xFF1C1C1E)
-                        : CupertinoColors.white),
+                        ? AppColors.backgroundDarkElevated
+                        : AppColors.surface),
                 borderRadius: const BorderRadius.vertical(
                   bottom: Radius.circular(14),
                 ),
@@ -1008,12 +1055,10 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: isSelected
-                                    ? (isDark
-                                        ? CupertinoColors.white
-                                        : CupertinoColors.white)
+                                    ? AppColors.textLight
                                     : (isDark
-                                        ? CupertinoColors.white
-                                        : CupertinoColors.black),
+                                        ? AppColors.textLight
+                                        : AppColors.textPrimary),
                                 fontFamily: '.SF Pro Display',
                               ),
                             ),
@@ -1024,9 +1069,9 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                                 fontSize: 14,
                                 color: isSelected
                                     ? (isDark
-                                        ? CupertinoColors.systemGrey
-                                        : CupertinoColors.systemGrey3.color)
-                                    : CupertinoColors.systemGrey,
+                                        ? AppColors.grey
+                                        : AppColors.greyLight)
+                                    : AppColors.grey,
                                 fontFamily: '.SF Pro Text',
                               ),
                             ),
@@ -1050,18 +1095,17 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                                     ? (isDark
                                         ? AppColors.primaryLight
                                             .withOpacity(0.2)
-                                        : CupertinoColors.white
-                                            .withOpacity(0.15))
+                                        : AppColors.textLight.withOpacity(0.15))
                                     : (isDark
-                                        ? const Color(0xFF2C2C2E)
-                                        : CupertinoColors.systemGrey6.color),
+                                        ? AppColors.toastBackgroundDark
+                                        : AppColors.greyLighter),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: isSelected
                                       ? (isDark
                                           ? AppColors.primaryLight
                                               .withOpacity(0.3)
-                                          : CupertinoColors.white
+                                          : AppColors.textLight
                                               .withOpacity(0.3))
                                       : Colors.transparent,
                                 ),
@@ -1072,12 +1116,10 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: isSelected
-                                      ? (isDark
-                                          ? CupertinoColors.white
-                                          : CupertinoColors.white)
+                                      ? AppColors.textLight
                                       : (isDark
-                                          ? CupertinoColors.white
-                                          : CupertinoColors.systemGrey),
+                                          ? AppColors.textLight
+                                          : AppColors.grey),
                                   fontFamily: '.SF Pro Text',
                                 ),
                               ),
@@ -1094,7 +1136,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
   }
 
   // ============================================================
-  // Android Content (unverändert)
+  // Android Content
   // ============================================================
   Widget _buildDetailsContent(bool isDark) {
     final theme = Theme.of(context);
@@ -1110,10 +1152,14 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
             const SizedBox(height: 32),
             TextFormField(
               controller: _nameController,
-              style: theme.textTheme.bodyLarge,
+              style: TextStyle(
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              ),
               decoration: InputDecoration(
                 labelText: AppStrings.personName,
                 hintText: AppStrings.personNameHint,
+                labelStyle: TextStyle(color: AppColors.textSecondary),
+                hintStyle: TextStyle(color: AppColors.grey),
                 prefixIcon: Icon(
                   Icons.person_outline_rounded,
                   color: isDark ? AppColors.primaryLight : AppColors.primary,
@@ -1193,10 +1239,10 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
       borderRadius: BorderRadius.circular(12),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade50,
+          color: isDark ? AppColors.surfaceDark : AppColors.background,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300,
+            color: isDark ? AppColors.cardBorderDark : AppColors.greyLight,
             width: 1,
           ),
         ),
@@ -1207,8 +1253,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               _isPublic ? Icons.public_rounded : Icons.lock_rounded,
               size: 20,
               color: isDark
-                  ? const Color(0xFF909090)
-                  : (_isPublic ? Colors.green : AppColors.primary),
+                  ? AppColors.grey
+                  : (_isPublic ? AppColors.success : AppColors.primary),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1228,9 +1274,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                         ? 'Jeder mit dem Link kann die Seite sehen'
                         : 'Nur eingeladene Personen',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: isDark
-                          ? const Color(0xFF707070)
-                          : AppColors.textSecondary,
+                      color:
+                          isDark ? AppColors.greyDark : AppColors.textSecondary,
                       fontSize: 11,
                     ),
                   ),
@@ -1242,12 +1287,12 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               child: Switch(
                 value: _isPublic,
                 onChanged: (value) => setState(() => _isPublic = value),
-                activeColor: Colors.green,
-                activeTrackColor: Colors.green.withOpacity(0.3),
+                activeColor: AppColors.success,
+                activeTrackColor: AppColors.success.withOpacity(0.3),
                 inactiveThumbColor:
-                    isDark ? const Color(0xFF606060) : Colors.grey.shade400,
+                    isDark ? AppColors.greyDark : AppColors.grey,
                 inactiveTrackColor:
-                    isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade300,
+                    isDark ? AppColors.cardBorderDark : AppColors.greyLight,
               ),
             ),
           ],
@@ -1275,7 +1320,9 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           Text(
             AppStrings.designCanBeChangedLater,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: isDark ? const Color(0xFFB0B0B0) : AppColors.textSecondary,
+              color: isDark
+                  ? AppColors.textDarkSecondary
+                  : AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 24),
@@ -1339,7 +1386,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         Text(
           AppStrings.preserveMemoriesForever,
           style: theme.textTheme.bodyLarge?.copyWith(
-            color: isDark ? const Color(0xFFB0B0B0) : AppColors.textSecondary,
+            color:
+                isDark ? AppColors.textDarkSecondary : AppColors.textSecondary,
           ),
           textAlign: TextAlign.center,
         ),
@@ -1362,6 +1410,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,
+          labelStyle: TextStyle(color: AppColors.textSecondary),
           prefixIcon: Icon(
             icon,
             color: isDark ? AppColors.primaryLight : AppColors.primary,
@@ -1378,7 +1427,9 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           style: theme.textTheme.bodyLarge?.copyWith(
             color: date != null
                 ? (isDark ? AppColors.textLight : AppColors.textPrimary)
-                : (isDark ? const Color(0xFFB0B0B0) : AppColors.textSecondary),
+                : (isDark
+                    ? AppColors.textDarkSecondary
+                    : AppColors.textSecondary),
           ),
         ),
       ),
@@ -1401,13 +1452,13 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           color: isSelected
               ? (isDark
                   ? AppColors.primaryLight.withOpacity(0.1)
-                  : Colors.black)
-              : (isDark ? const Color(0xFF2A2A2A) : Colors.white),
+                  : AppColors.textPrimary)
+              : (isDark ? AppColors.cardBorderDark : AppColors.surface),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
-                ? (isDark ? AppColors.primaryLight : Colors.black)
-                : (isDark ? const Color(0xFF404040) : Colors.grey.shade300),
+                ? (isDark ? AppColors.primaryLight : AppColors.textPrimary)
+                : (isDark ? AppColors.borderDarkSubtle : AppColors.greyLight),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: [
@@ -1415,14 +1466,14 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               BoxShadow(
                 color: isDark
                     ? AppColors.primaryLight.withOpacity(0.3)
-                    : Colors.black.withOpacity(0.3),
+                    : AppColors.shadowDark,
                 blurRadius: 24,
                 offset: const Offset(0, 8),
                 spreadRadius: 0,
               )
             else
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: AppColors.shadow,
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1442,17 +1493,17 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                               AppColors.primaryLight.withOpacity(0.1),
                             ]
                           : [
-                              Colors.black,
-                              Colors.grey.shade900,
+                              AppColors.textPrimary,
+                              AppColors.primaryDark,
                             ])
                       : (isDark
                           ? [
-                              const Color(0xFF1E1E1E),
-                              const Color(0xFF2A2A2A),
+                              AppColors.surfaceDark,
+                              AppColors.cardBorderDark,
                             ]
                           : [
-                              Colors.grey.shade100,
-                              Colors.grey.shade200,
+                              AppColors.greyLighter,
+                              AppColors.greyLight,
                             ]),
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -1472,11 +1523,11 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                         size: 56,
                         color: isSelected
                             ? (isDark
-                                ? Colors.white.withOpacity(0.3)
-                                : Colors.white.withOpacity(0.2))
+                                ? AppColors.textLight.withOpacity(0.3)
+                                : AppColors.textLight.withOpacity(0.2))
                             : (isDark
-                                ? Colors.white.withOpacity(0.1)
-                                : Colors.grey.shade400),
+                                ? AppColors.textLight.withOpacity(0.1)
+                                : AppColors.grey),
                       ),
                     ),
                   ),
@@ -1500,12 +1551,13 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color:
-                                isDark ? AppColors.primaryLight : Colors.white,
+                            color: isDark
+                                ? AppColors.primaryLight
+                                : AppColors.surface,
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
+                                color: AppColors.shadow,
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -1516,14 +1568,14 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                             children: [
                               Icon(
                                 Icons.check_circle_rounded,
-                                color: isDark ? Colors.black : Colors.black,
+                                color: AppColors.textPrimary,
                                 size: 16,
                               ),
                               const SizedBox(width: 6),
                               Text(
                                 AppStrings.selected,
                                 style: TextStyle(
-                                  color: isDark ? Colors.black : Colors.black,
+                                  color: AppColors.textPrimary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
@@ -1543,8 +1595,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                 color: isSelected
                     ? (isDark
                         ? AppColors.primaryLight.withOpacity(0.1)
-                        : Colors.black)
-                    : (isDark ? const Color(0xFF2A2A2A) : Colors.white),
+                        : AppColors.textPrimary)
+                    : (isDark ? AppColors.cardBorderDark : AppColors.surface),
                 borderRadius: const BorderRadius.vertical(
                   bottom: Radius.circular(14),
                 ),
@@ -1564,12 +1616,10 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: isSelected
-                                    ? (isDark
-                                        ? AppColors.textLight
-                                        : Colors.white)
+                                    ? AppColors.textLight
                                     : (isDark
                                         ? AppColors.textLight
-                                        : Colors.black87),
+                                        : AppColors.textPrimary),
                               ),
                               child: Text(template['name']),
                             ),
@@ -1580,11 +1630,11 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                                 fontSize: 14,
                                 color: isSelected
                                     ? (isDark
-                                        ? const Color(0xFFB0B0B0)
-                                        : Colors.grey.shade400)
+                                        ? AppColors.textDarkSecondary
+                                        : AppColors.grey)
                                     : (isDark
-                                        ? const Color(0xFFB0B0B0)
-                                        : Colors.grey.shade600),
+                                        ? AppColors.textDarkSecondary
+                                        : AppColors.greyDark),
                               ),
                               child: Text(template['description']),
                             ),
@@ -1608,17 +1658,18 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                                     ? (isDark
                                         ? AppColors.primaryLight
                                             .withOpacity(0.2)
-                                        : Colors.white.withOpacity(0.15))
+                                        : AppColors.textLight.withOpacity(0.15))
                                     : (isDark
-                                        ? const Color(0xFF1E1E1E)
-                                        : Colors.grey.shade100),
+                                        ? AppColors.surfaceDark
+                                        : AppColors.greyLighter),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: isSelected
                                       ? (isDark
                                           ? AppColors.primaryLight
                                               .withOpacity(0.3)
-                                          : Colors.white.withOpacity(0.3))
+                                          : AppColors.textLight
+                                              .withOpacity(0.3))
                                       : Colors.transparent,
                                 ),
                               ),
@@ -1628,12 +1679,10 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: isSelected
-                                      ? (isDark
-                                          ? AppColors.textLight
-                                          : Colors.white)
+                                      ? AppColors.textLight
                                       : (isDark
                                           ? AppColors.textLight
-                                          : Colors.grey.shade700),
+                                          : AppColors.greyDark),
                                 ),
                               ),
                             ))

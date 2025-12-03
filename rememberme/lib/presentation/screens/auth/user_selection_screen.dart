@@ -49,8 +49,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
 
   void _showPinDialog(String userId) {
     if (Platform.isIOS) {
-      final brightness = CupertinoTheme.brightnessOf(context);
-      final isDark = brightness == Brightness.dark;
+      final isDark = Theme.of(context).brightness == Brightness.dark;
 
       showCupertinoDialog(
         context: context,
@@ -61,7 +60,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
-              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -72,9 +71,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                 AppStrings.profileProtectedWithPin,
                 style: TextStyle(
                   fontSize: 13,
-                  color: isDark
-                      ? CupertinoColors.systemGrey
-                      : CupertinoColors.systemGrey2,
+                  color: AppColors.grey,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -88,13 +85,16 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                 autofocus: true,
                 style: TextStyle(
                   fontSize: 17,
-                  color: isDark ? CupertinoColors.white : CupertinoColors.black,
+                  color: isDark ? AppColors.textLight : AppColors.textPrimary,
                   fontFamily: '.SF Pro Text',
+                ),
+                placeholderStyle: TextStyle(
+                  color: AppColors.grey,
                 ),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? const Color(0xFF2C2C2E)
-                      : CupertinoColors.systemGrey6,
+                      ? AppColors.toastBackgroundDark
+                      : AppColors.greyLighter,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 padding: const EdgeInsets.all(12),
@@ -110,9 +110,9 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
               },
               child: Text(
                 AppStrings.cancel,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 17,
-                  color: CupertinoColors.systemRed,
+                  color: AppColors.error,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -145,6 +145,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
+          backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -155,7 +156,12 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                 color: isDark ? AppColors.primaryLight : AppColors.primary,
               ),
               const SizedBox(width: 12),
-              Text(AppStrings.enterPin),
+              Text(
+                AppStrings.enterPin,
+                style: TextStyle(
+                  color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                ),
+              ),
             ],
           ),
           content: Column(
@@ -166,16 +172,21 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                 AppStrings.profileProtectedWithPin,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: isDark
-                      ? const Color(0xFFB0B0B0)
+                      ? AppColors.textDarkSecondary
                       : AppColors.textSecondary,
                 ),
               ),
               const SizedBox(height: 20),
               TextFormField(
                 controller: _pinController,
+                style: TextStyle(
+                  color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                ),
                 decoration: InputDecoration(
                   labelText: AppStrings.pin,
                   hintText: AppStrings.fourDigitPin,
+                  labelStyle: TextStyle(color: AppColors.textSecondary),
+                  hintStyle: TextStyle(color: AppColors.grey),
                   prefixIcon: Icon(
                     Icons.pin_outlined,
                     color: isDark ? AppColors.primaryLight : AppColors.primary,
@@ -195,7 +206,12 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                 setState(() => _selectedUserId = null);
                 _pinController.clear();
               },
-              child: Text(AppStrings.cancel),
+              child: Text(
+                AppStrings.cancel,
+                style: TextStyle(
+                  color: isDark ? AppColors.grey : AppColors.textSecondary,
+                ),
+              ),
             ),
             FilledButton(
               onPressed: () {
@@ -206,6 +222,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
               style: FilledButton.styleFrom(
                 backgroundColor:
                     isDark ? AppColors.primaryLight : AppColors.primary,
+                foregroundColor: AppColors.textLight,
               ),
               child: Text(AppStrings.login),
             ),
@@ -235,10 +252,9 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
   }
 
   void _showError(String message) {
-    if (Platform.isIOS) {
-      final brightness = CupertinoTheme.brightnessOf(context);
-      final isDark = brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (Platform.isIOS) {
       showCupertinoDialog(
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
@@ -247,7 +263,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
-              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -255,9 +271,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
             message,
             style: TextStyle(
               fontSize: 13,
-              color: isDark
-                  ? CupertinoColors.systemGrey
-                  : CupertinoColors.systemGrey2,
+              color: AppColors.grey,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -281,8 +295,11 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message),
-          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Text(
+            message,
+            style: const TextStyle(color: AppColors.textLight),
+          ),
+          backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -325,6 +342,8 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
         }
       },
       child: Scaffold(
+        backgroundColor:
+            isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
         appBar: AppBar(
           title: Text(AppStrings.selectProfile),
           elevation: 0,
@@ -368,7 +387,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: isDark
-                                ? AppColors.primaryLight.withOpacity(0.2)
+                                ? AppColors.accent
                                 : AppColors.primary.withOpacity(0.1),
                             shape: BoxShape.circle,
                           ),
@@ -398,7 +417,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                           AppStrings.chooseYourProfile,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: isDark
-                                ? const Color(0xFFB0B0B0)
+                                ? AppColors.textDarkSecondary
                                 : AppColors.textSecondary,
                           ),
                           textAlign: TextAlign.center,
@@ -430,12 +449,11 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color:
-                          isDark ? const Color(0xFF2A2A2A) : AppColors.surface,
+                          isDark ? AppColors.cardBorderDark : AppColors.surface,
                       boxShadow: [
                         BoxShadow(
-                          color: isDark
-                              ? Colors.black.withOpacity(0.3)
-                              : Colors.black.withOpacity(0.05),
+                          color:
+                              isDark ? AppColors.shadowDark : AppColors.shadow,
                           blurRadius: 8,
                           offset: const Offset(0, -2),
                         ),
@@ -456,6 +474,9 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
+                            foregroundColor: isDark
+                                ? AppColors.primaryLight
+                                : AppColors.primary,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             side: BorderSide(
                               color: isDark
@@ -505,8 +526,9 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
             Text(
               AppStrings.createFirstProfile,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color:
-                    isDark ? const Color(0xFFB0B0B0) : AppColors.textSecondary,
+                color: isDark
+                    ? AppColors.textDarkSecondary
+                    : AppColors.textSecondary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -525,13 +547,14 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
       onTap: () => _handleUserSelection(user.id, member.hasPin),
       child: Card(
         elevation: isSelected ? 4 : (isDark ? 2 : 1),
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
         margin: const EdgeInsets.only(bottom: 12),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(
             color: isSelected
                 ? (isDark ? AppColors.primaryLight : AppColors.primary)
-                : (isDark ? const Color(0xFF404040) : AppColors.border),
+                : (isDark ? AppColors.borderDarkSubtle : AppColors.border),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -622,7 +645,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                               : Icons.lock_open_rounded,
                           size: 16,
                           color: isDark
-                              ? const Color(0xFFB0B0B0)
+                              ? AppColors.accent
                               : AppColors.textSecondary,
                         ),
                         const SizedBox(width: 6),
@@ -630,7 +653,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                           member.roleText,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: isDark
-                                ? const Color(0xFFB0B0B0)
+                                ? AppColors.textDarkSecondary
                                 : AppColors.textSecondary,
                           ),
                         ),
@@ -645,10 +668,8 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                 Icons.arrow_forward_ios_rounded,
                 size: 20,
                 color: isSelected
-                    ? (isDark ? AppColors.primaryLight : AppColors.primary)
-                    : (isDark
-                        ? const Color(0xFF707070)
-                        : AppColors.textSecondary),
+                    ? (isDark ? AppColors.accent : AppColors.primary)
+                    : (isDark ? AppColors.accent : AppColors.textSecondary),
               ),
             ],
           ),
@@ -659,9 +680,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
 
   // ==================== IOS VIEW ====================
   Widget _buildIOSView() {
-    // Dark Mode Detection
-    final brightness = CupertinoTheme.brightnessOf(context);
-    final isDark = brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
@@ -677,16 +696,17 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
       },
       child: CupertinoPageScaffold(
         backgroundColor:
-            isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7),
+            isDark ? AppColors.backgroundDark : AppColors.background,
         navigationBar: CupertinoNavigationBar(
-          backgroundColor:
-              isDark ? const Color(0xFF1C1C1E).withOpacity(0.8) : null,
+          backgroundColor: isDark
+              ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+              : AppColors.surface.withOpacity(0.94),
           middle: Text(
             AppStrings.selectProfile,
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
-              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -695,16 +715,15 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
           child: DefaultTextStyle(
             style: TextStyle(
               fontSize: 17,
-              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: '.SF Pro Text',
             ),
             child: _isLoading
                 ? Center(
                     child: CupertinoActivityIndicator(
                       radius: 20,
-                      color: isDark
-                          ? CupertinoColors.white
-                          : CupertinoColors.black,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
                     ),
                   )
                 : Column(
@@ -738,7 +757,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: isDark
-                                    ? AppColors.primaryLight.withOpacity(0.2)
+                                    ? AppColors.accent
                                     : AppColors.primary.withOpacity(0.1),
                                 shape: BoxShape.circle,
                               ),
@@ -746,7 +765,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                                 CupertinoIcons.person_2_fill,
                                 size: 48,
                                 color: isDark
-                                    ? AppColors.primaryLight
+                                    ? AppColors.background
                                     : AppColors.primary,
                               ),
                             ),
@@ -758,8 +777,8 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
                                 color: isDark
-                                    ? CupertinoColors.white
-                                    : CupertinoColors.black,
+                                    ? AppColors.textLight
+                                    : AppColors.textPrimary,
                                 letterSpacing: -0.5,
                                 fontFamily: '.SF Pro Display',
                               ),
@@ -771,7 +790,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                               AppStrings.chooseYourProfile,
                               style: TextStyle(
                                 fontSize: 17,
-                                color: CupertinoColors.systemGrey,
+                                color: AppColors.grey,
                                 fontWeight: FontWeight.w400,
                                 fontFamily: '.SF Pro Text',
                               ),
@@ -807,21 +826,21 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: isDark
-                              ? const Color(0xFF1C1C1E)
-                              : CupertinoColors.white,
+                              ? AppColors.backgroundDarkElevated
+                              : AppColors.surface,
                           border: Border(
                             top: BorderSide(
                               color: isDark
-                                  ? CupertinoColors.systemGrey3.darkColor
-                                  : CupertinoColors.systemGrey4,
+                                  ? AppColors.borderDark
+                                  : AppColors.greyLight,
                               width: 0.5,
                             ),
                           ),
                           boxShadow: [
                             BoxShadow(
                               color: isDark
-                                  ? Colors.black.withOpacity(0.3)
-                                  : Colors.black.withOpacity(0.05),
+                                  ? AppColors.shadowDark
+                                  : AppColors.shadow,
                               blurRadius: 8,
                               offset: const Offset(0, -2),
                             ),
@@ -835,8 +854,8 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                             child: CupertinoButton(
                               padding: EdgeInsets.zero,
                               color: isDark
-                                  ? const Color(0xFF2C2C2E)
-                                  : CupertinoColors.systemGrey6,
+                                  ? AppColors.accent
+                                  : AppColors.greyLighter,
                               borderRadius: BorderRadius.circular(12),
                               onPressed: _createNewProfile,
                               child: Row(
@@ -846,7 +865,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                                     CupertinoIcons.add,
                                     size: 22,
                                     color: isDark
-                                        ? AppColors.primaryLight
+                                        ? AppColors.background
                                         : AppColors.primary,
                                   ),
                                   const SizedBox(width: 10),
@@ -856,7 +875,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                                       fontSize: 17,
                                       fontWeight: FontWeight.w600,
                                       color: isDark
-                                          ? AppColors.primaryLight
+                                          ? AppColors.background
                                           : AppColors.primary,
                                       fontFamily: '.SF Pro Text',
                                     ),
@@ -895,7 +914,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: isDark ? CupertinoColors.white : CupertinoColors.black,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
                 fontFamily: '.SF Pro Display',
               ),
               textAlign: TextAlign.center,
@@ -905,7 +924,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
               AppStrings.createFirstProfile,
               style: TextStyle(
                 fontSize: 17,
-                color: CupertinoColors.systemGrey,
+                color: AppColors.grey,
                 fontFamily: '.SF Pro Text',
               ),
               textAlign: TextAlign.center,
@@ -926,14 +945,12 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white,
+          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
                 ? (isDark ? AppColors.primaryLight : AppColors.primary)
-                : (isDark
-                    ? CupertinoColors.systemGrey3.darkColor
-                    : CupertinoColors.systemGrey5),
+                : (isDark ? AppColors.borderDark : AppColors.greyLighter),
             width: isSelected ? 2.5 : 1,
           ),
           boxShadow: [
@@ -942,9 +959,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                   ? (isDark
                       ? AppColors.primaryLight.withOpacity(0.3)
                       : AppColors.primary.withOpacity(0.2))
-                  : (isDark
-                      ? Colors.black.withOpacity(0.3)
-                      : Colors.black.withOpacity(0.05)),
+                  : (isDark ? AppColors.shadowDark : AppColors.shadow),
               blurRadius: isSelected ? 12 : 8,
               offset: const Offset(0, 2),
             ),
@@ -971,7 +986,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
               child: CircleAvatar(
                 radius: 32,
                 backgroundColor: isDark
-                    ? AppColors.primaryLight.withOpacity(0.2)
+                    ? AppColors.accent
                     : AppColors.primary.withOpacity(0.15),
                 backgroundImage: user.profileImageUrl != null
                     ? NetworkImage(user.profileImageUrl!)
@@ -982,9 +997,8 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: isDark
-                              ? AppColors.primaryLight
-                              : AppColors.primary,
+                          color:
+                              isDark ? AppColors.background : AppColors.primary,
                           fontFamily: '.SF Pro Display',
                         ),
                       )
@@ -1003,9 +1017,8 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? CupertinoColors.white
-                          : CupertinoColors.black,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
                       fontFamily: '.SF Pro Text',
                     ),
                   ),
@@ -1017,14 +1030,14 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                             ? CupertinoIcons.lock_fill
                             : CupertinoIcons.lock_open_fill,
                         size: 14,
-                        color: CupertinoColors.systemGrey,
+                        color: AppColors.grey,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         member.roleText,
                         style: TextStyle(
                           fontSize: 15,
-                          color: CupertinoColors.systemGrey,
+                          color: AppColors.grey,
                           fontFamily: '.SF Pro Text',
                         ),
                       ),
@@ -1040,7 +1053,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
               size: 20,
               color: isSelected
                   ? (isDark ? AppColors.primaryLight : AppColors.primary)
-                  : CupertinoColors.systemGrey,
+                  : AppColors.grey,
             ),
           ],
         ),

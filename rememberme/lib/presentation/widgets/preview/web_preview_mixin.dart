@@ -6,21 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:rememberme/presentation/screens/preview/webview_preview_screen.dart';
 import '../../../data/models/memorial_page_model.dart';
 import '../../../data/services/preview_service.dart';
+import '../../../core/constants/app_colors.dart';
 import 'preview_dialogs.dart';
 
-/// Mixin that provides web preview functionality to any StatefulWidget
-///
-/// Usage:
-/// ```dart
-/// class _MyWidgetState extends State<MyWidget> with WebPreviewMixin {
-///   void _handlePreview() {
-///     showWebPreview(
-///       context: context,
-///       memorial: myMemorialPageModel,
-///     );
-///   }
-/// }
-/// ```
 mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
   final PreviewService _previewService = PreviewService();
   bool _isPreviewLoading = false;
@@ -33,7 +21,8 @@ mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
     // Prevent double-tap
     if (_isPreviewLoading) return;
 
-    // Check for empty blocks
+    debugPrint('🔒 showWebPreview: _isPreviewLoading=$_isPreviewLoading');
+
     if (memorial.contentBlocks.isEmpty) {
       _showEmptyBlocksWarning(context);
       return;
@@ -139,10 +128,9 @@ mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
   }
 
   void _showEmptyBlocksWarning(BuildContext context) {
-    if (Platform.isIOS) {
-      final brightness = MediaQuery.of(context).platformBrightness;
-      final isDark = brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (Platform.isIOS) {
       showCupertinoDialog(
         context: context,
         builder: (context) => CupertinoAlertDialog(
@@ -151,7 +139,7 @@ mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
-              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -159,7 +147,7 @@ mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
             'Füge zuerst Inhaltsblöcke hinzu, um eine Vorschau anzuzeigen.',
             style: TextStyle(
               fontSize: 13,
-              color: CupertinoColors.systemGrey,
+              color: AppColors.grey,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -170,7 +158,7 @@ mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
                 'OK',
                 style: TextStyle(
                   fontSize: 17,
-                  color: CupertinoColors.activeBlue,
+                  color: AppColors.interactive,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -184,16 +172,17 @@ mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
         SnackBar(
           content: const Row(
             children: [
-              Icon(Icons.info_outline, color: Colors.white, size: 20),
+              Icon(Icons.info_outline, color: AppColors.textLight, size: 20),
               SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Füge zuerst Inhaltsblöcke hinzu, um eine Vorschau anzuzeigen.',
+                  style: TextStyle(color: AppColors.textLight),
                 ),
               ),
             ],
           ),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -215,27 +204,56 @@ Future<void> showWebPreviewStandalone({
   // Check for empty blocks
   if (memorial.contentBlocks.isEmpty) {
     if (Platform.isIOS) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+
       showCupertinoDialog(
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
-          title: const Text('Keine Inhalte'),
-          content: const Text(
+          title: Text(
+            'Keine Inhalte',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              fontFamily: '.SF Pro Text',
+            ),
+          ),
+          content: Text(
             'Füge zuerst Inhaltsblöcke hinzu, um eine Vorschau anzuzeigen.',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.grey,
+              fontFamily: '.SF Pro Text',
+            ),
           ),
           actions: [
             CupertinoDialogAction(
               isDefaultAction: true,
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK'),
+              child: Text(
+                'OK',
+                style: TextStyle(
+                  fontSize: 17,
+                  color: AppColors.interactive,
+                  fontFamily: '.SF Pro Text',
+                ),
+              ),
             ),
           ],
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Füge zuerst Inhaltsblöcke hinzu.'),
-          backgroundColor: Colors.orange,
+        SnackBar(
+          content: const Text(
+            'Füge zuerst Inhaltsblöcke hinzu.',
+            style: TextStyle(color: AppColors.textLight),
+          ),
+          backgroundColor: AppColors.warning,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
       );
     }

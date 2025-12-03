@@ -6,10 +6,6 @@ import 'package:rememberme/core/constants/app_colors.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-/// WebView Preview Screen for displaying memorial page preview
-///
-/// This screen loads the preview URL in an in-app WebView with
-/// platform-native UI (iOS: Cupertino, Android: Material Design)
 class WebViewPreviewScreen extends StatefulWidget {
   final String previewUrl;
   final String memorialName;
@@ -38,10 +34,14 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
   }
 
   void _initWebView() {
+    final isDark =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+            Brightness.dark;
+
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(
-        Platform.isIOS ? CupertinoColors.systemBackground : Colors.white,
+        isDark ? AppColors.backgroundDark : AppColors.surface,
       )
       ..setNavigationDelegate(
         NavigationDelegate(
@@ -72,7 +72,9 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
           },
           onWebResourceError: (WebResourceError error) {
             debugPrint('❌ WebView error: ${error.description}');
-            if (mounted) {
+            debugPrint('   isForMainFrame: ${error.isForMainFrame}');
+
+            if (error.isForMainFrame == true && mounted) {
               setState(() {
                 _isLoading = false;
                 _hasError = true;
@@ -81,11 +83,9 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
             }
           },
           onNavigationRequest: (NavigationRequest request) {
-            // Allow all navigation within our domain
             if (request.url.contains('remember-me-slug.vercel.app')) {
               return NavigationDecision.navigate;
             }
-            // Block external links or handle them differently
             debugPrint('🚫 Blocked external navigation: ${request.url}');
             return NavigationDecision.prevent;
           },
@@ -95,17 +95,16 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
   }
 
   String _getErrorMessage(WebResourceError error) {
-    // Map common error codes to user-friendly messages
     switch (error.errorCode) {
-      case -2: // NSURLErrorCannotFindHost / ERR_NAME_NOT_RESOLVED
+      case -2:
         return 'Server nicht gefunden. Bitte überprüfe deine Internetverbindung.';
-      case -1009: // NSURLErrorNotConnectedToInternet
-      case -6: // ERR_INTERNET_DISCONNECTED
+      case -1009:
+      case -6:
         return 'Keine Internetverbindung.';
-      case -1001: // NSURLErrorTimedOut
-      case -7: // ERR_TIMED_OUT
+      case -1001:
+      case -7:
         return 'Die Verbindung hat zu lange gedauert.';
-      case -1003: // NSURLErrorCannotFindHost
+      case -1003:
         return 'Server nicht erreichbar.';
       default:
         return error.description ?? 'Ein Fehler ist aufgetreten.';
@@ -142,13 +141,10 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
   // iOS Layout with CupertinoPageScaffold
   // ============================================================
   Widget _buildIOSLayout(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return CupertinoPageScaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF000000)
-          : CupertinoColors.systemGroupedBackground,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
       navigationBar: CupertinoNavigationBar(
         middle: Column(
           mainAxisSize: MainAxisSize.min,
@@ -158,7 +154,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
-                color: isDark ? CupertinoColors.white : CupertinoColors.black,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
                 fontFamily: '.SF Pro Text',
               ),
             ),
@@ -167,18 +163,18 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
                 '${_loadingProgress}%',
                 style: TextStyle(
                   fontSize: 11,
-                  color: CupertinoColors.systemGrey,
+                  color: AppColors.grey,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
           ],
         ),
         backgroundColor: isDark
-            ? const Color(0xFF1C1C1E).withOpacity(0.94)
-            : CupertinoColors.systemBackground.withOpacity(0.94),
+            ? AppColors.backgroundDarkElevated.withOpacity(0.94)
+            : AppColors.surface.withOpacity(0.94),
         border: Border(
           bottom: BorderSide(
-            color: isDark ? const Color(0xFF38383A) : CupertinoColors.separator,
+            color: isDark ? AppColors.borderDark : AppColors.divider,
             width: 0.5,
           ),
         ),
@@ -188,7 +184,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
           onPressed: () => Navigator.pop(context),
           child: Icon(
             CupertinoIcons.xmark,
-            color: CupertinoColors.activeBlue,
+            color: AppColors.interactive,
             size: 22,
           ),
         ),
@@ -201,7 +197,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
               onPressed: _refresh,
               child: Icon(
                 CupertinoIcons.refresh,
-                color: CupertinoColors.activeBlue,
+                color: AppColors.interactive,
                 size: 22,
               ),
             ),
@@ -212,7 +208,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
               onPressed: _sharePreview,
               child: Icon(
                 CupertinoIcons.share,
-                color: CupertinoColors.activeBlue,
+                color: AppColors.interactive,
                 size: 22,
               ),
             ),
@@ -222,13 +218,8 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
       child: SafeArea(
         child: Stack(
           children: [
-            // WebView
             if (!_hasError) WebViewWidget(controller: _controller),
-
-            // Loading indicator
             if (_isLoading && !_hasError) _buildIOSLoadingIndicator(isDark),
-
-            // Error state
             if (_hasError) _buildIOSErrorState(isDark),
           ],
         ),
@@ -243,29 +234,30 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
       right: 0,
       child: Column(
         children: [
-          // Progress bar
           LinearProgressIndicator(
             value: _loadingProgress / 100,
             backgroundColor:
-                isDark ? const Color(0xFF38383A) : CupertinoColors.systemGrey5,
+                isDark ? AppColors.borderDark : AppColors.greyLighter,
             valueColor: const AlwaysStoppedAnimation<Color>(
-              CupertinoColors.activeBlue,
+              AppColors.interactive,
             ),
             minHeight: 2,
           ),
-          // Loading overlay (only shown at start)
           if (_loadingProgress < 30)
             Padding(
               padding: const EdgeInsets.only(top: 100),
               child: Column(
                 children: [
-                  const CupertinoActivityIndicator(radius: 14),
+                  CupertinoActivityIndicator(
+                    radius: 14,
+                    color: isDark ? AppColors.grey : null,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Vorschau wird geladen...',
                     style: TextStyle(
                       fontSize: 15,
-                      color: CupertinoColors.systemGrey,
+                      color: AppColors.grey,
                       fontFamily: '.SF Pro Text',
                     ),
                   ),
@@ -287,20 +279,22 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white,
+                color: isDark
+                    ? AppColors.backgroundDarkElevated
+                    : AppColors.surface,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+                    color: isDark ? AppColors.shadowDark : AppColors.shadow,
                     blurRadius: 20,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: Icon(
+              child: const Icon(
                 CupertinoIcons.wifi_slash,
                 size: 48,
-                color: CupertinoColors.systemRed,
+                color: AppColors.error,
               ),
             ),
             const SizedBox(height: 24),
@@ -309,7 +303,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: isDark ? CupertinoColors.white : CupertinoColors.black,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
                 fontFamily: '.SF Pro Display',
               ),
             ),
@@ -318,7 +312,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
               _errorMessage ?? 'Ein unbekannter Fehler ist aufgetreten.',
               style: TextStyle(
                 fontSize: 15,
-                color: CupertinoColors.systemGrey,
+                color: AppColors.grey,
                 height: 1.5,
                 fontFamily: '.SF Pro Text',
               ),
@@ -327,7 +321,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
             const SizedBox(height: 32),
             CupertinoButton(
               onPressed: _refresh,
-              color: CupertinoColors.activeBlue,
+              color: AppColors.interactive,
               borderRadius: BorderRadius.circular(12),
               padding: const EdgeInsets.symmetric(
                 horizontal: 32,
@@ -335,19 +329,19 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
+                children: const [
+                  Icon(
                     CupertinoIcons.refresh,
-                    color: CupertinoColors.white,
+                    color: AppColors.textLight,
                     size: 20,
                   ),
-                  const SizedBox(width: 8),
-                  const Text(
+                  SizedBox(width: 8),
+                  Text(
                     'Erneut versuchen',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: CupertinoColors.white,
+                      color: AppColors.textLight,
                       fontFamily: '.SF Pro Text',
                     ),
                   ),
@@ -364,11 +358,11 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
   // Android Layout with Material Design
   // ============================================================
   Widget _buildAndroidLayout(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
+      backgroundColor:
+          isDark ? AppColors.backgroundDarkSecondary : AppColors.surface,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -379,7 +373,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
                 '${_loadingProgress}%',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.white.withOpacity(0.7),
+                  color: AppColors.textLight.withOpacity(0.7),
                 ),
               ),
           ],
@@ -407,13 +401,8 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
       ),
       body: Stack(
         children: [
-          // WebView
           if (!_hasError) WebViewWidget(controller: _controller),
-
-          // Loading indicator
           if (_isLoading && !_hasError) _buildAndroidLoadingIndicator(isDark),
-
-          // Error state
           if (_hasError) _buildAndroidErrorState(isDark),
         ],
       ),
@@ -427,21 +416,21 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
       right: 0,
       child: Column(
         children: [
-          // Progress bar
           LinearProgressIndicator(
             value: _loadingProgress / 100,
             backgroundColor:
-                isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade200,
+                isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
             valueColor: AlwaysStoppedAnimation<Color>(
               isDark ? AppColors.primaryLight : AppColors.primary,
             ),
             minHeight: 3,
           ),
-          // Loading overlay (only shown at start)
           if (_loadingProgress < 30)
             Container(
               width: double.infinity,
-              color: isDark ? const Color(0xFF121212) : Colors.white,
+              color: isDark
+                  ? AppColors.backgroundDarkSecondary
+                  : AppColors.surface,
               padding: const EdgeInsets.only(top: 100),
               child: Column(
                 children: [
@@ -456,8 +445,8 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       color: isDark
-                          ? const Color(0xFFB0B0B0)
-                          : Colors.grey.shade600,
+                          ? AppColors.textDarkSecondary
+                          : AppColors.greyDark,
                     ),
                   ),
                 ],
@@ -492,7 +481,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
                   width: 2,
                 ),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.wifi_off_rounded,
                 size: 56,
                 color: AppColors.error,
@@ -511,7 +500,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
               _errorMessage ?? 'Ein unbekannter Fehler ist aufgetreten.',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: isDark
-                        ? const Color(0xFFB0B0B0)
+                        ? AppColors.textDarkSecondary
                         : AppColors.textSecondary,
                     height: 1.5,
                   ),
@@ -557,7 +546,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.textLight,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 28,
                     vertical: 14,
