@@ -20,7 +20,6 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
     on<PageBuilderRedoRequested>(_onRedo);
   }
 
-  // ✅ FIX: Null-Behandlung für getMemorial
   Future<void> _onLoad(
     PageBuilderLoadRequested event,
     Emitter<PageBuilderState> emit,

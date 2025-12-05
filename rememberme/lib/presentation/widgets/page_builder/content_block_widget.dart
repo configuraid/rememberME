@@ -620,6 +620,7 @@ class ContentBlockWidget extends StatelessWidget {
 
     final url = block.getContent('url', '');
     final caption = block.getContent('caption', '');
+    final autoplay = block.getContent('autoplay', false);
 
     if (url.isEmpty) {
       return Container(
@@ -657,21 +658,34 @@ class ContentBlockWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          height: 200,
-          decoration: BoxDecoration(
-            color: isDark
-                ? AppColors.backgroundDarkSecondary
-                : AppColors.backgroundDark,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Center(
-            child: Icon(
-              Icons.play_circle_outline_rounded,
-              size: 64,
-              color: AppColors.textLight.withOpacity(0.9),
+        Stack(
+          children: [
+            Container(
+              height: 200,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.backgroundDarkSecondary
+                    : AppColors.backgroundDark,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.play_circle_outline_rounded,
+                  size: 64,
+                  color: AppColors.textLight.withOpacity(0.9),
+                ),
+              ),
             ),
-          ),
+            // ============================================================
+            // NEU: Autoplay Badge
+            // ============================================================
+            if (autoplay)
+              Positioned(
+                top: 12,
+                right: 12,
+                child: _buildAutoplayBadge(context, isDark),
+              ),
+          ],
         ),
         if (caption.isNotEmpty) ...[
           const SizedBox(height: 8),
@@ -687,6 +701,88 @@ class ContentBlockWidget extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  Widget _buildAutoplayBadge(BuildContext context, bool isDark) {
+    if (Platform.isIOS) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.accent : AppColors.primary,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowDark,
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              CupertinoIcons.play_fill,
+              size: 12,
+              color: AppColors.textLight,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'Autoplay',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textLight,
+                fontFamily: '.SF Pro Text',
+                letterSpacing: -0.2,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.success,
+              AppColors.success.withOpacity(0.85),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.success.withOpacity(0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.play_arrow_rounded,
+              size: 14,
+              color: AppColors.textLight,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'Autoplay',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textLight,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   Color _hexToColor(String hex) {

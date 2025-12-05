@@ -11,7 +11,6 @@ class PreviewLoadingDialog extends StatelessWidget {
     this.message = 'Vorschau wird vorbereitet...',
   });
 
-  /// Shows the loading dialog
   static Future<void> show(BuildContext context, {String? message}) {
     if (Platform.isIOS) {
       return showCupertinoDialog(

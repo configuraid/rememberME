@@ -758,17 +758,15 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.toastBackgroundDark
-                              : AppColors.background,
+                          color: isDark ? AppColors.accent : AppColors.primary,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           CupertinoIcons.xmark,
                           size: 18,
                           color: isDark
-                              ? AppColors.textLight
-                              : AppColors.textPrimary,
+                              ? AppColors.textPrimary
+                              : AppColors.textLight,
                         ),
                       ),
                     ),
@@ -805,7 +803,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                       ),
                     ),
 
-                    // Bestätigen Button (Checkmark Icon)
                     CupertinoButton(
                       padding: EdgeInsets.zero,
                       minSize: 36,
@@ -814,13 +811,15 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: AppColors.interactive,
+                          color: isDark ? AppColors.accent : AppColors.primary,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           CupertinoIcons.checkmark,
                           size: 18,
-                          color: AppColors.textLight,
+                          color: isDark
+                              ? AppColors.textPrimary
+                              : AppColors.textLight,
                         ),
                       ),
                     ),
@@ -1550,6 +1549,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
   List<Widget> _buildVideoSettings() {
     final currentUrl = _getContent('url', '');
+    final autoplay = _getContent('autoplay', false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (Platform.isIOS) {
@@ -1754,6 +1754,13 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           ),
         ),
         const SizedBox(height: 24),
+
+        // ============================================================
+        // NEU: Autoplay Toggle für iOS
+        // ============================================================
+        _buildIOSAutoplayToggle(isDark, autoplay),
+
+        const SizedBox(height: 24),
         Text(
           'Beschreibung',
           style: TextStyle(
@@ -1881,6 +1888,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         ],
       ];
     } else {
+      // Android Video Settings
       return [
         if (currentUrl.isNotEmpty) ...[
           Container(
@@ -2042,6 +2050,13 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           ),
         ),
         const SizedBox(height: 20),
+
+        // ============================================================
+        // NEU: Autoplay Toggle für Android
+        // ============================================================
+        _buildAndroidAutoplayToggle(isDark, autoplay),
+
+        const SizedBox(height: 20),
         _buildTextField(
           label: AppStrings.description,
           key: 'caption',
@@ -2072,6 +2087,202 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         ],
       ];
     }
+  }
+
+  // ============================================================
+  // NEU: iOS Autoplay Toggle Widget
+  // ============================================================
+  Widget _buildIOSAutoplayToggle(bool isDark, bool autoplay) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: autoplay
+                    ? AppColors.success.withOpacity(0.15)
+                    : AppColors.grey.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                autoplay
+                    ? CupertinoIcons.play_circle_fill
+                    : CupertinoIcons.play_circle,
+                size: 18,
+                color: autoplay ? AppColors.success : AppColors.grey,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Autoplay',
+                    style: TextStyle(
+                      fontSize: 17,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                      fontFamily: '.SF Pro Text',
+                    ),
+                  ),
+                  Text(
+                    autoplay
+                        ? 'Video startet automatisch'
+                        : 'Video muss manuell gestartet werden',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.grey,
+                      fontFamily: '.SF Pro Text',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            CupertinoSwitch(
+              value: autoplay,
+              onChanged: (value) {
+                HapticFeedback.selectionClick();
+                _updateLocalValue('autoplay', value);
+              },
+              activeColor: AppColors.success,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // NEU: Android Autoplay Toggle Widget
+  // ============================================================
+  Widget _buildAndroidAutoplayToggle(bool isDark, bool autoplay) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: autoplay
+              ? AppColors.success.withOpacity(0.5)
+              : (isDark ? AppColors.cardBorderDark : AppColors.greyLighter),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? AppColors.shadowDark : AppColors.shadow,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            _updateLocalValue('autoplay', !autoplay);
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: autoplay
+                          ? [
+                              AppColors.success.withOpacity(0.2),
+                              AppColors.success.withOpacity(0.1),
+                            ]
+                          : isDark
+                              ? [
+                                  AppColors.grey.withOpacity(0.2),
+                                  AppColors.grey.withOpacity(0.1),
+                                ]
+                              : [
+                                  AppColors.greyLight.withOpacity(0.5),
+                                  AppColors.greyLight.withOpacity(0.3),
+                                ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: autoplay
+                          ? AppColors.success.withOpacity(0.3)
+                          : (isDark
+                              ? AppColors.grey.withOpacity(0.3)
+                              : AppColors.greyLight),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Icon(
+                    autoplay
+                        ? Icons.play_circle_filled_rounded
+                        : Icons.play_circle_outline_rounded,
+                    size: 24,
+                    color: autoplay
+                        ? AppColors.success
+                        : (isDark ? AppColors.grey : AppColors.greyDark),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Autoplay',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark
+                                      ? AppColors.textLight
+                                      : AppColors.textPrimary,
+                                ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        autoplay
+                            ? 'Video startet automatisch beim Laden'
+                            : 'Video muss manuell gestartet werden',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: isDark
+                                  ? AppColors.textDarkSecondary
+                                  : AppColors.textSecondary,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: autoplay,
+                  onChanged: (value) {
+                    HapticFeedback.selectionClick();
+                    _updateLocalValue('autoplay', value);
+                  },
+                  activeColor: AppColors.success,
+                  activeTrackColor: AppColors.success.withOpacity(0.4),
+                  inactiveThumbColor:
+                      isDark ? AppColors.grey : AppColors.greyDark,
+                  inactiveTrackColor:
+                      isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildTextField({

@@ -70,6 +70,7 @@ class ContentBlock {
         return {
           'url': '',
           'caption': '',
+          'autoplay': false,
         };
     }
   }

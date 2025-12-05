@@ -111,24 +111,6 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
     }
   }
 
-  Future<void> _refresh() async {
-    HapticFeedback.mediumImpact();
-    setState(() {
-      _hasError = false;
-      _errorMessage = null;
-      _isLoading = true;
-    });
-    await _controller.reload();
-  }
-
-  void _sharePreview() {
-    HapticFeedback.lightImpact();
-    Share.share(
-      'Schau dir die Vorschau an: ${widget.previewUrl}',
-      subject: 'Preview: ${widget.memorialName}',
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     if (Platform.isIOS) {
@@ -187,32 +169,6 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
             color: AppColors.interactive,
             size: 22,
           ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              minSize: 0,
-              onPressed: _refresh,
-              child: Icon(
-                CupertinoIcons.refresh,
-                color: AppColors.interactive,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 16),
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              minSize: 0,
-              onPressed: _sharePreview,
-              child: Icon(
-                CupertinoIcons.share,
-                color: AppColors.interactive,
-                size: 22,
-              ),
-            ),
-          ],
         ),
       ),
       child: SafeArea(
@@ -318,36 +274,6 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
-            CupertinoButton(
-              onPressed: _refresh,
-              color: AppColors.interactive,
-              borderRadius: BorderRadius.circular(12),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 32,
-                vertical: 14,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(
-                    CupertinoIcons.refresh,
-                    color: AppColors.textLight,
-                    size: 20,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Erneut versuchen',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textLight,
-                      fontFamily: '.SF Pro Text',
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -386,18 +312,6 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
           icon: const Icon(Icons.close_rounded),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: _refresh,
-            tooltip: 'Neu laden',
-          ),
-          IconButton(
-            icon: const Icon(Icons.share_rounded),
-            onPressed: _sharePreview,
-            tooltip: 'Teilen',
-          ),
-        ],
       ),
       body: Stack(
         children: [
@@ -532,29 +446,6 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
                     offset: const Offset(0, 6),
                   ),
                 ],
-              ),
-              child: ElevatedButton.icon(
-                onPressed: _refresh,
-                icon: const Icon(Icons.refresh_rounded, size: 22),
-                label: const Text(
-                  'Erneut versuchen',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  foregroundColor: AppColors.textLight,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 14,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
               ),
             ),
           ],
