@@ -511,7 +511,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
               Icons.person_add_rounded,
               size: 80,
               color: isDark
-                  ? AppColors.primaryLight.withOpacity(0.5)
+                  ? AppColors.accent
                   : AppColors.primary.withOpacity(0.3),
             ),
             const SizedBox(height: 24),
@@ -853,9 +853,8 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                             height: 50,
                             child: CupertinoButton(
                               padding: EdgeInsets.zero,
-                              color: isDark
-                                  ? AppColors.accent
-                                  : AppColors.greyLighter,
+                              color:
+                                  isDark ? AppColors.accent : AppColors.primary,
                               borderRadius: BorderRadius.circular(12),
                               onPressed: _createNewProfile,
                               child: Row(
@@ -865,8 +864,8 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                                     CupertinoIcons.add,
                                     size: 22,
                                     color: isDark
-                                        ? AppColors.background
-                                        : AppColors.primary,
+                                        ? AppColors.primary
+                                        : AppColors.background,
                                   ),
                                   const SizedBox(width: 10),
                                   Text(
@@ -875,8 +874,8 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                                       fontSize: 17,
                                       fontWeight: FontWeight.w600,
                                       color: isDark
-                                          ? AppColors.background
-                                          : AppColors.primary,
+                                          ? AppColors.primary
+                                          : AppColors.background,
                                       fontFamily: '.SF Pro Text',
                                     ),
                                   ),
@@ -905,7 +904,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
               CupertinoIcons.person_add,
               size: 80,
               color: isDark
-                  ? AppColors.primaryLight.withOpacity(0.5)
+                  ? AppColors.accent
                   : AppColors.primary.withOpacity(0.3),
             ),
             const SizedBox(height: 24),

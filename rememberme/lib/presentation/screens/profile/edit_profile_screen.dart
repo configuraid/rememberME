@@ -527,8 +527,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget _buildIOSLayout(
       BuildContext context, ProfileState state, bool isDark) {
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
       appBar: AppBar(
         title: const Text(AppStrings.editProfile),
         centerTitle: true,
@@ -638,18 +637,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [
-                            AppColors.primaryLight.withOpacity(0.3),
-                            AppColors.primary.withOpacity(0.2),
-                          ]
-                        : [
-                            AppColors.secondary.withOpacity(0.3),
-                            AppColors.secondaryLight.withOpacity(0.2),
-                          ],
+                  color: AppColors.accent.withOpacity(0.4),
+                  border: Border.all(
+                    color: AppColors.accent.withOpacity(0.4),
+                    width: 3,
                   ),
                 ),
                 child: ClipOval(
@@ -666,9 +657,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 style: TextStyle(
                                   fontSize: 40,
                                   fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? AppColors.accent
-                                      : AppColors.primary,
+                                  color: AppColors.accent,
                                 ),
                               ),
                             )),
@@ -683,17 +672,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: isDark
-                            ? [AppColors.accent, AppColors.accentLight]
-                            : [AppColors.primary, AppColors.primaryLight],
-                      ),
+                      color: AppColors.accent,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color:
-                            isDark ? AppColors.surfaceDark : AppColors.surface,
+                        color: AppColors.accent,
                         width: 3,
                       ),
                       boxShadow: [
@@ -814,7 +796,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           Icon(
             icon,
             size: 22,
-            color: isDark ? AppColors.accent : AppColors.interactive,
+            color: isDark ? AppColors.background : AppColors.backgroundDark,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -894,13 +876,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       AlwaysStoppedAnimation<Color>(AppColors.textLight),
                 ),
               )
-            : const Text(
+            : Text(
                 AppStrings.saveChanges,
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
                   letterSpacing: -0.4,
-                  color: AppColors.textLight,
+                  color: isDark ? AppColors.primary : AppColors.background,
                 ),
               ),
       ),
@@ -911,8 +893,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget _buildAndroidLayout(
       BuildContext context, ProfileState state, bool isDark) {
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
       appBar: AppBar(
         title: const Text(AppStrings.editProfile),
         elevation: 0,

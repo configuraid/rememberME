@@ -465,7 +465,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             },
             child: Icon(
               CupertinoIcons.back,
-              color: AppColors.interactive,
+              color: AppColors.accent,
               size: 28,
             ),
           ),
@@ -478,7 +478,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 onPressed: _showPreview,
                 child: Icon(
                   CupertinoIcons.eye,
-                  color: AppColors.interactive,
+                  color: AppColors.accent,
                   size: 24,
                 ),
               ),
@@ -489,7 +489,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 onPressed: _isSaving ? null : _save,
                 child: _isSaving
                     ? CupertinoActivityIndicator(
-                        color: AppColors.interactive,
+                        color: AppColors.accent,
                       )
                     : Text(
                         AppStrings.save,
@@ -497,7 +497,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                           fontSize: 17,
                           fontWeight: FontWeight.w600,
                           color: _hasUnsavedChanges
-                              ? AppColors.interactive
+                              ? AppColors.accent
                               : AppColors.greyLight,
                           fontFamily: '.SF Pro Text',
                         ),
@@ -524,11 +524,11 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                       vertical: 14,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.interactive,
+                      color: isDark ? AppColors.accent : AppColors.primary,
                       borderRadius: BorderRadius.circular(25),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.interactive.withOpacity(0.3),
+                          color: AppColors.accent.withOpacity(0.3),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),

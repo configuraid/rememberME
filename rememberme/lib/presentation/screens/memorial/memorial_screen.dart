@@ -251,7 +251,7 @@ class MemorialDetailScreen extends StatelessWidget {
                             _navigateToPageBuilder(context, memorial),
                       ),
                       const SizedBox(height: 12),
-                      _buildSecondaryButton(
+                      _buildPrimaryButton(
                         context: context,
                         icon: Icons.visibility_outlined,
                         label: AppStrings.viewPreview,
@@ -317,6 +317,7 @@ class MemorialDetailScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          // Edit Button - filled style
                           CupertinoButton.filled(
                             onPressed: () =>
                                 _navigateToPageBuilder(context, memorial),
@@ -336,29 +337,18 @@ class MemorialDetailScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          CupertinoButton(
+                          // Preview Button - NOW ALSO filled style (same as edit button)
+                          CupertinoButton.filled(
                             onPressed: () => _showPreview(context, memorial),
-                            color: isDark
-                                ? AppColors.toastBackgroundDark
-                                : AppColors.greyLighter,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
-                                  CupertinoIcons.eye,
-                                  size: 20,
-                                  color: isDark
-                                      ? AppColors.primaryLight
-                                      : AppColors.primary,
-                                ),
+                                const Icon(CupertinoIcons.eye, size: 20),
                                 const SizedBox(width: 8),
                                 Text(
                                   AppStrings.viewPreview,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 16,
-                                    color: isDark
-                                        ? AppColors.primaryLight
-                                        : AppColors.primary,
                                     fontFamily: '.SF Pro Text',
                                   ),
                                 ),
@@ -441,45 +431,6 @@ class MemorialDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSecondaryButton({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required bool isDark,
-    required VoidCallback onPressed,
-  }) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        foregroundColor:
-            isDark ? AppColors.textDarkSecondary : AppColors.primary,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        side: BorderSide(
-          color: isDark ? AppColors.borderDarkSubtle : AppColors.primary,
-          width: 2,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 20),
-          const SizedBox(width: 10),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildHeader(
       BuildContext context, MemorialPageModel memorial, bool isDark) {
     final theme = Theme.of(context);
@@ -531,7 +482,7 @@ class MemorialDetailScreen extends StatelessWidget {
                 child: Icon(
                   isIOS ? CupertinoIcons.heart_fill : Icons.favorite_rounded,
                   size: 56,
-                  color: isDark ? AppColors.accent : AppColors.greyDark,
+                  color: AppColors.accent,
                 ),
               ),
               Positioned(

@@ -813,8 +813,10 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                             )
                           : Text(
                               AppStrings.createProfile,
-                              style: const TextStyle(
-                                color: AppColors.textLight,
+                              style: TextStyle(
+                                color: isDark
+                                    ? AppColors.primary
+                                    : AppColors.background,
                                 decoration: TextDecoration.none,
                               ),
                             ),

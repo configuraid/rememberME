@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rememberme/data/models/auth/user_model.dart';
+import 'package:rememberme/presentation/widgets/profile/delete_account_sheet.dart';
 import '../../../business_logic/auth/auth_bloc.dart';
 import '../../../business_logic/auth/auth_event.dart';
 import '../../../business_logic/auth/auth_state.dart';
@@ -53,7 +54,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showErrorMessage(BuildContext context, String message) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    if (Platform.isAndroid) {
+    if (Platform.isIOS) {
+      showCupertinoDialog(
+        context: context,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: Text(
+            AppStrings.errorTitle,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              fontFamily: '.SF Pro Text',
+            ),
+          ),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              message,
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.grey,
+                fontFamily: '.SF Pro Text',
+              ),
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              child: Text(
+                AppStrings.ok,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  fontFamily: '.SF Pro Text',
+                ),
+              ),
+              onPressed: () => Navigator.of(ctx).pop(),
+            ),
+          ],
+        ),
+      );
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -76,41 +117,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
           margin: const EdgeInsets.all(16),
         ),
       );
-    } else {
-      showCupertinoDialog(
-        context: context,
-        builder: (ctx) => CupertinoAlertDialog(
-          title: const Icon(
-            Icons.error,
-            color: AppColors.error,
-            size: 48,
-          ),
-          content: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(message),
-          ),
-          actions: [
-            CupertinoDialogAction(
-              child: Text(
-                AppStrings.ok,
-                style: TextStyle(color: AppColors.interactive),
-              ),
-              onPressed: () => Navigator.of(ctx).pop(),
-            ),
-          ],
-        ),
-      );
     }
+  }
+
+  // ============================================================
+  // NEU: Navigation nach Account-Löschung
+  // ============================================================
+  void _handleAccountDeleted(BuildContext context) {
+    // 1. Auth-State zurücksetzen
+    context.read<AuthBloc>().add(const AuthLogoutRequested());
+
+    // 2. Zum Login navigieren
+    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+      AppRoutes.login,
+      (route) => false, // Entfernt alle vorherigen Routes
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return BlocConsumer<ProfileBloc, ProfileState>(
       listener: (context, state) {
-        if (state.isSuccess && state.successMessage != null) {}
+        // ============================================================
+        // NEU: Auf deleted Status reagieren
+        // ============================================================
+        if (state.isDeleted) {
+          _handleAccountDeleted(context);
+          return;
+        }
 
         if (state.hasError && state.errorMessage != null) {
           _showErrorMessage(context, state.errorMessage!);
@@ -121,46 +155,91 @@ class _ProfileScreenState extends State<ProfileScreen> {
           builder: (context, authState) {
             final user = authState.user;
 
-            return Scaffold(
-              backgroundColor: isDark
-                  ? AppColors.backgroundDarkSecondary
-                  : AppColors.background,
-              appBar: AppBar(
-                title: const Text(AppStrings.profile),
-                backgroundColor:
-                    isDark ? AppColors.surfaceDark : AppColors.primary,
-                foregroundColor: AppColors.textLight,
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.edit_rounded),
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const EditProfileScreen(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              body: RefreshIndicator(
-                onRefresh: () async => _loadProfile(),
-                color: isDark ? AppColors.accent : AppColors.primary,
-                child: ListView(
-                  children: [
-                    if (Platform.isAndroid)
-                      _buildAndroidProfileHeader(user, profileState, isDark)
-                    else
-                      _buildIOSProfileHeader(user, profileState, isDark),
-                    const SizedBox(height: 16),
-                    _buildMenuSection(context, user, isDark),
-                    const SizedBox(height: 80),
-                  ],
-                ),
-              ),
-            );
+            if (Platform.isIOS) {
+              return _buildIOSView(context, user, profileState);
+            }
+            return _buildAndroidView(context, user, profileState);
           },
         );
       },
+    );
+  }
+
+  // ===== iOS VIEW =====
+  Widget _buildIOSView(
+      BuildContext context, UserModel? user, ProfileState profileState) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return CupertinoPageScaffold(
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(
+          AppStrings.profile,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            fontFamily: '.SF Pro Text',
+          ),
+        ),
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => Navigator.push(
+            context,
+            CupertinoPageRoute(
+              builder: (context) => const EditProfileScreen(),
+            ),
+          ),
+          child: Icon(
+            CupertinoIcons.pencil,
+            color: isDark ? AppColors.accent : AppColors.primary,
+          ),
+        ),
+        backgroundColor:
+            isDark ? AppColors.backgroundDarkElevated.withOpacity(0.8) : null,
+      ),
+      child: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            CupertinoSliverRefreshControl(
+              onRefresh: () async => _loadProfile(),
+            ),
+            SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  _buildIOSProfileHeader(user, profileState, isDark),
+                  const SizedBox(height: 16),
+                  _buildIOSMenuSection(context, user, isDark),
+                  const SizedBox(height: 80),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ===== ANDROID VIEW =====
+  Widget _buildAndroidView(
+      BuildContext context, UserModel? user, ProfileState profileState) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      backgroundColor:
+          isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
+      body: RefreshIndicator(
+        onRefresh: () async => _loadProfile(),
+        color: isDark ? AppColors.accent : AppColors.primary,
+        child: ListView(
+          children: [
+            _buildAndroidProfileHeader(user, profileState, isDark),
+            const SizedBox(height: 16),
+            _buildAndroidMenuSection(context, user, isDark),
+            const SizedBox(height: 80),
+          ],
+        ),
+      ),
     );
   }
 
@@ -301,56 +380,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [
-                  AppColors.primaryDark,
-                  AppColors.primary,
-                ]
-              : [
-                  AppColors.primary,
-                  AppColors.primary.withOpacity(0.8),
-                ],
-        ),
+        color: isDark ? AppColors.backgroundDark : AppColors.background,
       ),
       child: Column(
         children: [
           Stack(
             children: [
-              CircleAvatar(
-                radius: 50,
-                backgroundColor: AppColors.surface,
-                backgroundImage: profileState.profileImageUrl != null
-                    ? NetworkImage(profileState.profileImageUrl!)
-                    : null,
-                child: profileState.profileImageUrl == null
-                    ? Text(
-                        _getInitials(user?.name),
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: isDark
-                              ? AppColors.primaryLight
-                              : AppColors.primary,
-                        ),
-                      )
-                    : null,
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.accent,
+                    width: 3,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundColor: AppColors.accent.withOpacity(0.4),
+                  backgroundImage: profileState.profileImageUrl != null
+                      ? NetworkImage(profileState.profileImageUrl!)
+                      : null,
+                  child: profileState.profileImageUrl == null
+                      ? Text(
+                          _getInitials(user?.name),
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.accent,
+                            fontFamily: '.SF Pro Display',
+                            decoration: TextDecoration.none,
+                          ),
+                        )
+                      : null,
+                ),
               ),
               Positioned(
                 bottom: 0,
                 right: 0,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.accentLight : AppColors.accent,
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDark ? AppColors.accentLight : AppColors.accent,
+                      width: 2,
+                    ),
                   ),
                   child: Icon(
-                    Icons.camera_alt,
-                    size: 20,
-                    color: isDark ? AppColors.primaryDark : AppColors.textLight,
+                    CupertinoIcons.camera_fill,
+                    size: 16,
+                    color: AppColors.textLight,
                   ),
                 ),
               ),
@@ -359,10 +439,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
           Text(
             profileState.name ?? user?.name ?? AppStrings.unknown,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppColors.textLight,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              fontFamily: '.SF Pro Display',
+              decoration: TextDecoration.none,
             ),
           ),
           const SizedBox(height: 4),
@@ -370,18 +452,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
             profileState.email ?? user?.email ?? '',
             style: TextStyle(
               fontSize: 14,
-              color: AppColors.textLight.withOpacity(0.7),
+              color: isDark
+                  ? AppColors.textLight.withOpacity(0.8)
+                  : AppColors.textSecondary,
+              fontFamily: '.SF Pro Text',
+              decoration: TextDecoration.none,
             ),
           ),
           if (profileState.bio != null && profileState.bio!.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              profileState.bio!,
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textLight.withOpacity(0.7),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
               ),
-              textAlign: TextAlign.center,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.surfaceDark.withOpacity(0.5)
+                    : AppColors.greyLighter,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                profileState.bio!,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark
+                      ? AppColors.textLight.withOpacity(0.9)
+                      : AppColors.textSecondary,
+                  height: 1.4,
+                  fontFamily: '.SF Pro Text',
+                  decoration: TextDecoration.none,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
           ],
         ],
@@ -389,141 +492,271 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildMenuSection(BuildContext context, UserModel? user, bool isDark) {
+  // ===== iOS MENU SECTION =====
+  Widget _buildIOSMenuSection(
+      BuildContext context, UserModel? user, bool isDark) {
     return Column(
       children: [
-        _buildMenuHeader(AppStrings.accountSection, isDark),
-        if (Platform.isAndroid)
-          _buildAndroidMenuItem(
-            context: context,
-            icon: Icons.person_rounded,
-            title: AppStrings.editProfile,
-            isDark: isDark,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const EditProfileScreen(),
+        _buildIOSMenuHeader(AppStrings.accountSection, isDark),
+        _buildIOSMenuCard(
+          context: context,
+          isDark: isDark,
+          children: [
+            _buildIOSMenuItem(
+              icon: CupertinoIcons.person,
+              title: AppStrings.editProfile,
+              isDark: isDark,
+              onTap: () => Navigator.push(
+                context,
+                CupertinoPageRoute(
+                  builder: (context) => const EditProfileScreen(),
+                ),
               ),
             ),
-          )
-        else
-          _buildIOSMenuItem(
-            icon: Icons.person,
-            title: AppStrings.editProfile,
-            isDark: isDark,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const EditProfileScreen(),
-              ),
-            ),
-          ),
-        Divider(
-          height: 1,
-          color: isDark ? AppColors.borderDark : AppColors.divider,
+          ],
         ),
-        Divider(
-          height: 1,
-          color: isDark ? AppColors.borderDark : AppColors.divider,
-        ),
-        _buildMenuHeader(AppStrings.support, isDark),
-        if (Platform.isAndroid) ...[
-          _buildAndroidMenuItem(
-            context: context,
-            icon: Icons.help_outline_rounded,
-            title: AppStrings.helpAndFaq,
-            isDark: isDark,
-            onTap: () {},
-          ),
-          _buildAndroidMenuItem(
-            context: context,
-            icon: Icons.info_outline_rounded,
-            title: AppStrings.about,
-            isDark: isDark,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const AboutScreen(),
+        _buildIOSMenuHeader(AppStrings.support, isDark),
+        _buildIOSMenuCard(
+          context: context,
+          isDark: isDark,
+          children: [
+            _buildIOSMenuItem(
+              icon: CupertinoIcons.question_circle,
+              title: AppStrings.helpAndFaq,
+              isDark: isDark,
+              onTap: () {},
+            ),
+            _buildIOSDivider(isDark),
+            _buildIOSMenuItem(
+              icon: CupertinoIcons.info_circle,
+              title: AppStrings.about,
+              isDark: isDark,
+              onTap: () => Navigator.push(
+                context,
+                CupertinoPageRoute(
+                  builder: (context) => const AboutScreen(),
+                ),
               ),
             ),
-          ),
-          _buildAndroidMenuItem(
-            context: context,
-            icon: Icons.feedback_outlined,
-            title: AppStrings.sendFeedback,
-            isDark: isDark,
-            onTap: () {},
-          ),
-        ] else ...[
-          _buildIOSMenuItem(
-            icon: Icons.help_outline,
-            title: AppStrings.helpAndFaq,
-            isDark: isDark,
-            onTap: () {},
-          ),
-          _buildIOSMenuItem(
-            icon: Icons.info_outline,
-            title: AppStrings.about,
-            isDark: isDark,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const AboutScreen(),
-              ),
+            _buildIOSDivider(isDark),
+            _buildIOSMenuItem(
+              icon: CupertinoIcons.chat_bubble_text,
+              title: AppStrings.sendFeedback,
+              isDark: isDark,
+              onTap: () {},
             ),
-          ),
-          _buildIOSMenuItem(
-            icon: Icons.feedback_outlined,
-            title: AppStrings.sendFeedback,
-            isDark: isDark,
-            onTap: () {},
-          ),
-        ],
-        Divider(
-          height: 1,
-          color: isDark ? AppColors.borderDark : AppColors.divider,
+          ],
         ),
-        _buildMenuHeader(AppStrings.dangerZone, isDark),
-        if (Platform.isAndroid) ...[
-          _buildAndroidMenuItem(
-            context: context,
-            icon: Icons.logout_rounded,
-            title: AppStrings.logout,
-            isDark: isDark,
-            isDestructive: true,
-            onTap: () => _showLogoutDialog(context, isDark),
-          ),
-          _buildAndroidMenuItem(
-            context: context,
-            icon: Icons.delete_forever_rounded,
-            title: AppStrings.deleteAccount,
-            isDark: isDark,
-            isDestructive: true,
-            onTap: () => _showDeleteAccountDialog(context, isDark),
-          ),
-        ] else ...[
-          _buildIOSMenuItem(
-            icon: Icons.logout,
-            title: AppStrings.logout,
-            isDark: isDark,
-            textColor: AppColors.error,
-            iconColor: AppColors.error,
-            onTap: () => _showLogoutDialog(context, isDark),
-          ),
-          _buildIOSMenuItem(
-            icon: Icons.delete_forever,
-            title: AppStrings.deleteAccount,
-            isDark: isDark,
-            textColor: AppColors.error,
-            iconColor: AppColors.error,
-            onTap: () => _showDeleteAccountDialog(context, isDark),
-          ),
-        ],
+        _buildIOSMenuHeader(AppStrings.dangerZone, isDark),
+        _buildIOSMenuCard(
+          context: context,
+          isDark: isDark,
+          children: [
+            _buildIOSMenuItem(
+              icon: CupertinoIcons.square_arrow_right,
+              title: AppStrings.logout,
+              isDark: isDark,
+              isDestructive: true,
+              onTap: () => _showLogoutDialog(context, isDark),
+            ),
+            _buildIOSDivider(isDark),
+            _buildIOSMenuItem(
+              icon: CupertinoIcons.trash,
+              title: AppStrings.deleteAccount,
+              isDark: isDark,
+              isDestructive: true,
+              onTap: () => _showDeleteAccountDialog(context, isDark),
+            ),
+          ],
+        ),
       ],
     );
   }
 
-  Widget _buildMenuHeader(String title, bool isDark) {
+  // ===== iOS MENU HEADER =====
+  Widget _buildIOSMenuHeader(String title, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          title.toUpperCase(),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: AppColors.grey,
+            letterSpacing: 0.5,
+            fontFamily: '.SF Pro Text',
+            decoration: TextDecoration.none,
+          ),
+        ),
+      ),
+    );
+  }
+
+// ===== iOS MENU ITEM =====
+  Widget _buildIOSMenuItem({
+    required IconData icon,
+    required String title,
+    required bool isDark,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    final iconColor = isDestructive
+        ? AppColors.error
+        : (isDark ? AppColors.textLight : AppColors.textPrimary);
+    final textColor = isDestructive
+        ? AppColors.error
+        : (isDark ? AppColors.textLight : AppColors.textPrimary);
+
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(isDark ? 0.2 : 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: iconColor,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w400,
+                  color: textColor,
+                  fontFamily: '.SF Pro Text',
+                  decoration: TextDecoration.none,
+                ),
+              ),
+            ),
+            Icon(
+              CupertinoIcons.chevron_right,
+              size: 16,
+              color: AppColors.grey,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIOSMenuCard({
+    required BuildContext context,
+    required bool isDark,
+    required List<Widget> children,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
+          width: 1,
+        ),
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _buildIOSDivider(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 56),
+      child: Divider(
+        height: 1,
+        color: isDark ? AppColors.borderDarkSubtle : AppColors.divider,
+      ),
+    );
+  }
+
+  // ===== ANDROID MENU SECTION =====
+  Widget _buildAndroidMenuSection(
+      BuildContext context, UserModel? user, bool isDark) {
+    return Column(
+      children: [
+        _buildAndroidMenuHeader(AppStrings.accountSection, isDark),
+        _buildAndroidMenuItem(
+          context: context,
+          icon: Icons.person_rounded,
+          title: AppStrings.editProfile,
+          isDark: isDark,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const EditProfileScreen(),
+            ),
+          ),
+        ),
+        Divider(
+          height: 1,
+          color: isDark ? AppColors.borderDark : AppColors.divider,
+        ),
+        _buildAndroidMenuHeader(AppStrings.support, isDark),
+        _buildAndroidMenuItem(
+          context: context,
+          icon: Icons.help_outline_rounded,
+          title: AppStrings.helpAndFaq,
+          isDark: isDark,
+          onTap: () {},
+        ),
+        _buildAndroidMenuItem(
+          context: context,
+          icon: Icons.info_outline_rounded,
+          title: AppStrings.about,
+          isDark: isDark,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AboutScreen(),
+            ),
+          ),
+        ),
+        _buildAndroidMenuItem(
+          context: context,
+          icon: Icons.feedback_outlined,
+          title: AppStrings.sendFeedback,
+          isDark: isDark,
+          onTap: () {},
+        ),
+        Divider(
+          height: 1,
+          color: isDark ? AppColors.borderDark : AppColors.divider,
+        ),
+        _buildAndroidMenuHeader(AppStrings.dangerZone, isDark),
+        _buildAndroidMenuItem(
+          context: context,
+          icon: Icons.logout_rounded,
+          title: AppStrings.logout,
+          isDark: isDark,
+          isDestructive: true,
+          onTap: () => _showLogoutDialog(context, isDark),
+        ),
+        _buildAndroidMenuItem(
+          context: context,
+          icon: Icons.delete_forever_rounded,
+          title: AppStrings.deleteAccount,
+          isDark: isDark,
+          isDestructive: true,
+          onTap: () => _showDeleteAccountDialog(context, isDark),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAndroidMenuHeader(String title, bool isDark) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
       child: Align(
@@ -541,7 +774,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ===== ANDROID MENU ITEM =====
   Widget _buildAndroidMenuItem({
     required BuildContext context,
     required IconData icon,
@@ -605,40 +837,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ===== iOS MENU ITEM =====
-  Widget _buildIOSMenuItem({
-    required IconData icon,
-    required String title,
-    required bool isDark,
-    required VoidCallback onTap,
-    Widget? trailing,
-    Color? textColor,
-    Color? iconColor,
-  }) {
-    final defaultIconColor =
-        iconColor ?? (isDark ? AppColors.accent : AppColors.interactive);
-    final defaultTextColor =
-        textColor ?? (isDark ? AppColors.textLight : AppColors.textPrimary);
-
-    return ListTile(
-      leading: Icon(icon, color: defaultIconColor),
-      title: Text(
-        title,
-        style: TextStyle(color: defaultTextColor),
-      ),
-      trailing: trailing ??
-          Icon(
-            Icons.arrow_forward_ios,
-            size: 16,
-            color: isDark ? AppColors.grey : AppColors.textSecondary,
-          ),
-      onTap: onTap,
-    );
-  }
-
   // ===== LOGOUT DIALOG =====
   void _showLogoutDialog(BuildContext context, bool isDark) {
-    if (Platform.isAndroid) {
+    if (Platform.isIOS) {
+      showCupertinoDialog(
+        context: context,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: Text(
+            AppStrings.logout,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              fontFamily: '.SF Pro Text',
+            ),
+          ),
+          content: Text(
+            AppStrings.logoutConfirmMessage,
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.grey,
+              fontFamily: '.SF Pro Text',
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                AppStrings.cancel,
+                style: TextStyle(
+                  fontSize: 17,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  fontFamily: '.SF Pro Text',
+                ),
+              ),
+            ),
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              onPressed: () {
+                context.read<AuthBloc>().add(const AuthLogoutRequested());
+                Navigator.of(ctx).pop();
+                Navigator.of(context, rootNavigator: true)
+                    .pushReplacementNamed(AppRoutes.login);
+              },
+              child: Text(
+                AppStrings.logout,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontFamily: '.SF Pro Text',
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -690,53 +943,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       );
-    } else {
-      showCupertinoDialog(
-        context: context,
-        builder: (ctx) => CupertinoAlertDialog(
-          title: Text(
-            AppStrings.logout,
-            style: TextStyle(
-              color: isDark ? AppColors.textLight : AppColors.textPrimary,
-            ),
-          ),
-          content: Text(
-            AppStrings.logoutConfirmMessage,
-            style: TextStyle(
-              color: isDark
-                  ? AppColors.textDarkSecondary
-                  : AppColors.textSecondary,
-            ),
-          ),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(
-                AppStrings.cancel,
-                style: TextStyle(color: AppColors.interactive),
-              ),
-            ),
-            CupertinoDialogAction(
-              isDestructiveAction: true,
-              onPressed: () {
-                context.read<AuthBloc>().add(const AuthLogoutRequested());
-                Navigator.of(ctx).pop();
-                Navigator.of(context, rootNavigator: true)
-                    .pushReplacementNamed(AppRoutes.login);
-              },
-              child: const Text(AppStrings.logout),
-            ),
-          ],
-        ),
-      );
     }
   }
 
   // ===== DELETE ACCOUNT DIALOG =====
   void _showDeleteAccountDialog(BuildContext context, bool isDark) {
-    final passwordController = TextEditingController();
-
-    if (Platform.isAndroid) {
+    if (Platform.isIOS) {
+      // iOS: Schönes Bottom Sheet
+      DeleteAccountConfirmationFlow.show(
+        context,
+        isDark: isDark,
+        userId: context.read<AuthBloc>().state.user?.id,
+        onDeleteAccount: (userId) {
+          // Nur Event dispatchen - Navigation erfolgt im BlocConsumer listener!
+          context.read<ProfileBloc>().add(
+                ProfileDeleteAccountRequested(userId: userId, password: ''),
+              );
+        },
+      );
+    } else {
+      // Android: Standard Dialog
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -752,47 +978,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: isDark ? AppColors.textLight : AppColors.textPrimary,
             ),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                AppStrings.deleteAccountWarning,
-                style: TextStyle(
-                  color: isDark
-                      ? AppColors.textDarkSecondary
-                      : AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: passwordController,
-                style: TextStyle(
-                  color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                ),
-                decoration: InputDecoration(
-                  labelText: AppStrings.passwordConfirmation,
-                  labelStyle: TextStyle(color: AppColors.textSecondary),
-                  prefixIcon: Icon(
-                    Icons.lock_rounded,
-                    color: isDark ? AppColors.accent : AppColors.primary,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: isDark ? AppColors.borderDark : AppColors.border,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: isDark ? AppColors.accent : AppColors.primary,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                obscureText: true,
-              ),
-            ],
+          content: Text(
+            AppStrings.deleteAccountWarning,
+            style: TextStyle(
+              color: isDark
+                  ? AppColors.textDarkSecondary
+                  : AppColors.textSecondary,
+            ),
           ),
           actions: [
             TextButton(
@@ -811,7 +1003,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   context.read<ProfileBloc>().add(
                         ProfileDeleteAccountRequested(
                           userId: userId,
-                          password: passwordController.text,
+                          password: '',
                         ),
                       );
                 }
@@ -823,74 +1015,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 foregroundColor:
                     isDark ? AppColors.errorDark : AppColors.textLight,
               ),
-              child: Text(AppStrings.deleteAccount),
-            ),
-          ],
-        ),
-      );
-    } else {
-      showCupertinoDialog(
-        context: context,
-        builder: (ctx) => CupertinoAlertDialog(
-          title: Text(
-            AppStrings.deleteAccount,
-            style: TextStyle(
-              color: isDark ? AppColors.textLight : AppColors.textPrimary,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              Text(
-                AppStrings.deleteAccountWarning,
-                style: TextStyle(
-                  color: isDark
-                      ? AppColors.textDarkSecondary
-                      : AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              CupertinoTextField(
-                controller: passwordController,
-                placeholder: AppStrings.passwordConfirmation,
-                placeholderStyle: TextStyle(color: AppColors.textSecondary),
-                style: TextStyle(
-                  color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                ),
-                obscureText: true,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDark : AppColors.surface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isDark ? AppColors.borderDark : AppColors.border,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(
-                AppStrings.cancel,
-                style: TextStyle(color: AppColors.interactive),
-              ),
-            ),
-            CupertinoDialogAction(
-              isDestructiveAction: true,
-              onPressed: () {
-                final userId = context.read<AuthBloc>().state.user?.id;
-                if (userId != null) {
-                  context.read<ProfileBloc>().add(
-                        ProfileDeleteAccountRequested(
-                          userId: userId,
-                          password: passwordController.text,
-                        ),
-                      );
-                }
-                Navigator.of(ctx).pop();
-              },
               child: Text(AppStrings.deleteAccount),
             ),
           ],

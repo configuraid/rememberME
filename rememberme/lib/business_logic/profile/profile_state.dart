@@ -7,6 +7,7 @@ enum ProfileStatus {
   updating,
   success,
   error,
+  deleted,
 }
 
 class ProfileSettings {
@@ -142,11 +143,18 @@ class ProfileState extends Equatable {
       errorMessage: message,
     );
   }
+  factory ProfileState.deleted() {
+    return const ProfileState(
+      status: ProfileStatus.deleted,
+      successMessage: 'Account erfolgreich gelöscht',
+    );
+  }
 
   bool get isLoading =>
       status == ProfileStatus.loading || status == ProfileStatus.updating;
   bool get hasError => status == ProfileStatus.error;
   bool get isSuccess => status == ProfileStatus.success;
+  bool get isDeleted => status == ProfileStatus.deleted;
 
   ProfileState copyWith({
     ProfileStatus? status,

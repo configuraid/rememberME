@@ -73,8 +73,7 @@ class AddBlockBottomSheet extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color:
-                            isDark ? AppColors.primaryLight : AppColors.primary,
+                        color: isDark ? AppColors.accent : AppColors.primary,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -82,9 +81,7 @@ class AddBlockBottomSheet extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: isDark
-                              ? AppColors.primaryDark
-                              : AppColors.textLight,
+                          color: AppColors.textLight,
                           fontFamily: '.SF Pro Text',
                         ),
                       ),
@@ -132,16 +129,15 @@ class AddBlockBottomSheet extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: isDark
-                    ? AppColors.primaryLight.withOpacity(0.2)
-                    : AppColors.primary.withOpacity(0.15),
+                    ? AppColors.textLight.withOpacity(0.2)
+                    : AppColors.textPrimary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
-                child: Icon(
-                  BlockTypeInfo.getIcon(type),
-                  size: 20,
-                  color: isDark ? AppColors.primaryLight : AppColors.primary,
-                ),
+                child: Icon(BlockTypeInfo.getIcon(type),
+                    size: 20,
+                    color:
+                        isDark ? AppColors.textLight : AppColors.textPrimary),
               ),
             ),
             const SizedBox(width: 12),

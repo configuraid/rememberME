@@ -570,9 +570,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           height: 50,
                           child: CupertinoButton(
                             padding: EdgeInsets.zero,
-                            color: isDark
-                                ? AppColors.primaryLight
-                                : AppColors.primary,
+                            color:
+                                isDark ? AppColors.accent : AppColors.primary,
                             borderRadius: BorderRadius.circular(14),
                             onPressed: _isLoading ? null : _openQRScanner,
                             child: _isLoading

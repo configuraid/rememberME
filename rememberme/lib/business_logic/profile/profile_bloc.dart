@@ -249,10 +249,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         password: event.password,
       );
 
-      emit(state.copyWith(
-        status: ProfileStatus.success,
-        successMessage: 'Account erfolgreich gelöscht',
-      ));
+      emit(ProfileState.deleted());
     } catch (e) {
       emit(ProfileState.error(
           'Fehler beim Löschen des Accounts: ${e.toString()}'));
