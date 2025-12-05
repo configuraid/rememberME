@@ -81,7 +81,8 @@ class AddBlockBottomSheet extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textLight,
+                          color:
+                              isDark ? AppColors.primary : AppColors.background,
                           fontFamily: '.SF Pro Text',
                         ),
                       ),
@@ -129,15 +130,16 @@ class AddBlockBottomSheet extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: isDark
-                    ? AppColors.textLight.withOpacity(0.2)
-                    : AppColors.textPrimary.withOpacity(0.1),
+                    ? AppColors.backgroundDarkElevated
+                    : AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
-                child: Icon(BlockTypeInfo.getIcon(type),
-                    size: 20,
-                    color:
-                        isDark ? AppColors.textLight : AppColors.textPrimary),
+                child: Icon(
+                  BlockTypeInfo.getIcon(type),
+                  size: 20,
+                  color: isDark ? AppColors.accent : AppColors.primary,
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -148,7 +150,7 @@ class AddBlockBottomSheet extends StatelessWidget {
                   Text(
                     BlockTypeInfo.getTitle(type),
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 17,
                       fontWeight: FontWeight.w600,
                       color:
                           isDark ? AppColors.textLight : AppColors.textPrimary,
@@ -171,7 +173,7 @@ class AddBlockBottomSheet extends StatelessWidget {
             Icon(
               CupertinoIcons.chevron_right,
               size: 18,
-              color: isDark ? AppColors.borderDark : AppColors.greyLight,
+              color: AppColors.grey,
             ),
           ],
         ),
@@ -181,20 +183,17 @@ class AddBlockBottomSheet extends StatelessWidget {
 
   // ========== Android Material UI ==========
   Widget _buildAndroidSheet(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(
-          color: isDark
-              ? AppColors.primaryLight.withOpacity(0.2)
-              : AppColors.greyLighter,
+          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
           width: 1,
         ),
       ),
@@ -208,8 +207,7 @@ class AddBlockBottomSheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color:
-                    isDark ? AppColors.borderDarkSubtle : AppColors.greyLight,
+                color: isDark ? AppColors.borderDark : AppColors.greyLight,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -222,23 +220,13 @@ class AddBlockBottomSheet extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: isDark
-                            ? [
-                                AppColors.primaryLight.withOpacity(0.25),
-                                AppColors.primaryLight.withOpacity(0.15),
-                              ]
-                            : [
-                                AppColors.primary.withOpacity(0.15),
-                                AppColors.primary.withOpacity(0.08),
-                              ],
-                      ),
+                      color: isDark
+                          ? AppColors.toastBackgroundDark
+                          : AppColors.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isDark
-                            ? AppColors.primaryLight.withOpacity(0.3)
+                            ? AppColors.borderDark
                             : AppColors.primary.withOpacity(0.2),
                         width: 1.5,
                       ),
@@ -246,15 +234,15 @@ class AddBlockBottomSheet extends StatelessWidget {
                     child: Icon(
                       Icons.add_circle_outline_rounded,
                       size: 24,
-                      color:
-                          isDark ? AppColors.primaryLight : AppColors.primary,
+                      color: isDark ? AppColors.accent : AppColors.primary,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       AppStrings.addBlock,
-                      style: theme.textTheme.titleLarge?.copyWith(
+                      style: TextStyle(
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: isDark
                             ? AppColors.textLight
@@ -266,14 +254,14 @@ class AddBlockBottomSheet extends StatelessWidget {
                   Container(
                     decoration: BoxDecoration(
                       color: isDark
-                          ? AppColors.cardBorderDark
+                          ? AppColors.toastBackgroundDark
                           : AppColors.greyLighter,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: IconButton(
                       icon: Icon(
                         Icons.close_rounded,
-                        color: isDark ? AppColors.grey : AppColors.greyDark,
+                        color: AppColors.grey,
                       ),
                       onPressed: () => Navigator.pop(context),
                     ),
@@ -285,7 +273,7 @@ class AddBlockBottomSheet extends StatelessWidget {
             Divider(
               height: 1,
               thickness: 1,
-              color: isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
+              color: isDark ? AppColors.borderDark : AppColors.greyLighter,
             ),
 
             // Scrollable Block Types Grid
@@ -323,14 +311,12 @@ class AddBlockBottomSheet extends StatelessWidget {
     ContentBlockType type,
     bool isDark,
   ) {
-    final theme = Theme.of(context);
-
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
+          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
           width: 1.5,
         ),
         boxShadow: [
@@ -347,10 +333,10 @@ class AddBlockBottomSheet extends StatelessWidget {
           onTap: () => onBlockTypeSelected(type),
           borderRadius: BorderRadius.circular(16),
           splashColor: isDark
-              ? AppColors.primaryLight.withOpacity(0.1)
+              ? AppColors.accent.withOpacity(0.1)
               : AppColors.primary.withOpacity(0.08),
           highlightColor: isDark
-              ? AppColors.primaryLight.withOpacity(0.05)
+              ? AppColors.accent.withOpacity(0.05)
               : AppColors.primary.withOpacity(0.04),
           child: Padding(
             padding: const EdgeInsets.all(12),
@@ -358,27 +344,17 @@ class AddBlockBottomSheet extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Icon Container mit Gradient
+                // Icon Container
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isDark
-                          ? [
-                              AppColors.primaryLight.withOpacity(0.2),
-                              AppColors.primaryLight.withOpacity(0.1),
-                            ]
-                          : [
-                              AppColors.primary.withOpacity(0.12),
-                              AppColors.primary.withOpacity(0.06),
-                            ],
-                    ),
+                    color: isDark
+                        ? AppColors.toastBackgroundDark
+                        : AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isDark
-                          ? AppColors.primaryLight.withOpacity(0.25)
+                          ? AppColors.borderDark
                           : AppColors.primary.withOpacity(0.2),
                       width: 1.5,
                     ),
@@ -386,7 +362,7 @@ class AddBlockBottomSheet extends StatelessWidget {
                   child: Icon(
                     BlockTypeInfo.getIcon(type),
                     size: 28,
-                    color: isDark ? AppColors.primaryLight : AppColors.primary,
+                    color: isDark ? AppColors.accent : AppColors.primary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -394,10 +370,10 @@ class AddBlockBottomSheet extends StatelessWidget {
                 // Title
                 Text(
                   BlockTypeInfo.getTitle(type),
-                  style: theme.textTheme.titleSmall?.copyWith(
+                  style: TextStyle(
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                    fontSize: 13,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -409,9 +385,9 @@ class AddBlockBottomSheet extends StatelessWidget {
                 Flexible(
                   child: Text(
                     BlockTypeInfo.getDescription(type),
-                    style: theme.textTheme.bodySmall?.copyWith(
+                    style: TextStyle(
                       fontSize: 10,
-                      color: isDark ? AppColors.grey : AppColors.greyDark,
+                      color: AppColors.grey,
                       height: 1.2,
                     ),
                     textAlign: TextAlign.center,

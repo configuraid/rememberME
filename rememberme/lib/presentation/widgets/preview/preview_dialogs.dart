@@ -54,7 +54,7 @@ class PreviewLoadingDialog extends StatelessWidget {
         margin: const EdgeInsets.all(32),
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.toastBackgroundDark : AppColors.surface,
+          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
@@ -71,7 +71,7 @@ class PreviewLoadingDialog extends StatelessWidget {
           children: [
             CupertinoActivityIndicator(
               radius: 14,
-              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              color: isDark ? AppColors.accent : AppColors.primary,
             ),
             const SizedBox(height: 20),
             Text(
@@ -99,7 +99,7 @@ class PreviewLoadingDialog extends StatelessWidget {
         margin: const EdgeInsets.all(32),
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : AppColors.surface,
+          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -116,7 +116,7 @@ class PreviewLoadingDialog extends StatelessWidget {
           children: [
             CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(
-                isDark ? AppColors.primaryLight : AppColors.primary,
+                isDark ? AppColors.accent : AppColors.primary,
               ),
             ),
             const SizedBox(height: 24),
@@ -125,7 +125,7 @@ class PreviewLoadingDialog extends StatelessWidget {
               child: Text(
                 message,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 17,
                   fontWeight: FontWeight.w500,
                   color: isDark ? AppColors.textLight : AppColors.textPrimary,
                 ),
@@ -231,7 +231,7 @@ class PreviewErrorDialog extends StatelessWidget {
             'Schließen',
             style: TextStyle(
               fontSize: 17,
-              color: AppColors.interactive,
+              color: isDark ? AppColors.accent : AppColors.primary,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -245,7 +245,7 @@ class PreviewErrorDialog extends StatelessWidget {
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
-                color: AppColors.interactive,
+                color: isDark ? AppColors.accent : AppColors.primary,
                 fontFamily: '.SF Pro Text',
               ),
             ),
@@ -267,7 +267,7 @@ class PreviewErrorDialog extends StatelessWidget {
       child: Container(
         constraints: const BoxConstraints(maxWidth: 340),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : AppColors.surface,
+          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isDark
@@ -292,19 +292,8 @@ class PreviewErrorDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.warning.withOpacity(0.2),
-                    AppColors.warning.withOpacity(0.1),
-                  ],
-                ),
+                color: AppColors.warning.withOpacity(isDark ? 0.2 : 0.1),
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.warning.withOpacity(0.4),
-                  width: 2,
-                ),
               ),
               child: const Icon(
                 Icons.warning_rounded,
@@ -317,11 +306,11 @@ class PreviewErrorDialog extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
                 title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color:
-                          isDark ? AppColors.textLight : AppColors.textPrimary,
-                    ),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -330,12 +319,11 @@ class PreviewErrorDialog extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
                 message,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: isDark
-                          ? AppColors.textDarkSecondary
-                          : AppColors.textSecondary,
-                      height: 1.5,
-                    ),
+                style: TextStyle(
+                  fontSize: 15,
+                  color: AppColors.grey,
+                  height: 1.5,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -351,7 +339,7 @@ class PreviewErrorDialog extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         side: BorderSide(
                           color: isDark
-                              ? AppColors.borderDarkSubtle
+                              ? AppColors.borderDark
                               : AppColors.greyLight,
                           width: 1.5,
                         ),
@@ -373,18 +361,17 @@ class PreviewErrorDialog extends StatelessWidget {
                   if (onRetry != null) ...[
                     const SizedBox(width: 12),
                     Expanded(
-                      child: ElevatedButton(
+                      child: FilledButton(
                         onPressed: () {
                           Navigator.pop(context, true);
                           onRetry?.call();
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isDark
-                              ? AppColors.primaryLight
-                              : AppColors.primary,
-                          foregroundColor: AppColors.textLight,
+                        style: FilledButton.styleFrom(
+                          backgroundColor:
+                              isDark ? AppColors.accent : AppColors.primary,
+                          foregroundColor:
+                              isDark ? AppColors.primary : AppColors.background,
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -392,6 +379,7 @@ class PreviewErrorDialog extends StatelessWidget {
                         child: const Text(
                           'Erneut',
                           style: TextStyle(
+                            fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
                         ),

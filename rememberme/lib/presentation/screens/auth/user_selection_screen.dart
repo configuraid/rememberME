@@ -138,27 +138,29 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
         ),
       );
     } else {
-      final theme = Theme.of(context);
-      final isDark = theme.brightness == Brightness.dark;
+      final isDark = Theme.of(context).brightness == Brightness.dark;
 
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
+          backgroundColor:
+              isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
           ),
           title: Row(
             children: [
               Icon(
                 Icons.lock_outline_rounded,
-                color: isDark ? AppColors.primaryLight : AppColors.primary,
+                color: isDark ? AppColors.accent : AppColors.primary,
               ),
               const SizedBox(width: 12),
               Text(
                 AppStrings.enterPin,
                 style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
                   color: isDark ? AppColors.textLight : AppColors.textPrimary,
                 ),
               ),
@@ -170,26 +172,45 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
             children: [
               Text(
                 AppStrings.profileProtectedWithPin,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: isDark
-                      ? AppColors.textDarkSecondary
-                      : AppColors.textSecondary,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.grey,
                 ),
               ),
               const SizedBox(height: 20),
               TextFormField(
                 controller: _pinController,
                 style: TextStyle(
+                  fontSize: 17,
                   color: isDark ? AppColors.textLight : AppColors.textPrimary,
                 ),
                 decoration: InputDecoration(
                   labelText: AppStrings.pin,
                   hintText: AppStrings.fourDigitPin,
-                  labelStyle: TextStyle(color: AppColors.textSecondary),
+                  labelStyle: TextStyle(color: AppColors.grey),
                   hintStyle: TextStyle(color: AppColors.grey),
                   prefixIcon: Icon(
                     Icons.pin_outlined,
-                    color: isDark ? AppColors.primaryLight : AppColors.primary,
+                    color: isDark ? AppColors.accent : AppColors.primary,
+                  ),
+                  filled: true,
+                  fillColor: isDark
+                      ? AppColors.toastBackgroundDark
+                      : AppColors.greyLighter,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: isDark ? AppColors.accent : AppColors.primary,
+                      width: 2,
+                    ),
                   ),
                 ),
                 keyboardType: TextInputType.number,
@@ -209,7 +230,8 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
               child: Text(
                 AppStrings.cancel,
                 style: TextStyle(
-                  color: isDark ? AppColors.grey : AppColors.textSecondary,
+                  fontSize: 17,
+                  color: AppColors.error,
                 ),
               ),
             ),
@@ -220,11 +242,20 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                 _pinController.clear();
               },
               style: FilledButton.styleFrom(
-                backgroundColor:
-                    isDark ? AppColors.primaryLight : AppColors.primary,
-                foregroundColor: AppColors.textLight,
+                backgroundColor: isDark ? AppColors.accent : AppColors.primary,
+                foregroundColor:
+                    isDark ? AppColors.primary : AppColors.background,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-              child: Text(AppStrings.login),
+              child: Text(
+                AppStrings.login,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ),
@@ -326,8 +357,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
 
   // ==================== ANDROID VIEW ====================
   Widget _buildAndroidView() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
@@ -343,17 +373,28 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
       },
       child: Scaffold(
         backgroundColor:
-            isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
+            isDark ? AppColors.backgroundDark : AppColors.background,
         appBar: AppBar(
-          title: Text(AppStrings.selectProfile),
+          title: Text(
+            AppStrings.selectProfile,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            ),
+          ),
           elevation: 0,
-          backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
-          foregroundColor: AppColors.textLight,
+          scrolledUnderElevation: 0.5,
+          backgroundColor: isDark
+              ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+              : AppColors.surface.withOpacity(0.94),
+          foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
+          surfaceTintColor: Colors.transparent,
         ),
         body: _isLoading
             ? Center(
                 child: CircularProgressIndicator(
-                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  color: isDark ? AppColors.accent : AppColors.primary,
                 ),
               )
             : Column(
@@ -375,7 +416,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                                 Colors.transparent,
                               ]
                             : [
-                                AppColors.primary.withOpacity(0.1),
+                                AppColors.primary.withOpacity(0.08),
                                 Colors.transparent,
                               ],
                       ),
@@ -392,10 +433,10 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            Icons.business_rounded,
+                            Icons.people_rounded,
                             size: 48,
                             color: isDark
-                                ? AppColors.primaryLight
+                                ? AppColors.background
                                 : AppColors.primary,
                           ),
                         ),
@@ -403,11 +444,13 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                         // Organisation Name
                         Text(
                           widget.organization.name,
-                          style: theme.textTheme.headlineSmall?.copyWith(
+                          style: TextStyle(
+                            fontSize: 28,
                             fontWeight: FontWeight.bold,
                             color: isDark
                                 ? AppColors.textLight
                                 : AppColors.textPrimary,
+                            letterSpacing: -0.5,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -415,10 +458,10 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                         // Untertitel
                         Text(
                           AppStrings.chooseYourProfile,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: isDark
-                                ? AppColors.textDarkSecondary
-                                : AppColors.textSecondary,
+                          style: TextStyle(
+                            fontSize: 17,
+                            color: AppColors.grey,
+                            fontWeight: FontWeight.w400,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -431,7 +474,10 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                     child: widget.membersWithData.isEmpty
                         ? _buildEmptyStateAndroid(isDark)
                         : ListView.builder(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                             itemCount: widget.membersWithData.length,
                             itemBuilder: (context, index) {
                               final data = widget.membersWithData[index];
@@ -448,8 +494,17 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color:
-                          isDark ? AppColors.cardBorderDark : AppColors.surface,
+                      color: isDark
+                          ? AppColors.backgroundDarkElevated
+                          : AppColors.surface,
+                      border: Border(
+                        top: BorderSide(
+                          color: isDark
+                              ? AppColors.borderDark
+                              : AppColors.greyLight,
+                          width: 0.5,
+                        ),
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color:
@@ -463,30 +518,42 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                       top: false,
                       child: SizedBox(
                         width: double.infinity,
-                        child: OutlinedButton.icon(
+                        height: 50,
+                        child: FilledButton(
                           onPressed: _createNewProfile,
-                          icon: const Icon(Icons.add_rounded),
-                          label: Text(
-                            AppStrings.createNewProfile,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
+                          style: FilledButton.styleFrom(
+                            backgroundColor:
+                                isDark ? AppColors.accent : AppColors.primary,
                             foregroundColor: isDark
-                                ? AppColors.primaryLight
-                                : AppColors.primary,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: BorderSide(
-                              color: isDark
-                                  ? AppColors.primaryLight
-                                  : AppColors.primary,
-                              width: 2,
-                            ),
+                                ? AppColors.primary
+                                : AppColors.background,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                             ),
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_rounded,
+                                size: 22,
+                                color: isDark
+                                    ? AppColors.primary
+                                    : AppColors.background,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                AppStrings.createNewProfile,
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? AppColors.primary
+                                      : AppColors.background,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -499,8 +566,6 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
   }
 
   Widget _buildEmptyStateAndroid(bool isDark) {
-    final theme = Theme.of(context);
-
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -517,18 +582,19 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
             const SizedBox(height: 24),
             Text(
               AppStrings.noProfilesYet,
-              style: theme.textTheme.titleLarge?.copyWith(
+              style: TextStyle(
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: isDark ? AppColors.textLight : AppColors.textPrimary,
               ),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
               AppStrings.createFirstProfile,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: isDark
-                    ? AppColors.textDarkSecondary
-                    : AppColors.textSecondary,
+              style: TextStyle(
+                fontSize: 17,
+                color: AppColors.grey,
               ),
               textAlign: TextAlign.center,
             ),
@@ -540,139 +606,122 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
 
   Widget _buildUserCardAndroid(
       UserModel user, OrganizationMemberModel member, bool isDark) {
-    final theme = Theme.of(context);
     final bool isSelected = _selectedUserId == user.id;
 
     return GestureDetector(
       onTap: () => _handleUserSelection(user.id, member.hasPin),
-      child: Card(
-        elevation: isSelected ? 4 : (isDark ? 2 : 1),
-        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+      child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        shape: RoundedRectangleBorder(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
+          border: Border.all(
             color: isSelected
                 ? (isDark ? AppColors.primaryLight : AppColors.primary)
-                : (isDark ? AppColors.borderDarkSubtle : AppColors.border),
-            width: isSelected ? 2 : 1,
+                : (isDark ? AppColors.borderDark : AppColors.greyLighter),
+            width: isSelected ? 2.5 : 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: isSelected
+                  ? (isDark
+                      ? AppColors.primaryLight.withOpacity(0.3)
+                      : AppColors.primary.withOpacity(0.2))
+                  : (isDark ? AppColors.shadowDark : AppColors.shadow),
+              blurRadius: isSelected ? 12 : 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: isSelected
-                ? LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [
-                            AppColors.primaryLight.withOpacity(0.15),
-                            AppColors.primaryLight.withOpacity(0.05),
-                          ]
-                        : [
-                            AppColors.primary.withOpacity(0.1),
-                            AppColors.primary.withOpacity(0.05),
-                          ],
-                  )
-                : null,
-          ),
-          child: Row(
-            children: [
-              // Avatar
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: isDark
-                                ? AppColors.primaryLight.withOpacity(0.3)
-                                : AppColors.primary.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: CircleAvatar(
-                  radius: 32,
-                  backgroundColor: isDark
-                      ? AppColors.primaryLight.withOpacity(0.2)
-                      : AppColors.primary.withOpacity(0.2),
-                  backgroundImage: user.profileImageUrl != null
-                      ? NetworkImage(user.profileImageUrl!)
-                      : null,
-                  child: user.profileImageUrl == null
-                      ? Text(
-                          user.name.isNotEmpty
-                              ? user.name[0].toUpperCase()
-                              : '?',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? AppColors.primaryLight
-                                : AppColors.primary,
-                          ),
-                        )
-                      : null,
-                ),
-              ),
-              const SizedBox(width: 16),
-
-              // User Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: isDark
-                            ? AppColors.textLight
-                            : AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(
-                          member.hasPin
-                              ? Icons.lock_rounded
-                              : Icons.lock_open_rounded,
-                          size: 16,
+        child: Row(
+          children: [
+            // Avatar
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
                           color: isDark
-                              ? AppColors.accent
-                              : AppColors.textSecondary,
+                              ? AppColors.primaryLight.withOpacity(0.4)
+                              : AppColors.primary.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          member.roleText,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: isDark
-                                ? AppColors.textDarkSecondary
-                                : AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ]
+                    : null,
               ),
+              child: CircleAvatar(
+                radius: 32,
+                backgroundColor: isDark
+                    ? AppColors.accent
+                    : AppColors.primary.withOpacity(0.15),
+                backgroundImage: user.profileImageUrl != null
+                    ? NetworkImage(user.profileImageUrl!)
+                    : null,
+                child: user.profileImageUrl == null
+                    ? Text(
+                        user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              isDark ? AppColors.background : AppColors.primary,
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+            const SizedBox(width: 16),
 
-              // Arrow Icon
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 20,
-                color: isSelected
-                    ? (isDark ? AppColors.accent : AppColors.primary)
-                    : (isDark ? AppColors.accent : AppColors.textSecondary),
+            // User Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user.name,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        member.hasPin
+                            ? Icons.lock_rounded
+                            : Icons.lock_open_rounded,
+                        size: 14,
+                        color: AppColors.grey,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        member.roleText,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: AppColors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+
+            // Arrow Icon
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 20,
+              color: isSelected
+                  ? (isDark ? AppColors.primaryLight : AppColors.primary)
+                  : AppColors.grey,
+            ),
+          ],
         ),
       ),
     );

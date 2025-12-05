@@ -22,10 +22,9 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   void _showError(String message) {
-    if (Platform.isIOS) {
-      final brightness = MediaQuery.of(context).platformBrightness;
-      final isDark = brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (Platform.isIOS) {
       showCupertinoDialog(
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
@@ -49,12 +48,13 @@ class _LoginScreenState extends State<LoginScreen> {
           actions: [
             CupertinoDialogAction(
               onPressed: () => Navigator.of(ctx).pop(),
+              isDefaultAction: true,
               child: Text(
                 AppStrings.ok,
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.interactive,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -128,8 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // Android View
   // ============================================================
   Widget _buildAndroidView() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) async {
@@ -160,7 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
       },
       child: Scaffold(
         backgroundColor:
-            isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
+            isDark ? AppColors.backgroundDark : AppColors.background,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -181,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.accent.withOpacity(0.4),
+                        color: AppColors.accent.withOpacity(isDark ? 0.5 : 0.4),
                         blurRadius: 24,
                         offset: const Offset(0, 12),
                       ),
@@ -199,7 +198,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 // App Name
                 Text(
                   AppStrings.appNameRememberMe,
-                  style: theme.textTheme.headlineMedium?.copyWith(
+                  style: TextStyle(
+                    fontSize: 32,
                     fontWeight: FontWeight.bold,
                     color: isDark ? AppColors.textLight : AppColors.textPrimary,
                     letterSpacing: -0.5,
@@ -207,15 +207,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   textAlign: TextAlign.center,
                 ),
 
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
 
                 // Subtitle
                 Text(
                   AppStrings.digitalMemorials,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: isDark
-                        ? AppColors.textDarkSecondary
-                        : AppColors.textSecondary,
+                  style: TextStyle(
+                    fontSize: 17,
+                    color: AppColors.grey,
                     fontWeight: FontWeight.w400,
                   ),
                   textAlign: TextAlign.center,
@@ -228,8 +227,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.surfaceDark : AppColors.surface,
-                    borderRadius: BorderRadius.circular(24),
+                    color: isDark
+                        ? AppColors.backgroundDarkElevated
+                        : AppColors.surface,
+                    borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
                         color: isDark
@@ -266,7 +267,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Title
                       Text(
                         'QR-Code scannen',
-                        style: theme.textTheme.titleLarge?.copyWith(
+                        style: TextStyle(
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: isDark
                               ? AppColors.textLight
@@ -279,10 +281,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Description
                       Text(
                         'Scanne den QR-Code deiner\nOrganisation zum Anmelden',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: isDark
-                              ? AppColors.textDarkSecondary
-                              : AppColors.textSecondary,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: AppColors.grey,
                           height: 1.5,
                         ),
                         textAlign: TextAlign.center,
@@ -293,44 +294,52 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Scan Button
                       SizedBox(
                         width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
+                        height: 50,
+                        child: FilledButton(
                           onPressed: _isLoading ? null : _openQRScanner,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isDark
-                                ? AppColors.primaryLight
-                                : AppColors.primary,
-                            foregroundColor: AppColors.textLight,
-                            elevation: 0,
+                          style: FilledButton.styleFrom(
+                            backgroundColor:
+                                isDark ? AppColors.accent : AppColors.primary,
+                            foregroundColor: isDark
+                                ? AppColors.primary
+                                : AppColors.background,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
+                            elevation: 0,
                           ),
                           child: _isLoading
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 24,
                                   height: 24,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2.5,
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                      AppColors.textLight,
+                                      isDark
+                                          ? AppColors.primary
+                                          : AppColors.background,
                                     ),
                                   ),
                                 )
                               : Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.camera_alt_rounded,
                                       size: 22,
+                                      color: isDark
+                                          ? AppColors.primary
+                                          : AppColors.background,
                                     ),
                                     const SizedBox(width: 10),
                                     Text(
                                       'Scanner öffnen',
-                                      style:
-                                          theme.textTheme.titleMedium?.copyWith(
-                                        color: AppColors.textLight,
+                                      style: TextStyle(
+                                        fontSize: 17,
                                         fontWeight: FontWeight.w600,
+                                        color: isDark
+                                            ? AppColors.primary
+                                            : AppColors.background,
                                       ),
                                     ),
                                   ],
@@ -341,32 +350,39 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
                 // Info Box
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppColors.info.withOpacity(isDark ? 0.15 : 0.1),
+                    color: isDark
+                        ? AppColors.info.withOpacity(0.15)
+                        : AppColors.info.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: AppColors.info.withOpacity(isDark ? 0.4 : 0.3),
+                      color: isDark
+                          ? AppColors.info.withOpacity(0.4)
+                          : AppColors.info.withOpacity(0.3),
                       width: 1,
                     ),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.info_outline_rounded,
-                        color: AppColors.info,
+                        color: isDark
+                            ? AppColors.info.withOpacity(0.9)
+                            : AppColors.info,
                         size: 20,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           'Den QR-Code findest du in deinen Unterlagen oder bei deinem Administrator.',
-                          style: theme.textTheme.bodySmall?.copyWith(
+                          style: TextStyle(
+                            fontSize: 13,
                             color: isDark
                                 ? AppColors.info.withOpacity(0.9)
                                 : AppColors.info,
@@ -576,15 +592,19 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: _isLoading ? null : _openQRScanner,
                             child: _isLoading
                                 ? CupertinoActivityIndicator(
-                                    color: AppColors.textLight,
+                                    color: isDark
+                                        ? AppColors.primary
+                                        : AppColors.background,
                                   )
                                 : Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         CupertinoIcons.camera_fill,
                                         size: 22,
-                                        color: AppColors.textLight,
+                                        color: isDark
+                                            ? AppColors.primary
+                                            : AppColors.background,
                                       ),
                                       const SizedBox(width: 10),
                                       Text(
@@ -592,7 +612,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         style: TextStyle(
                                           fontSize: 17,
                                           fontWeight: FontWeight.w600,
-                                          color: AppColors.textLight,
+                                          color: isDark
+                                              ? AppColors.primary
+                                              : AppColors.background,
                                           fontFamily: '.SF Pro Text',
                                         ),
                                       ),
@@ -853,14 +875,15 @@ class _QRScannerScreenState extends State<_QRScannerScreen>
   // Android Scanner
   // ============================================================
   Widget _buildAndroidScanner() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
         backgroundColor: AppColors.backgroundDark.withOpacity(0.8),
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.close_rounded, color: AppColors.textLight),
           onPressed: () => Navigator.of(context).pop(),
@@ -868,6 +891,7 @@ class _QRScannerScreenState extends State<_QRScannerScreen>
         title: Text(
           'QR-Code scannen',
           style: TextStyle(
+            fontSize: 17,
             color: AppColors.textLight,
             fontWeight: FontWeight.w600,
           ),

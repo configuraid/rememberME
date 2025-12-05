@@ -117,34 +117,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Android
     return Scaffold(
       body: screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: isDark ? AppColors.primaryLight : AppColors.primary,
-        unselectedItemColor: isDark ? AppColors.grey : AppColors.greyDark,
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
-        type: BottomNavigationBarType.fixed,
-        elevation: 8,
-        selectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
-        ),
-        items: [
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.favorite_outline),
-            activeIcon: const Icon(Icons.favorite),
-            label: AppStrings.memorialPage,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: isDark
+              ? AppColors.backgroundDarkElevated.withOpacity(0.94)
+              : AppColors.surface.withOpacity(0.94),
+          border: Border(
+            top: BorderSide(
+              color: isDark ? AppColors.borderDark : AppColors.divider,
+              width: 0.5,
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.person_outline),
-            activeIcon: const Icon(Icons.person),
-            label: AppStrings.profile,
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          selectedItemColor: isDark ? AppColors.accent : AppColors.primary,
+          unselectedItemColor: AppColors.grey,
+          backgroundColor: Colors.transparent,
+          type: BottomNavigationBarType.fixed,
+          elevation: 0,
+          selectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
           ),
-        ],
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 12,
+          ),
+          items: [
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.favorite_outline),
+              activeIcon: const Icon(Icons.favorite),
+              label: AppStrings.memorialPage,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.person_outline),
+              activeIcon: const Icon(Icons.person),
+              label: AppStrings.profile,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -198,12 +211,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           middle: Text(
             AppStrings.myMemorialPage,
             style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
               color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: '.SF Pro Text',
             ),
           ),
-          backgroundColor:
-              isDark ? AppColors.backgroundDarkElevated.withOpacity(0.8) : null,
+          backgroundColor: isDark
+              ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+              : AppColors.surface.withOpacity(0.94),
         ),
         child: Center(
           child: CupertinoActivityIndicator(
@@ -215,17 +231,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
       appBar: AppBar(
-        title: Text(AppStrings.myMemorialPage),
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
-        foregroundColor: AppColors.textLight,
+        title: Text(
+          AppStrings.myMemorialPage,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: isDark
+            ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+            : AppColors.surface.withOpacity(0.94),
+        foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
+        surfaceTintColor: Colors.transparent,
       ),
       body: Center(
         child: CircularProgressIndicator(
           valueColor: AlwaysStoppedAnimation<Color>(
-            isDark ? AppColors.primaryLight : AppColors.primary,
+            isDark ? AppColors.accent : AppColors.primary,
           ),
         ),
       ),
@@ -245,12 +273,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           middle: Text(
             AppStrings.myMemorialPage,
             style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
               color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: '.SF Pro Text',
             ),
           ),
-          backgroundColor:
-              isDark ? AppColors.backgroundDarkElevated.withOpacity(0.8) : null,
+          backgroundColor: isDark
+              ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+              : AppColors.surface.withOpacity(0.94),
         ),
         child: Center(
           child: Padding(
@@ -258,26 +289,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  CupertinoIcons.exclamationmark_circle,
-                  size: 64,
-                  color: isDark ? AppColors.errorLight : AppColors.error,
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(isDark ? 0.2 : 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    CupertinoIcons.exclamationmark_circle,
+                    size: 40,
+                    color: isDark ? AppColors.errorLight : AppColors.error,
+                  ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 Text(
                   errorMessage ?? AppStrings.errorOccurred,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                    fontSize: 16,
+                    fontSize: 17,
                     fontFamily: '.SF Pro Text',
                     decoration: TextDecoration.none,
                   ),
                 ),
-                const SizedBox(height: 24),
-                CupertinoButton.filled(
-                  onPressed: _loadData,
-                  child: Text(AppStrings.tryAgain),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    color: isDark ? AppColors.accent : AppColors.primary,
+                    borderRadius: BorderRadius.circular(12),
+                    onPressed: _loadData,
+                    child: Text(
+                      AppStrings.tryAgain,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color:
+                            isDark ? AppColors.primary : AppColors.background,
+                        fontFamily: '.SF Pro Text',
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -287,12 +342,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
       appBar: AppBar(
-        title: Text(AppStrings.myMemorialPage),
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
-        foregroundColor: AppColors.textLight,
+        title: Text(
+          AppStrings.myMemorialPage,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: isDark
+            ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+            : AppColors.surface.withOpacity(0.94),
+        foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
+        surfaceTintColor: Colors.transparent,
       ),
       body: Center(
         child: Padding(
@@ -300,28 +367,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: isDark ? AppColors.errorLight : AppColors.error,
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: AppColors.error.withOpacity(isDark ? 0.2 : 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.error_outline_rounded,
+                  size: 40,
+                  color: isDark ? AppColors.errorLight : AppColors.error,
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               Text(
                 errorMessage ?? AppStrings.errorOccurred,
                 textAlign: TextAlign.center,
                 style: TextStyle(
+                  fontSize: 17,
                   color: isDark ? AppColors.textLight : AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _loadData,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      isDark ? AppColors.primaryLight : AppColors.primary,
-                  foregroundColor: AppColors.textLight,
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: FilledButton(
+                  onPressed: _loadData,
+                  style: FilledButton.styleFrom(
+                    backgroundColor:
+                        isDark ? AppColors.accent : AppColors.primary,
+                    foregroundColor:
+                        isDark ? AppColors.primary : AppColors.background,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    AppStrings.tryAgain,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-                child: Text(AppStrings.tryAgain),
               ),
             ],
           ),
@@ -346,8 +436,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             fontFamily: '.SF Pro Text',
           ),
         ),
-        backgroundColor:
-            isDark ? AppColors.backgroundDarkElevated.withOpacity(0.8) : null,
+        backgroundColor: isDark
+            ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+            : AppColors.surface.withOpacity(0.94),
       ),
       child: SafeArea(
         child: Center(
@@ -362,25 +453,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   height: 140,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isDark
-                          ? [
-                              AppColors.accent.withOpacity(0.3),
-                              AppColors.primary.withOpacity(0.2),
-                            ]
-                          : [
-                              AppColors.accent.withOpacity(0.15),
-                              AppColors.primary.withOpacity(0.1),
-                            ],
-                    ),
+                    color: isDark
+                        ? AppColors.accent
+                        : AppColors.primary.withOpacity(0.1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDark
+                            ? AppColors.accent.withOpacity(0.3)
+                            : AppColors.primary.withOpacity(0.2),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
                   child: Center(
                     child: Icon(
                       CupertinoIcons.heart_fill,
                       size: 64,
-                      color: isDark ? AppColors.accent : AppColors.primary,
+                      color: isDark ? AppColors.background : AppColors.primary,
                     ),
                   ),
                 ),
@@ -391,11 +481,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Text(
                   AppStrings.noMemorialYet,
                   style: TextStyle(
-                    fontSize: 26,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: isDark ? AppColors.textLight : AppColors.textPrimary,
                     fontFamily: '.SF Pro Display',
                     decoration: TextDecoration.none,
+                    letterSpacing: -0.5,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -406,10 +497,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Text(
                   AppStrings.createYourPersonalMemorial,
                   style: TextStyle(
-                    fontSize: 16,
-                    color: isDark
-                        ? AppColors.textLight.withOpacity(0.7)
-                        : AppColors.textSecondary,
+                    fontSize: 15,
+                    color: AppColors.grey,
                     fontFamily: '.SF Pro Text',
                     decoration: TextDecoration.none,
                     height: 1.4,
@@ -427,9 +516,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // CTA Button
                 SizedBox(
                   width: double.infinity,
+                  height: 50,
                   child: CupertinoButton(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    borderRadius: BorderRadius.circular(14),
+                    padding: EdgeInsets.zero,
+                    borderRadius: BorderRadius.circular(12),
                     color: isDark ? AppColors.accent : AppColors.primary,
                     onPressed: () {
                       Navigator.of(context, rootNavigator: true).pushNamed(
@@ -439,18 +529,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
+                        Icon(
                           CupertinoIcons.add_circled_solid,
                           size: 22,
-                          color: AppColors.textLight,
+                          color:
+                              isDark ? AppColors.primary : AppColors.background,
                         ),
                         const SizedBox(width: 10),
                         Text(
                           AppStrings.createMemorialPage,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textLight,
+                            color: isDark
+                                ? AppColors.primary
+                                : AppColors.background,
                             fontFamily: '.SF Pro Text',
                           ),
                         ),
@@ -476,11 +569,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color:
-            isDark ? AppColors.surfaceDark.withOpacity(0.5) : AppColors.surface,
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? AppColors.borderDarkSubtle : AppColors.greyLighter,
+          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
           width: 1,
         ),
       ),
@@ -495,7 +587,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   height: 36,
                   decoration: BoxDecoration(
                     color: isDark
-                        ? AppColors.accent.withOpacity(0.2)
+                        ? AppColors.toastBackgroundDark
                         : AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -510,7 +602,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Text(
                     feature.$2,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       color:
                           isDark ? AppColors.textLight : AppColors.textPrimary,
                       fontFamily: '.SF Pro Text',
@@ -528,14 +620,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildAndroidEmptyState(BuildContext context, bool isDark) {
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
       appBar: AppBar(
-        title: Text(AppStrings.myMemorialPage),
+        title: Text(
+          AppStrings.myMemorialPage,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+          ),
+        ),
         centerTitle: true,
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
-        foregroundColor: AppColors.textLight,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: isDark
+            ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+            : AppColors.surface.withOpacity(0.94),
+        foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
+        surfaceTintColor: Colors.transparent,
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -545,43 +647,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               // Illustration Container
               Container(
-                width: 160,
-                height: 160,
+                width: 140,
+                height: 140,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [
-                            AppColors.primaryDark,
-                            AppColors.primary.withOpacity(0.6),
-                          ]
-                        : [
-                            AppColors.primary.withOpacity(0.2),
-                            AppColors.accent.withOpacity(0.15),
-                          ],
-                  ),
-                  boxShadow: isDark
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.2),
-                            blurRadius: 30,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
+                  color: isDark
+                      ? AppColors.accent
+                      : AppColors.primary.withOpacity(0.1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isDark
+                          ? AppColors.accent.withOpacity(0.3)
+                          : AppColors.primary.withOpacity(0.2),
+                      blurRadius: 30,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
                 child: Center(
                   child: Icon(
                     Icons.favorite_rounded,
-                    size: 72,
-                    color: isDark ? AppColors.accent : AppColors.primary,
+                    size: 64,
+                    color: isDark ? AppColors.background : AppColors.primary,
                   ),
                 ),
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
 
               // Title
               Text(
@@ -601,11 +693,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Text(
                 AppStrings.createYourPersonalMemorial,
                 style: TextStyle(
-                  fontSize: 16,
-                  color: isDark
-                      ? AppColors.textDarkSecondary
-                      : AppColors.textSecondary,
-                  height: 1.5,
+                  fontSize: 15,
+                  color: AppColors.grey,
+                  height: 1.4,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -620,30 +710,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
               // CTA Button
               SizedBox(
                 width: double.infinity,
-                height: 56,
+                height: 50,
                 child: FilledButton.icon(
                   onPressed: () {
                     Navigator.of(context, rootNavigator: true).pushNamed(
                       AppRoutes.memorialCreate,
                     );
                   },
-                  icon: const Icon(Icons.add_rounded, size: 24),
+                  icon: Icon(
+                    Icons.add_rounded,
+                    size: 22,
+                    color: isDark ? AppColors.primary : AppColors.background,
+                  ),
                   label: Text(
                     AppStrings.createMemorialPage,
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: 17,
                       fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.primary : AppColors.background,
                     ),
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor:
-                        isDark ? AppColors.primaryLight : AppColors.primary,
-                    foregroundColor: AppColors.textLight,
+                        isDark ? AppColors.accent : AppColors.primary,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: isDark ? 0 : 4,
-                    shadowColor: AppColors.primary.withOpacity(0.4),
+                    elevation: 0,
                   ),
                 ),
               ),
@@ -670,21 +763,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surface,
+              color:
+                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isDark ? AppColors.borderDark : AppColors.greyLighter,
                 width: 1,
               ),
-              boxShadow: isDark
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: AppColors.shadow.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
             ),
             child: Column(
               children: [
@@ -693,14 +778,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   height: 48,
                   decoration: BoxDecoration(
                     color: isDark
-                        ? AppColors.primary.withOpacity(0.2)
+                        ? AppColors.toastBackgroundDark
                         : AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     feature.$1,
                     size: 24,
-                    color: isDark ? AppColors.primaryLight : AppColors.primary,
+                    color: isDark ? AppColors.accent : AppColors.primary,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -718,9 +803,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   feature.$3,
                   style: TextStyle(
                     fontSize: 11,
-                    color: isDark
-                        ? AppColors.textDarkSecondary
-                        : AppColors.textSecondary,
+                    color: AppColors.grey,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -740,32 +823,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
       IconData icon, Color color) {
     final isDark = _isDarkMode(context);
 
-    return Card(
-      color: isDark ? AppColors.surfaceDark : AppColors.surface,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-            ),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: isDark
-                        ? AppColors.textDarkSecondary
-                        : AppColors.textSecondary,
-                  ),
-            ),
-          ],
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
         ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.grey,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -822,6 +909,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Text(
               label,
               style: TextStyle(
+                fontSize: 14,
                 color: color,
                 fontWeight: FontWeight.w600,
               ),

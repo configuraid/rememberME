@@ -38,13 +38,14 @@ class CustomButton extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final buttonColor = isDanger
         ? AppColors.error
-        : (color ?? (isDark ? AppColors.primaryLight : AppColors.primary));
+        : (color ?? (isDark ? AppColors.accent : AppColors.primary));
+    final buttonTextColor = isDark ? AppColors.primary : AppColors.background;
 
     if (isLoading) {
       return Container(
         height: 56,
         decoration: BoxDecoration(
-          color: isDark ? AppColors.cardBorderDark : AppColors.greyLight,
+          color: isDark ? AppColors.toastBackgroundDark : AppColors.greyLighter,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Center(
@@ -86,16 +87,14 @@ class CustomButton extends StatelessWidget {
               side: BorderSide(
                 color: onPressed != null
                     ? buttonColor
-                    : (isDark
-                        ? AppColors.borderDarkSubtle
-                        : AppColors.greyLight),
+                    : (isDark ? AppColors.borderDark : AppColors.greyLighter),
                 width: 2,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
               backgroundColor:
-                  isDark ? AppColors.surfaceDark : AppColors.surface,
+                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -112,7 +111,8 @@ class CustomButton extends StatelessWidget {
                 ],
                 Text(
                   text,
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  style: TextStyle(
+                    fontSize: 17,
                     fontWeight: FontWeight.bold,
                     color: onPressed != null
                         ? buttonColor
@@ -150,7 +150,8 @@ class CustomButton extends StatelessWidget {
               ],
               Text(
                 text,
-                style: theme.textTheme.titleMedium?.copyWith(
+                style: TextStyle(
+                  fontSize: 17,
                   fontWeight: FontWeight.w600,
                   color: onPressed != null
                       ? buttonColor
@@ -178,7 +179,9 @@ class CustomButton extends StatelessWidget {
                   )
                 : null,
             color: onPressed == null
-                ? (isDark ? AppColors.cardBorderDark : AppColors.greyLight)
+                ? (isDark
+                    ? AppColors.toastBackgroundDark
+                    : AppColors.greyLighter)
                 : null,
             borderRadius: BorderRadius.circular(16),
             boxShadow: onPressed != null
@@ -196,10 +199,9 @@ class CustomButton extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,
               shadowColor: Colors.transparent,
-              foregroundColor: AppColors.textLight,
+              foregroundColor: buttonTextColor,
               disabledBackgroundColor: Colors.transparent,
-              disabledForegroundColor:
-                  isDark ? AppColors.grey : AppColors.textSecondary,
+              disabledForegroundColor: AppColors.grey,
               minimumSize: const Size(double.infinity, 56),
               padding: const EdgeInsets.symmetric(horizontal: 24),
               shape: RoundedRectangleBorder(
@@ -215,11 +217,10 @@ class CustomButton extends StatelessWidget {
                 ],
                 Text(
                   text,
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  style: TextStyle(
+                    fontSize: 17,
                     fontWeight: FontWeight.bold,
-                    color: onPressed != null
-                        ? AppColors.textLight
-                        : (isDark ? AppColors.grey : AppColors.textSecondary),
+                    color: onPressed != null ? buttonTextColor : AppColors.grey,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -232,26 +233,27 @@ class CustomButton extends StatelessWidget {
 
   Widget _buildCupertinoButton(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final buttonColor = isDanger
+        ? AppColors.error
+        : (color ?? (isDark ? AppColors.accent : AppColors.primary));
+    final buttonTextColor = isDark ? AppColors.primary : AppColors.background;
 
     if (isLoading) {
       return Container(
         height: 50,
         alignment: Alignment.center,
         child: CupertinoActivityIndicator(
-          color: isDark ? AppColors.textLight : AppColors.textPrimary,
+          color: isDark ? AppColors.accent : AppColors.primary,
         ),
       );
     }
 
-    // Für iOS: Cupertino Button mit angepassten Farben
     return Container(
       height: 50,
       decoration: BoxDecoration(
         color: onPressed != null
-            ? (isDanger
-                ? AppColors.error
-                : (isDark ? AppColors.primaryLight : AppColors.primary))
-            : (isDark ? AppColors.borderDarkSubtle : AppColors.greyLight),
+            ? buttonColor
+            : (isDark ? AppColors.toastBackgroundDark : AppColors.greyLighter),
         borderRadius: BorderRadius.circular(12),
       ),
       child: CupertinoButton(
@@ -266,21 +268,17 @@ class CustomButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 20,
-                color: onPressed != null
-                    ? AppColors.textLight
-                    : (isDark ? AppColors.grey : AppColors.textSecondary),
+                color: onPressed != null ? buttonTextColor : AppColors.grey,
               ),
               const SizedBox(width: 8),
             ],
             Text(
               text,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 17,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.5,
-                color: onPressed != null
-                    ? AppColors.textLight
-                    : (isDark ? AppColors.grey : AppColors.textSecondary),
+                color: onPressed != null ? buttonTextColor : AppColors.grey,
                 fontFamily: '.SF Pro Text',
               ),
             ),

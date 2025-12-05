@@ -59,17 +59,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    final backgroundColor =
-        isDarkMode ? AppColors.surfaceDark : AppColors.primary;
-    final containerColor = isDarkMode ? AppColors.primaryDark : Colors.white;
-    final iconColor = isDarkMode ? AppColors.accentLight : AppColors.accent;
-    final titleColor = isDarkMode ? AppColors.textLight : Colors.white;
-    final taglineColor = isDarkMode
-        ? AppColors.textLight.withOpacity(0.7)
-        : Colors.white.withOpacity(0.9);
-    final loaderColor = isDarkMode ? AppColors.accent : Colors.white;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
@@ -87,59 +77,83 @@ class _SplashScreenState extends State<SplashScreen>
         }
       },
       child: Scaffold(
-        backgroundColor: backgroundColor,
+        backgroundColor:
+            isDark ? AppColors.backgroundDark : AppColors.background,
         body: Center(
           child: FadeTransition(
             opacity: _fadeAnimation,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // Logo Container
                 Container(
                   width: 120,
                   height: 120,
                   decoration: BoxDecoration(
-                    color: containerColor,
-                    borderRadius: BorderRadius.circular(24),
+                    color: isDark
+                        ? AppColors.accent
+                        : AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(32),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.shadow,
-                        blurRadius: 20,
+                        color: isDark
+                            ? AppColors.accent.withOpacity(0.3)
+                            : AppColors.primary.withOpacity(0.2),
+                        blurRadius: 30,
                         offset: const Offset(0, 10),
                       ),
                     ],
                   ),
                   child: Icon(
-                    Icons.favorite,
+                    Platform.isIOS
+                        ? CupertinoIcons.heart_fill
+                        : Icons.favorite_rounded,
                     size: 60,
-                    color: iconColor,
+                    color: isDark ? AppColors.background : AppColors.primary,
                   ),
                 ),
                 const SizedBox(height: 32),
+
+                // App Name
                 Text(
                   AppStrings.appName,
                   style: TextStyle(
                     fontSize: 32,
-                    fontWeight: FontWeight.w700,
-                    color: titleColor,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                    fontFamily: Platform.isIOS ? '.SF Pro Display' : null,
+                    letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 8),
+
+                // Tagline
                 Text(
                   AppStrings.appTagline,
                   style: TextStyle(
-                    fontSize: 16,
-                    color: taglineColor,
+                    fontSize: 15,
+                    color: AppColors.grey,
+                    fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
                   ),
                 ),
                 const SizedBox(height: 48),
+
+                // Loading Indicator
                 if (Platform.isIOS)
                   CupertinoActivityIndicator(
-                    color: loaderColor,
-                    radius: 16,
+                    color: isDark ? AppColors.accent : AppColors.primary,
+                    radius: 14,
                   )
                 else
-                  CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(loaderColor),
+                  SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isDark ? AppColors.accent : AppColors.primary,
+                      ),
+                    ),
                   ),
               ],
             ),

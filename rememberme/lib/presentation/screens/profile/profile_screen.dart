@@ -195,8 +195,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: isDark ? AppColors.accent : AppColors.primary,
           ),
         ),
-        backgroundColor:
-            isDark ? AppColors.backgroundDarkElevated.withOpacity(0.8) : null,
+        backgroundColor: isDark
+            ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+            : AppColors.surface.withOpacity(0.94),
       ),
       child: SafeArea(
         child: CustomScrollView(
@@ -226,8 +227,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
+      appBar: AppBar(
+        title: Text(
+          AppStrings.profile,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: isDark
+            ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+            : AppColors.surface.withOpacity(0.94),
+        foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
+        surfaceTintColor: Colors.transparent,
+        actions: [
+          IconButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const EditProfileScreen(),
+              ),
+            ),
+            icon: Icon(
+              Icons.edit_rounded,
+              color: isDark ? AppColors.accent : AppColors.primary,
+            ),
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: () async => _loadProfile(),
         color: isDark ? AppColors.accent : AppColors.primary,
@@ -247,129 +279,107 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildAndroidProfileHeader(
       UserModel? user, ProfileState profileState, bool isDark) {
     return Container(
-      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [
-                  AppColors.primaryDark,
-                  AppColors.primary,
-                ]
-              : [
-                  AppColors.primary,
-                  AppColors.primary.withOpacity(0.8),
-                ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? AppColors.shadowDark : AppColors.shadow,
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: isDark ? AppColors.backgroundDark : AppColors.background,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Stack(
-              children: [
-                Container(
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.accent,
+                    width: 3,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundColor: AppColors.accent.withOpacity(0.4),
+                  backgroundImage: profileState.profileImageUrl != null
+                      ? NetworkImage(profileState.profileImageUrl!)
+                      : null,
+                  child: profileState.profileImageUrl == null
+                      ? Text(
+                          _getInitials(user?.name),
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.accent,
+                          ),
+                        )
+                      : null,
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
+                    color: AppColors.accent,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: AppColors.textLight.withOpacity(0.3),
-                      width: 3,
+                      color: isDark
+                          ? AppColors.backgroundDark
+                          : AppColors.background,
+                      width: 2,
                     ),
                   ),
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundColor: AppColors.surface,
-                    backgroundImage: profileState.profileImageUrl != null
-                        ? NetworkImage(profileState.profileImageUrl!)
-                        : null,
-                    child: profileState.profileImageUrl == null
-                        ? Text(
-                            _getInitials(user?.name),
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: isDark
-                                  ? AppColors.primaryLight
-                                  : AppColors.primary,
-                            ),
-                          )
-                        : null,
+                  child: Icon(
+                    Icons.camera_alt_rounded,
+                    size: 16,
+                    color: isDark ? AppColors.primary : AppColors.background,
                   ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.accentLight : AppColors.accent,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.surface,
-                        width: 2,
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.camera_alt_rounded,
-                      size: 18,
-                      color:
-                          isDark ? AppColors.primaryDark : AppColors.textLight,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              profileState.name ?? user?.name ?? AppStrings.unknown,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textLight,
-                letterSpacing: 0.15,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              profileState.email ?? user?.email ?? '',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textLight.withOpacity(0.9),
-              ),
-            ),
-            if (profileState.bio != null && profileState.bio!.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.textLight.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  profileState.bio!,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textLight.withOpacity(0.9),
-                    height: 1.4,
-                  ),
-                  textAlign: TextAlign.center,
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            profileState.name ?? user?.name ?? AppStrings.unknown,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            profileState.email ?? user?.email ?? '',
+            style: TextStyle(
+              fontSize: 15,
+              color: AppColors.grey,
+            ),
+          ),
+          if (profileState.bio != null && profileState.bio!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.backgroundDarkElevated
+                    : AppColors.greyLighter,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                profileState.bio!,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.grey,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -420,17 +430,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.accentLight : AppColors.accent,
+                    color: AppColors.accent,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isDark ? AppColors.accentLight : AppColors.accent,
+                      color: isDark
+                          ? AppColors.backgroundDark
+                          : AppColors.background,
                       width: 2,
                     ),
                   ),
                   child: Icon(
                     CupertinoIcons.camera_fill,
                     size: 16,
-                    color: AppColors.textLight,
+                    color: isDark ? AppColors.primary : AppColors.background,
                   ),
                 ),
               ),
@@ -445,16 +457,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: '.SF Pro Display',
               decoration: TextDecoration.none,
+              letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             profileState.email ?? user?.email ?? '',
             style: TextStyle(
-              fontSize: 14,
-              color: isDark
-                  ? AppColors.textLight.withOpacity(0.8)
-                  : AppColors.textSecondary,
+              fontSize: 15,
+              color: AppColors.grey,
               fontFamily: '.SF Pro Text',
               decoration: TextDecoration.none,
             ),
@@ -468,7 +479,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               decoration: BoxDecoration(
                 color: isDark
-                    ? AppColors.surfaceDark.withOpacity(0.5)
+                    ? AppColors.backgroundDarkElevated
                     : AppColors.greyLighter,
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -476,9 +487,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 profileState.bio!,
                 style: TextStyle(
                   fontSize: 14,
-                  color: isDark
-                      ? AppColors.textLight.withOpacity(0.9)
-                      : AppColors.textSecondary,
+                  color: AppColors.grey,
                   height: 1.4,
                   fontFamily: '.SF Pro Text',
                   decoration: TextDecoration.none,
@@ -594,7 +603,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-// ===== iOS MENU ITEM =====
+  // ===== iOS MENU ITEM =====
   Widget _buildIOSMenuItem({
     required IconData icon,
     required String title,
@@ -604,7 +613,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }) {
     final iconColor = isDestructive
         ? AppColors.error
-        : (isDark ? AppColors.textLight : AppColors.textPrimary);
+        : (isDark ? AppColors.accent : AppColors.primary);
     final textColor = isDestructive
         ? AppColors.error
         : (isDark ? AppColors.textLight : AppColors.textPrimary);
@@ -620,7 +629,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(isDark ? 0.2 : 0.1),
+                color: isDestructive
+                    ? AppColors.error.withOpacity(isDark ? 0.2 : 0.1)
+                    : (isDark
+                        ? AppColors.toastBackgroundDark
+                        : AppColors.primary.withOpacity(0.1)),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -661,10 +674,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
+          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
           width: 1,
         ),
       ),
@@ -677,7 +690,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.only(left: 56),
       child: Divider(
         height: 1,
-        color: isDark ? AppColors.borderDarkSubtle : AppColors.divider,
+        color: isDark ? AppColors.borderDark : AppColors.divider,
       ),
     );
   }
@@ -688,69 +701,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       children: [
         _buildAndroidMenuHeader(AppStrings.accountSection, isDark),
-        _buildAndroidMenuItem(
+        _buildAndroidMenuCard(
           context: context,
-          icon: Icons.person_rounded,
-          title: AppStrings.editProfile,
           isDark: isDark,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const EditProfileScreen(),
+          children: [
+            _buildAndroidMenuItem(
+              context: context,
+              icon: Icons.person_rounded,
+              title: AppStrings.editProfile,
+              isDark: isDark,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EditProfileScreen(),
+                ),
+              ),
             ),
-          ),
-        ),
-        Divider(
-          height: 1,
-          color: isDark ? AppColors.borderDark : AppColors.divider,
+          ],
         ),
         _buildAndroidMenuHeader(AppStrings.support, isDark),
-        _buildAndroidMenuItem(
+        _buildAndroidMenuCard(
           context: context,
-          icon: Icons.help_outline_rounded,
-          title: AppStrings.helpAndFaq,
           isDark: isDark,
-          onTap: () {},
-        ),
-        _buildAndroidMenuItem(
-          context: context,
-          icon: Icons.info_outline_rounded,
-          title: AppStrings.about,
-          isDark: isDark,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AboutScreen(),
+          children: [
+            _buildAndroidMenuItem(
+              context: context,
+              icon: Icons.help_outline_rounded,
+              title: AppStrings.helpAndFaq,
+              isDark: isDark,
+              onTap: () {},
             ),
-          ),
-        ),
-        _buildAndroidMenuItem(
-          context: context,
-          icon: Icons.feedback_outlined,
-          title: AppStrings.sendFeedback,
-          isDark: isDark,
-          onTap: () {},
-        ),
-        Divider(
-          height: 1,
-          color: isDark ? AppColors.borderDark : AppColors.divider,
+            _buildAndroidDivider(isDark),
+            _buildAndroidMenuItem(
+              context: context,
+              icon: Icons.info_outline_rounded,
+              title: AppStrings.about,
+              isDark: isDark,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AboutScreen(),
+                ),
+              ),
+            ),
+            _buildAndroidDivider(isDark),
+            _buildAndroidMenuItem(
+              context: context,
+              icon: Icons.feedback_outlined,
+              title: AppStrings.sendFeedback,
+              isDark: isDark,
+              onTap: () {},
+            ),
+          ],
         ),
         _buildAndroidMenuHeader(AppStrings.dangerZone, isDark),
-        _buildAndroidMenuItem(
+        _buildAndroidMenuCard(
           context: context,
-          icon: Icons.logout_rounded,
-          title: AppStrings.logout,
           isDark: isDark,
-          isDestructive: true,
-          onTap: () => _showLogoutDialog(context, isDark),
-        ),
-        _buildAndroidMenuItem(
-          context: context,
-          icon: Icons.delete_forever_rounded,
-          title: AppStrings.deleteAccount,
-          isDark: isDark,
-          isDestructive: true,
-          onTap: () => _showDeleteAccountDialog(context, isDark),
+          children: [
+            _buildAndroidMenuItem(
+              context: context,
+              icon: Icons.logout_rounded,
+              title: AppStrings.logout,
+              isDark: isDark,
+              isDestructive: true,
+              onTap: () => _showLogoutDialog(context, isDark),
+            ),
+            _buildAndroidDivider(isDark),
+            _buildAndroidMenuItem(
+              context: context,
+              icon: Icons.delete_forever_rounded,
+              title: AppStrings.deleteAccount,
+              isDark: isDark,
+              isDestructive: true,
+              onTap: () => _showDeleteAccountDialog(context, isDark),
+            ),
+          ],
         ),
       ],
     );
@@ -764,12 +790,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Text(
           title.toUpperCase(),
           style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: isDark ? AppColors.grey : AppColors.textSecondary,
-            letterSpacing: 1.2,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: AppColors.grey,
+            letterSpacing: 0.5,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAndroidMenuCard({
+    required BuildContext context,
+    required bool isDark,
+    required List<Widget> children,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+          width: 1,
+        ),
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _buildAndroidDivider(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 56),
+      child: Divider(
+        height: 1,
+        color: isDark ? AppColors.borderDark : AppColors.divider,
       ),
     );
   }
@@ -783,52 +838,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
     bool isDestructive = false,
   }) {
     final iconColor = isDestructive
-        ? (isDark ? AppColors.errorLight : AppColors.error)
-        : (isDark ? AppColors.accentLight : AppColors.primary);
+        ? AppColors.error
+        : (isDark ? AppColors.accent : AppColors.primary);
 
     final textColor = isDestructive
-        ? (isDark ? AppColors.errorLight : AppColors.error)
+        ? AppColors.error
         : (isDark ? AppColors.textLight : AppColors.textPrimary);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
         splashColor: iconColor.withOpacity(0.1),
         highlightColor: iconColor.withOpacity(0.05),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(isDark ? 0.2 : 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  color: isDestructive
+                      ? AppColors.error.withOpacity(isDark ? 0.2 : 0.1)
+                      : (isDark
+                          ? AppColors.toastBackgroundDark
+                          : AppColors.primary.withOpacity(0.1)),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   icon,
                   color: iconColor,
-                  size: 22,
+                  size: 18,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w400,
                     color: textColor,
-                    letterSpacing: 0.15,
                   ),
                 ),
               ),
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 16,
-                color: isDark ? AppColors.grey : AppColors.textSecondary,
+                color: AppColors.grey,
               ),
             ],
           ),
@@ -895,24 +954,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
-          icon: Icon(
-            Icons.logout_rounded,
-            size: 32,
-            color: isDark ? AppColors.accentLight : AppColors.primary,
+          backgroundColor:
+              isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          icon: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.toastBackgroundDark
+                  : AppColors.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.logout_rounded,
+              size: 24,
+              color: isDark ? AppColors.accent : AppColors.primary,
+            ),
           ),
           title: Text(
             AppStrings.logout,
             style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
               color: isDark ? AppColors.textLight : AppColors.textPrimary,
             ),
           ),
           content: Text(
             AppStrings.logoutConfirmMessage,
             style: TextStyle(
-              color: isDark
-                  ? AppColors.textDarkSecondary
-                  : AppColors.textSecondary,
+              fontSize: 15,
+              color: AppColors.grey,
             ),
           ),
           actions: [
@@ -921,7 +995,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Text(
                 AppStrings.cancel,
                 style: TextStyle(
-                  color: isDark ? AppColors.grey : AppColors.textSecondary,
+                  fontSize: 15,
+                  color: AppColors.grey,
                 ),
               ),
             ),
@@ -933,12 +1008,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     .pushReplacementNamed(AppRoutes.login);
               },
               style: FilledButton.styleFrom(
-                backgroundColor:
-                    isDark ? AppColors.accentLight : AppColors.primary,
+                backgroundColor: isDark ? AppColors.accent : AppColors.primary,
                 foregroundColor:
-                    isDark ? AppColors.primaryDark : AppColors.textLight,
+                    isDark ? AppColors.primary : AppColors.background,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
-              child: const Text(AppStrings.logout),
+              child: Text(
+                AppStrings.logout,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ),
@@ -966,24 +1049,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
-          icon: Icon(
-            Icons.warning_rounded,
-            size: 32,
-            color: isDark ? AppColors.errorLight : AppColors.error,
+          backgroundColor:
+              isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          icon: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.error.withOpacity(isDark ? 0.2 : 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.warning_rounded,
+              size: 24,
+              color: isDark ? AppColors.errorLight : AppColors.error,
+            ),
           ),
           title: Text(
             AppStrings.deleteAccount,
             style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
               color: isDark ? AppColors.textLight : AppColors.textPrimary,
             ),
           ),
           content: Text(
             AppStrings.deleteAccountWarning,
             style: TextStyle(
-              color: isDark
-                  ? AppColors.textDarkSecondary
-                  : AppColors.textSecondary,
+              fontSize: 15,
+              color: AppColors.grey,
             ),
           ),
           actions: [
@@ -992,7 +1088,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Text(
                 AppStrings.cancel,
                 style: TextStyle(
-                  color: isDark ? AppColors.grey : AppColors.textSecondary,
+                  fontSize: 15,
+                  color: AppColors.grey,
                 ),
               ),
             ),
@@ -1012,10 +1109,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: FilledButton.styleFrom(
                 backgroundColor:
                     isDark ? AppColors.errorLight : AppColors.error,
-                foregroundColor:
-                    isDark ? AppColors.errorDark : AppColors.textLight,
+                foregroundColor: AppColors.textLight,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
-              child: Text(AppStrings.deleteAccount),
+              child: Text(
+                AppStrings.deleteAccount,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ),

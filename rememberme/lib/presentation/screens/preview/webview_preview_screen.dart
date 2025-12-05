@@ -152,7 +152,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
           ],
         ),
         backgroundColor: isDark
-            ? AppColors.backgroundDarkElevated.withOpacity(0.94)
+            ? AppColors.backgroundDarkElevated.withOpacity(0.8)
             : AppColors.surface.withOpacity(0.94),
         border: Border(
           bottom: BorderSide(
@@ -166,7 +166,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
           onPressed: () => Navigator.pop(context),
           child: Icon(
             CupertinoIcons.xmark,
-            color: AppColors.interactive,
+            color: isDark ? AppColors.accent : AppColors.primary,
             size: 22,
           ),
         ),
@@ -194,8 +194,8 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
             value: _loadingProgress / 100,
             backgroundColor:
                 isDark ? AppColors.borderDark : AppColors.greyLighter,
-            valueColor: const AlwaysStoppedAnimation<Color>(
-              AppColors.interactive,
+            valueColor: AlwaysStoppedAnimation<Color>(
+              isDark ? AppColors.accent : AppColors.primary,
             ),
             minHeight: 2,
           ),
@@ -235,22 +235,13 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.backgroundDarkElevated
-                    : AppColors.surface,
+                color: AppColors.error.withOpacity(isDark ? 0.2 : 0.1),
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: isDark ? AppColors.shadowDark : AppColors.shadow,
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
               ),
-              child: const Icon(
+              child: Icon(
                 CupertinoIcons.wifi_slash,
                 size: 48,
-                color: AppColors.error,
+                color: isDark ? AppColors.errorLight : AppColors.error,
               ),
             ),
             const SizedBox(height: 24),
@@ -274,6 +265,32 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
               ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: CupertinoButton(
+                padding: EdgeInsets.zero,
+                color: isDark ? AppColors.accent : AppColors.primary,
+                borderRadius: BorderRadius.circular(12),
+                onPressed: () {
+                  setState(() {
+                    _isLoading = true;
+                    _hasError = false;
+                  });
+                  _controller.reload();
+                },
+                child: Text(
+                  'Erneut versuchen',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.primary : AppColors.background,
+                    fontFamily: '.SF Pro Text',
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -287,29 +304,42 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDarkSecondary : AppColors.surface,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text('Vorschau'),
+            Text(
+              'Vorschau',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              ),
+            ),
             if (_isLoading)
               Text(
                 '${_loadingProgress}%',
                 style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textLight.withOpacity(0.7),
+                  fontSize: 11,
+                  color: AppColors.grey,
                 ),
               ),
           ],
         ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
-        foregroundColor: AppColors.textLight,
+        scrolledUnderElevation: 0,
+        backgroundColor: isDark
+            ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+            : AppColors.surface.withOpacity(0.94),
+        foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
+          icon: Icon(
+            Icons.close_rounded,
+            color: isDark ? AppColors.accent : AppColors.primary,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -333,34 +363,30 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
           LinearProgressIndicator(
             value: _loadingProgress / 100,
             backgroundColor:
-                isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
+                isDark ? AppColors.borderDark : AppColors.greyLighter,
             valueColor: AlwaysStoppedAnimation<Color>(
-              isDark ? AppColors.primaryLight : AppColors.primary,
+              isDark ? AppColors.accent : AppColors.primary,
             ),
-            minHeight: 3,
+            minHeight: 2,
           ),
           if (_loadingProgress < 30)
             Container(
               width: double.infinity,
-              color: isDark
-                  ? AppColors.backgroundDarkSecondary
-                  : AppColors.surface,
+              color: isDark ? AppColors.backgroundDark : AppColors.background,
               padding: const EdgeInsets.only(top: 100),
               child: Column(
                 children: [
                   CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      isDark ? AppColors.primaryLight : AppColors.primary,
+                      isDark ? AppColors.accent : AppColors.primary,
                     ),
                   ),
                   const SizedBox(height: 24),
                   Text(
                     'Vorschau wird geladen...',
                     style: TextStyle(
-                      fontSize: 16,
-                      color: isDark
-                          ? AppColors.textDarkSecondary
-                          : AppColors.greyDark,
+                      fontSize: 15,
+                      color: AppColors.grey,
                     ),
                   ),
                 ],
@@ -381,71 +407,62 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.error.withOpacity(0.15),
-                    AppColors.error.withOpacity(0.08),
-                  ],
-                ),
+                color: AppColors.error.withOpacity(isDark ? 0.2 : 0.1),
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.error.withOpacity(0.3),
-                  width: 2,
-                ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.wifi_off_rounded,
-                size: 56,
-                color: AppColors.error,
+                size: 48,
+                color: isDark ? AppColors.errorLight : AppColors.error,
               ),
             ),
             const SizedBox(height: 24),
             Text(
               'Laden fehlgeschlagen',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                  ),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              ),
             ),
             const SizedBox(height: 12),
             Text(
               _errorMessage ?? 'Ein unbekannter Fehler ist aufgetreten.',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: isDark
-                        ? AppColors.textDarkSecondary
-                        : AppColors.textSecondary,
-                    height: 1.5,
-                  ),
+              style: TextStyle(
+                fontSize: 15,
+                color: AppColors.grey,
+                height: 1.5,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          AppColors.primaryLight,
-                          AppColors.primaryLight.withOpacity(0.8),
-                        ]
-                      : [
-                          AppColors.primary,
-                          AppColors.primary.withOpacity(0.9),
-                        ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: isDark
-                        ? AppColors.primaryLight.withOpacity(0.3)
-                        : AppColors.primary.withOpacity(0.4),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: FilledButton(
+                onPressed: () {
+                  setState(() {
+                    _isLoading = true;
+                    _hasError = false;
+                  });
+                  _controller.reload();
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor:
+                      isDark ? AppColors.accent : AppColors.primary,
+                  foregroundColor:
+                      isDark ? AppColors.primary : AppColors.background,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ],
+                ),
+                child: const Text(
+                  'Erneut versuchen',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
           ],

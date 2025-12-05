@@ -79,45 +79,35 @@ class CustomTextField extends StatelessWidget {
         style: TextStyle(
           color: enabled
               ? (isDark ? AppColors.textLight : AppColors.textPrimary)
-              : (isDark ? AppColors.grey : AppColors.greyLight),
-          fontSize: 16,
+              : AppColors.grey,
+          fontSize: 17,
         ),
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
           labelStyle: TextStyle(
-            color: isDark ? AppColors.grey : AppColors.textSecondary,
+            color: AppColors.grey,
+            fontSize: 15,
           ),
           hintStyle: TextStyle(
-            color: isDark ? AppColors.greyDark : AppColors.greyLight,
+            color: AppColors.grey,
+            fontSize: 17,
           ),
           prefixIcon: prefixIcon != null
               ? Container(
                   margin: const EdgeInsets.only(right: 12, left: 12),
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isDark
-                          ? [
-                              AppColors.primaryLight.withOpacity(0.2),
-                              AppColors.primaryLight.withOpacity(0.1),
-                            ]
-                          : [
-                              AppColors.primary.withOpacity(0.12),
-                              AppColors.primary.withOpacity(0.06),
-                            ],
-                    ),
+                    color: isDark
+                        ? AppColors.toastBackgroundDark
+                        : AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     prefixIcon,
                     color: enabled
-                        ? (isDark ? AppColors.primaryLight : AppColors.primary)
-                        : (isDark
-                            ? AppColors.borderDarkSubtle
-                            : AppColors.greyLight),
+                        ? (isDark ? AppColors.accent : AppColors.primary)
+                        : AppColors.grey,
                     size: 22,
                   ),
                 )
@@ -127,10 +117,8 @@ class CustomTextField extends StatelessWidget {
                   icon: Icon(
                     suffixIcon,
                     color: enabled
-                        ? (isDark ? AppColors.primaryLight : AppColors.primary)
-                        : (isDark
-                            ? AppColors.borderDarkSubtle
-                            : AppColors.greyLight),
+                        ? (isDark ? AppColors.accent : AppColors.primary)
+                        : AppColors.grey,
                     size: 22,
                   ),
                   onPressed: enabled ? onSuffixIconPressed : null,
@@ -138,8 +126,10 @@ class CustomTextField extends StatelessWidget {
               : null,
           filled: true,
           fillColor: enabled
-              ? (isDark ? AppColors.surfaceDark : AppColors.surface)
-              : (isDark ? AppColors.cardBorderDark : AppColors.greyLighter),
+              ? (isDark ? AppColors.backgroundDarkElevated : AppColors.surface)
+              : (isDark
+                  ? AppColors.toastBackgroundDark
+                  : AppColors.greyLighter),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 20,
             vertical: 18,
@@ -147,21 +137,21 @@ class CustomTextField extends StatelessWidget {
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
-              color: isDark ? AppColors.cardBorderDark : AppColors.greyLight,
+              color: isDark ? AppColors.borderDark : AppColors.greyLighter,
               width: 1.5,
             ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
-              color: isDark ? AppColors.cardBorderDark : AppColors.greyLight,
+              color: isDark ? AppColors.borderDark : AppColors.greyLighter,
               width: 1.5,
             ),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
-              color: isDark ? AppColors.primaryLight : AppColors.primary,
+              color: isDark ? AppColors.accent : AppColors.primary,
               width: 2,
             ),
           ),
@@ -182,7 +172,7 @@ class CustomTextField extends StatelessWidget {
           disabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
-              color: isDark ? AppColors.cardBorderDark : AppColors.greyLight,
+              color: isDark ? AppColors.borderDark : AppColors.greyLighter,
               width: 1.5,
             ),
           ),
@@ -206,7 +196,7 @@ class CustomTextField extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 15,
             fontWeight: FontWeight.w500,
             color: enabled
                 ? (isDark ? AppColors.textLight : AppColors.textPrimary)
@@ -220,32 +210,48 @@ class CustomTextField extends StatelessWidget {
           placeholder: hint,
           placeholderStyle: TextStyle(
             color: AppColors.grey,
+            fontSize: 17,
             fontFamily: '.SF Pro Text',
           ),
           style: TextStyle(
             color: enabled
                 ? (isDark ? AppColors.textLight : AppColors.textPrimary)
                 : AppColors.grey,
+            fontSize: 17,
             fontFamily: '.SF Pro Text',
           ),
           prefix: prefixIcon != null
               ? Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: Icon(
-                    prefixIcon,
-                    size: 20,
-                    color: enabled ? AppColors.grey : AppColors.greyLight,
+                  padding: const EdgeInsets.only(left: 12),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppColors.toastBackgroundDark
+                          : AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      prefixIcon,
+                      size: 18,
+                      color: enabled
+                          ? (isDark ? AppColors.accent : AppColors.primary)
+                          : AppColors.grey,
+                    ),
                   ),
                 )
               : null,
           suffix: suffixIcon != null
               ? CupertinoButton(
-                  padding: EdgeInsets.zero,
+                  padding: const EdgeInsets.only(right: 8),
+                  minSize: 0,
                   onPressed: enabled ? onSuffixIconPressed : null,
                   child: Icon(
                     suffixIcon,
                     size: 20,
-                    color: enabled ? AppColors.grey : AppColors.greyLight,
+                    color: enabled
+                        ? (isDark ? AppColors.accent : AppColors.primary)
+                        : AppColors.grey,
                   ),
                 )
               : null,
@@ -261,17 +267,18 @@ class CustomTextField extends StatelessWidget {
           onChanged: onChanged,
           decoration: BoxDecoration(
             color: enabled
-                ? (isDark ? AppColors.surfaceDark : AppColors.surface)
-                : (isDark
+                ? (isDark
                     ? AppColors.backgroundDarkElevated
+                    : AppColors.surface)
+                : (isDark
+                    ? AppColors.toastBackgroundDark
                     : AppColors.greyLighter),
             border: Border.all(
               color: isDark ? AppColors.borderDark : AppColors.divider,
             ),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
           ),
         ),
-        // Validierungs-Fehler für iOS (da CupertinoTextField kein validator hat)
         if (!enabled || validator == null)
           const SizedBox.shrink()
         else

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:rememberme/core/constants/app_colors.dart';
 
 // ============================================================
 // DELETE ACCOUNT BOTTOM SHEET - iOS STYLE
@@ -21,8 +22,7 @@ class DeleteAccountSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color:
-            isDark ? const Color(0xFF1C1C1E) : CupertinoColors.systemBackground,
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: SafeArea(
@@ -48,8 +48,7 @@ class DeleteAccountSheet extends StatelessWidget {
       width: 36,
       height: 5,
       decoration: BoxDecoration(
-        color:
-            isDark ? CupertinoColors.systemGrey : CupertinoColors.systemGrey3,
+        color: isDark ? AppColors.borderDark : AppColors.greyLight,
         borderRadius: BorderRadius.circular(2.5),
       ),
     );
@@ -64,12 +63,12 @@ class DeleteAccountSheet extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: CupertinoColors.systemRed.withOpacity(0.12),
+              color: AppColors.error.withOpacity(isDark ? 0.15 : 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               CupertinoIcons.exclamationmark_triangle_fill,
-              color: CupertinoColors.systemRed,
+              color: AppColors.error,
               size: 28,
             ),
           ),
@@ -79,7 +78,7 @@ class DeleteAccountSheet extends StatelessWidget {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: isDark ? CupertinoColors.white : CupertinoColors.black,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: '.SF Pro Display',
               decoration: TextDecoration.none,
             ),
@@ -90,7 +89,7 @@ class DeleteAccountSheet extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 15,
-              color: CupertinoColors.systemGrey,
+              color: AppColors.grey,
               fontFamily: '.SF Pro Text',
               decoration: TextDecoration.none,
             ),
@@ -105,12 +104,10 @@ class DeleteAccountSheet extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark
-            ? CupertinoColors.systemRed.darkColor.withOpacity(0.15)
-            : CupertinoColors.systemRed.withOpacity(0.08),
+        color: AppColors.error.withOpacity(isDark ? 0.15 : 0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: CupertinoColors.systemRed.withOpacity(0.2),
+          color: AppColors.error.withOpacity(0.2),
           width: 1,
         ),
       ),
@@ -119,7 +116,7 @@ class DeleteAccountSheet extends StatelessWidget {
         children: [
           const Icon(
             CupertinoIcons.info_circle_fill,
-            color: CupertinoColors.systemRed,
+            color: AppColors.error,
             size: 20,
           ),
           const SizedBox(width: 12),
@@ -130,9 +127,7 @@ class DeleteAccountSheet extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 height: 1.4,
-                color: isDark
-                    ? CupertinoColors.systemRed.withOpacity(0.9)
-                    : CupertinoColors.systemRed.darkColor,
+                color: AppColors.error.withOpacity(isDark ? 0.9 : 1.0),
                 fontFamily: '.SF Pro Text',
                 decoration: TextDecoration.none,
               ),
@@ -154,14 +149,14 @@ class DeleteAccountSheet extends StatelessWidget {
             child: CupertinoButton(
               padding: const EdgeInsets.symmetric(vertical: 16),
               borderRadius: BorderRadius.circular(12),
-              color: CupertinoColors.systemRed,
+              color: AppColors.error,
               onPressed: onConfirm,
               child: const Text(
                 'Account unwiderruflich löschen',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
-                  color: CupertinoColors.white,
+                  color: AppColors.textLight,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -175,17 +170,15 @@ class DeleteAccountSheet extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 16),
               borderRadius: BorderRadius.circular(12),
               color: isDark
-                  ? const Color(0xFF2C2C2E)
-                  : CupertinoColors.systemGrey6,
+                  ? AppColors.toastBackgroundDark
+                  : AppColors.greyLighter,
               onPressed: onCancel,
               child: Text(
                 'Abbrechen',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
-                  color: isDark
-                      ? CupertinoColors.white
-                      : CupertinoColors.systemBlue,
+                  color: isDark ? AppColors.accent : AppColors.primary,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -243,27 +236,28 @@ class DeleteAccountConfirmationFlow {
           children: [
             const Icon(
               CupertinoIcons.exclamationmark_triangle_fill,
-              color: CupertinoColors.systemRed,
+              color: AppColors.error,
               size: 20,
             ),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'Account löschen?',
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
                 fontFamily: '.SF Pro Text',
               ),
             ),
           ],
         ),
-        content: const Padding(
-          padding: EdgeInsets.only(top: 12),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12),
           child: Text(
             'Bist du sicher? Alle Daten werden unwiderruflich gelöscht.',
             style: TextStyle(
               fontSize: 13,
-              color: CupertinoColors.systemGrey,
+              color: AppColors.grey,
               fontFamily: '.SF Pro Text',
             ),
           ),
@@ -271,11 +265,11 @@ class DeleteAccountConfirmationFlow {
         actions: [
           CupertinoDialogAction(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text(
+            child: Text(
               'Abbrechen',
               style: TextStyle(
                 fontSize: 17,
-                color: CupertinoColors.systemBlue,
+                color: isDark ? AppColors.accent : AppColors.primary,
                 fontFamily: '.SF Pro Text',
               ),
             ),

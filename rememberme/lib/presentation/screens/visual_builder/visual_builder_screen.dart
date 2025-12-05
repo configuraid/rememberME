@@ -226,7 +226,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 AppStrings.cancel,
                 style: TextStyle(
                   fontSize: 17,
-                  color: AppColors.interactive,
+                  color: isDark ? AppColors.accent : AppColors.primary,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -257,7 +257,8 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
           child: Container(
             constraints: const BoxConstraints(maxWidth: 340),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surface,
+              color:
+                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: isDark
@@ -305,12 +306,12 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
                     AppStrings.unsavedChanges,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isDark
-                              ? AppColors.textLight
-                              : AppColors.textPrimary,
-                        ),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -319,12 +320,11 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
                     AppStrings.unsavedChangesMessage,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: isDark
-                              ? AppColors.textDarkSecondary
-                              : AppColors.textSecondary,
-                          height: 1.5,
-                        ),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: AppColors.grey,
+                      height: 1.5,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -340,7 +340,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             side: BorderSide(
                               color: isDark
-                                  ? AppColors.borderDarkSubtle
+                                  ? AppColors.borderDark
                                   : AppColors.greyLight,
                               width: 1.5,
                             ),
@@ -361,26 +361,23 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: ElevatedButton(
+                        child: FilledButton(
                           onPressed: () => Navigator.pop(ctx, true),
-                          style: ElevatedButton.styleFrom(
+                          style: FilledButton.styleFrom(
                             backgroundColor: AppColors.error,
                             foregroundColor: AppColors.textLight,
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                           child: Text(
                             AppStrings.discardChanges,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textLight,
-                                ),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textLight,
+                            ),
                           ),
                         ),
                       ),
@@ -447,7 +444,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             ],
           ),
           backgroundColor: isDark
-              ? AppColors.backgroundDarkElevated.withOpacity(0.94)
+              ? AppColors.backgroundDarkElevated.withOpacity(0.8)
               : AppColors.surface.withOpacity(0.94),
           border: Border(
             bottom: BorderSide(
@@ -465,7 +462,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             },
             child: Icon(
               CupertinoIcons.back,
-              color: AppColors.accent,
+              color: isDark ? AppColors.accent : AppColors.primary,
               size: 28,
             ),
           ),
@@ -478,7 +475,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 onPressed: _showPreview,
                 child: Icon(
                   CupertinoIcons.eye,
-                  color: AppColors.accent,
+                  color: isDark ? AppColors.accent : AppColors.primary,
                   size: 24,
                 ),
               ),
@@ -489,7 +486,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 onPressed: _isSaving ? null : _save,
                 child: _isSaving
                     ? CupertinoActivityIndicator(
-                        color: AppColors.accent,
+                        color: isDark ? AppColors.accent : AppColors.primary,
                       )
                     : Text(
                         AppStrings.save,
@@ -497,7 +494,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                           fontSize: 17,
                           fontWeight: FontWeight.w600,
                           color: _hasUnsavedChanges
-                              ? AppColors.accent
+                              ? (isDark ? AppColors.accent : AppColors.primary)
                               : AppColors.greyLight,
                           fontFamily: '.SF Pro Text',
                         ),
@@ -528,7 +525,8 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                       borderRadius: BorderRadius.circular(25),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.accent.withOpacity(0.3),
+                          color: (isDark ? AppColors.accent : AppColors.primary)
+                              .withOpacity(0.3),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -537,18 +535,21 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           CupertinoIcons.add,
-                          color: AppColors.textLight,
+                          color:
+                              isDark ? AppColors.primary : AppColors.background,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           AppStrings.addBlock,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textLight,
+                            color: isDark
+                                ? AppColors.primary
+                                : AppColors.background,
                             fontFamily: '.SF Pro Text',
                           ),
                         ),
@@ -589,7 +590,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
               child: Icon(
                 CupertinoIcons.doc_text,
                 size: 64,
-                color: isDark ? AppColors.grey : AppColors.interactive,
+                color: isDark ? AppColors.accent : AppColors.primary,
               ),
             ),
             const SizedBox(height: 32),
@@ -616,7 +617,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             const SizedBox(height: 40),
             CupertinoButton(
               onPressed: _showAddBlockSheet,
-              color: AppColors.interactive,
+              color: isDark ? AppColors.accent : AppColors.primary,
               borderRadius: BorderRadius.circular(12),
               padding: const EdgeInsets.symmetric(
                 horizontal: 32,
@@ -624,19 +625,19 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Icon(
                     CupertinoIcons.add,
-                    color: AppColors.textLight,
+                    color: isDark ? AppColors.primary : AppColors.background,
                     size: 22,
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Text(
                     AppStrings.addBlock,
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textLight,
+                      color: isDark ? AppColors.primary : AppColors.background,
                       fontFamily: '.SF Pro Text',
                     ),
                   ),
@@ -728,13 +729,35 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
       onWillPop: _onWillPop,
       child: Scaffold(
         backgroundColor:
-            isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
+            isDark ? AppColors.backgroundDark : AppColors.background,
         appBar: AppBar(
-          title: Text(widget.memorial.name),
+          title: Text(
+            widget.memorial.name,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            ),
+          ),
           centerTitle: true,
           elevation: 0,
-          backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
-          foregroundColor: AppColors.textLight,
+          scrolledUnderElevation: 0,
+          backgroundColor: isDark
+              ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+              : AppColors.surface.withOpacity(0.94),
+          foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
+          surfaceTintColor: Colors.transparent,
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back_rounded,
+              color: isDark ? AppColors.accent : AppColors.primary,
+            ),
+            onPressed: () async {
+              if (await _onWillPop()) {
+                if (mounted) Navigator.pop(context);
+              }
+            },
+          ),
           actions: [
             if (_hasUnsavedChanges)
               Center(
@@ -775,45 +798,43 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                   ),
                 ),
               ),
-            Container(
-              margin: const EdgeInsets.only(right: 4),
-              decoration: BoxDecoration(
-                color: AppColors.textLight.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
+            IconButton(
+              icon: Icon(
+                Icons.visibility_rounded,
+                color: isDark ? AppColors.accent : AppColors.primary,
               ),
-              child: IconButton(
-                icon: const Icon(Icons.visibility_rounded),
-                onPressed: _showPreview,
-                tooltip: AppStrings.preview,
-              ),
+              onPressed: _showPreview,
+              tooltip: AppStrings.preview,
             ),
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.success,
-                    AppColors.success.withOpacity(0.8),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: IconButton(
-                icon: _isSaving
-                    ? const SizedBox(
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _isSaving
+                  ? Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.textLight),
+                            isDark ? AppColors.accent : AppColors.primary,
+                          ),
                         ),
-                      )
-                    : const Icon(Icons.check_rounded),
-                onPressed: _isSaving ? null : _save,
-                tooltip: AppStrings.save,
-                color: AppColors.textLight,
-              ),
+                      ),
+                    )
+                  : TextButton(
+                      onPressed: _save,
+                      child: Text(
+                        AppStrings.save,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: _hasUnsavedChanges
+                              ? (isDark ? AppColors.accent : AppColors.primary)
+                              : AppColors.greyLight,
+                        ),
+                      ),
+                    ),
             ),
           ],
         ),
@@ -822,10 +843,18 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             : _buildAndroidBlockList(isDark),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _showAddBlockSheet,
-          icon: const Icon(Icons.add_rounded),
-          label: const Text(AppStrings.addBlock),
-          backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
-          foregroundColor: AppColors.textLight,
+          icon: Icon(
+            Icons.add_rounded,
+            color: isDark ? AppColors.primary : AppColors.background,
+          ),
+          label: Text(
+            AppStrings.addBlock,
+            style: TextStyle(
+              color: isDark ? AppColors.primary : AppColors.background,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          backgroundColor: isDark ? AppColors.accent : AppColors.primary,
           elevation: 4,
         ),
       ),
@@ -847,8 +876,8 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                   end: Alignment.bottomRight,
                   colors: isDark
                       ? [
-                          AppColors.primaryLight.withOpacity(0.2),
-                          AppColors.primaryLight.withOpacity(0.1),
+                          AppColors.accent.withOpacity(0.2),
+                          AppColors.accent.withOpacity(0.1),
                         ]
                       : [
                           AppColors.primary.withOpacity(0.15),
@@ -858,7 +887,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isDark
-                      ? AppColors.primaryLight.withOpacity(0.3)
+                      ? AppColors.accent.withOpacity(0.3)
                       : AppColors.primary.withOpacity(0.2),
                   width: 2,
                 ),
@@ -866,26 +895,26 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
               child: Icon(
                 Icons.article_outlined,
                 size: 80,
-                color: isDark ? AppColors.primaryLight : AppColors.primary,
+                color: isDark ? AppColors.accent : AppColors.primary,
               ),
             ),
             const SizedBox(height: 32),
             Text(
               AppStrings.noContentYet,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                  ),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              ),
             ),
             const SizedBox(height: 12),
             Text(
               AppStrings.noContentMessage,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: isDark
-                        ? AppColors.textDarkSecondary
-                        : AppColors.textSecondary,
-                    height: 1.5,
-                  ),
+              style: TextStyle(
+                fontSize: 15,
+                color: AppColors.grey,
+                height: 1.5,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
@@ -896,8 +925,8 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                   end: Alignment.bottomRight,
                   colors: isDark
                       ? [
-                          AppColors.primaryLight,
-                          AppColors.primaryLight.withOpacity(0.8),
+                          AppColors.accent,
+                          AppColors.accent.withOpacity(0.8),
                         ]
                       : [
                           AppColors.primary,
@@ -908,7 +937,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 boxShadow: [
                   BoxShadow(
                     color: isDark
-                        ? AppColors.primaryLight.withOpacity(0.3)
+                        ? AppColors.accent.withOpacity(0.3)
                         : AppColors.primary.withOpacity(0.4),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
@@ -917,19 +946,25 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
               ),
               child: ElevatedButton.icon(
                 onPressed: _showAddBlockSheet,
-                icon: const Icon(Icons.add_rounded, size: 24),
-                label: const Text(
+                icon: Icon(
+                  Icons.add_rounded,
+                  size: 24,
+                  color: isDark ? AppColors.primary : AppColors.background,
+                ),
+                label: Text(
                   AppStrings.addBlock,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
+                    color: isDark ? AppColors.primary : AppColors.background,
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,
-                  foregroundColor: AppColors.textLight,
+                  foregroundColor:
+                      isDark ? AppColors.primary : AppColors.background,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 32,
                     vertical: 16,
@@ -1198,7 +1233,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 AppStrings.cancel,
                 style: TextStyle(
                   fontSize: 17,
-                  color: AppColors.interactive,
+                  color: isDark ? AppColors.accent : AppColors.primary,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -1238,7 +1273,8 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
           child: Container(
             constraints: const BoxConstraints(maxWidth: 340),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surface,
+              color:
+                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: isDark
@@ -1286,12 +1322,12 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
                     AppStrings.deleteBlockTitle,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isDark
-                              ? AppColors.textLight
-                              : AppColors.textPrimary,
-                        ),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -1300,12 +1336,11 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
                     AppStrings.deleteBlockMessage,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: isDark
-                              ? AppColors.textDarkSecondary
-                              : AppColors.textSecondary,
-                          height: 1.5,
-                        ),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: AppColors.grey,
+                      height: 1.5,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -1321,7 +1356,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             side: BorderSide(
                               color: isDark
-                                  ? AppColors.borderDarkSubtle
+                                  ? AppColors.borderDark
                                   : AppColors.greyLight,
                               width: 1.5,
                             ),
@@ -1342,7 +1377,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: ElevatedButton(
+                        child: FilledButton(
                           onPressed: () {
                             setState(() {
                               _blocks.removeWhere((b) => b.id == blockId);
@@ -1353,24 +1388,21 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                             });
                             Navigator.pop(ctx);
                           },
-                          style: ElevatedButton.styleFrom(
+                          style: FilledButton.styleFrom(
                             backgroundColor: AppColors.error,
                             foregroundColor: AppColors.textLight,
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: Text(
+                          child: const Text(
                             AppStrings.delete,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textLight,
-                                ),
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textLight,
+                            ),
                           ),
                         ),
                       ),
@@ -1608,7 +1640,7 @@ class _IOSBottomToastState extends State<_IOSBottomToast>
                     ],
                     border: Border.all(
                       color: widget.isDark
-                          ? AppColors.borderDarkLight
+                          ? AppColors.borderDark
                           : AppColors.greyLighter,
                       width: 0.5,
                     ),

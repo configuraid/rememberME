@@ -125,7 +125,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                 AppStrings.cancel,
                 style: TextStyle(
                   fontSize: 17,
-                  color: AppColors.interactive,
+                  color: isDark ? AppColors.accent : AppColors.primary,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -158,7 +158,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           child: Container(
             constraints: const BoxConstraints(maxWidth: 340),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surface,
+              color:
+                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: isDark
@@ -183,19 +184,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.error.withOpacity(0.2),
-                        AppColors.error.withOpacity(0.1),
-                      ],
-                    ),
+                    color: AppColors.error.withOpacity(isDark ? 0.2 : 0.1),
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.error.withOpacity(0.4),
-                      width: 2,
-                    ),
                   ),
                   child: const Icon(
                     Icons.warning_rounded,
@@ -208,12 +198,12 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
                     AppStrings.unsavedChanges,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isDark
-                              ? AppColors.textLight
-                              : AppColors.textPrimary,
-                        ),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -222,12 +212,11 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
                     AppStrings.unsavedChangesMessage,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: isDark
-                              ? AppColors.textDarkSecondary
-                              : AppColors.textSecondary,
-                          height: 1.5,
-                        ),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: AppColors.grey,
+                      height: 1.5,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -243,7 +232,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             side: BorderSide(
                               color: isDark
-                                  ? AppColors.borderDarkSubtle
+                                  ? AppColors.borderDark
                                   : AppColors.greyLight,
                               width: 1.5,
                             ),
@@ -264,29 +253,26 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: ElevatedButton(
+                        child: FilledButton(
                           onPressed: () {
                             Navigator.pop(ctx);
                             Navigator.pop(context);
                           },
-                          style: ElevatedButton.styleFrom(
+                          style: FilledButton.styleFrom(
                             backgroundColor: AppColors.error,
                             foregroundColor: AppColors.textLight,
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                           child: Text(
                             AppStrings.discardChanges,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textLight,
-                                ),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textLight,
+                            ),
                           ),
                         ),
                       ),
@@ -452,7 +438,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  color: isDark ? AppColors.accent : AppColors.primary,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -471,7 +457,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           child: Container(
             constraints: const BoxConstraints(maxWidth: 300),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surface,
+              color:
+                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: AppColors.success.withOpacity(0.3),
@@ -494,19 +481,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.success.withOpacity(0.2),
-                        AppColors.success.withOpacity(0.1),
-                      ],
-                    ),
+                    color: AppColors.success.withOpacity(isDark ? 0.2 : 0.1),
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.success.withOpacity(0.4),
-                      width: 2,
-                    ),
                   ),
                   child: const Icon(
                     Icons.check_circle_rounded,
@@ -517,12 +493,11 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                 const SizedBox(height: 16),
                 Text(
                   message,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: isDark
-                            ? AppColors.textLight
-                            : AppColors.textPrimary,
-                      ),
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -570,7 +545,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  color: isDark ? AppColors.accent : AppColors.primary,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -588,7 +563,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           child: Container(
             constraints: const BoxConstraints(maxWidth: 340),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surface,
+              color:
+                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: isDark
@@ -613,19 +589,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.error.withOpacity(0.2),
-                        AppColors.error.withOpacity(0.1),
-                      ],
-                    ),
+                    color: AppColors.error.withOpacity(isDark ? 0.2 : 0.1),
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.error.withOpacity(0.4),
-                      width: 2,
-                    ),
                   ),
                   child: const Icon(
                     Icons.error_rounded,
@@ -638,12 +603,12 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
                     title,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isDark
-                              ? AppColors.textLight
-                              : AppColors.textPrimary,
-                        ),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -652,12 +617,11 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
                     message,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: isDark
-                              ? AppColors.textDarkSecondary
-                              : AppColors.textSecondary,
-                          height: 1.5,
-                        ),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: AppColors.grey,
+                      height: 1.5,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -666,24 +630,23 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                   child: SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
+                    child: FilledButton(
                       onPressed: () => Navigator.pop(ctx),
-                      style: ElevatedButton.styleFrom(
+                      style: FilledButton.styleFrom(
                         backgroundColor: AppColors.error,
                         foregroundColor: AppColors.textLight,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: Text(
                         AppStrings.ok,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textLight,
-                                ),
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textLight,
+                        ),
                       ),
                     ),
                   ),
@@ -764,9 +727,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                         child: Icon(
                           CupertinoIcons.xmark,
                           size: 18,
-                          color: isDark
-                              ? AppColors.textPrimary
-                              : AppColors.textLight,
+                          color:
+                              isDark ? AppColors.primary : AppColors.background,
                         ),
                       ),
                     ),
@@ -780,9 +742,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                           Icon(
                             BlockTypeInfo.getIcon(widget.block.type),
                             size: 20,
-                            color: isDark
-                                ? AppColors.interactive
-                                : AppColors.primary,
+                            color:
+                                isDark ? AppColors.accent : AppColors.primary,
                           ),
                           const SizedBox(width: 8),
                           Flexible(
@@ -817,9 +778,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                         child: Icon(
                           CupertinoIcons.checkmark,
                           size: 18,
-                          color: isDark
-                              ? AppColors.textPrimary
-                              : AppColors.textLight,
+                          color:
+                              isDark ? AppColors.primary : AppColors.background,
                         ),
                       ),
                     ),
@@ -846,8 +806,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
   // Android Layout
   // ============================================================
   Widget _buildAndroidLayout(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
@@ -856,12 +815,11 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : AppColors.surface,
+            color:
+                isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             border: Border.all(
-              color: isDark
-                  ? AppColors.primaryLight.withOpacity(0.2)
-                  : AppColors.greyLighter,
+              color: isDark ? AppColors.borderDark : AppColors.greyLighter,
               width: 1,
             ),
           ),
@@ -873,8 +831,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color:
-                      isDark ? AppColors.borderDarkSubtle : AppColors.greyLight,
+                  color: isDark ? AppColors.borderDark : AppColors.greyLight,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -887,23 +844,13 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: isDark
-                              ? [
-                                  AppColors.primaryLight.withOpacity(0.25),
-                                  AppColors.primaryLight.withOpacity(0.15),
-                                ]
-                              : [
-                                  AppColors.primary.withOpacity(0.15),
-                                  AppColors.primary.withOpacity(0.08),
-                                ],
-                        ),
+                        color: isDark
+                            ? AppColors.toastBackgroundDark
+                            : AppColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isDark
-                              ? AppColors.primaryLight.withOpacity(0.3)
+                              ? AppColors.borderDark
                               : AppColors.primary.withOpacity(0.2),
                           width: 1.5,
                         ),
@@ -911,15 +858,15 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                       child: Icon(
                         BlockTypeInfo.getIcon(widget.block.type),
                         size: 24,
-                        color:
-                            isDark ? AppColors.primaryLight : AppColors.primary,
+                        color: isDark ? AppColors.accent : AppColors.primary,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         '${BlockTypeInfo.getTitle(widget.block.type)}${AppStrings.editBlock}',
-                        style: theme.textTheme.titleLarge?.copyWith(
+                        style: TextStyle(
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: isDark
                               ? AppColors.textLight
@@ -931,14 +878,14 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                     Container(
                       decoration: BoxDecoration(
                         color: isDark
-                            ? AppColors.cardBorderDark
+                            ? AppColors.toastBackgroundDark
                             : AppColors.greyLighter,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: IconButton(
                         icon: Icon(
                           Icons.close_rounded,
-                          color: isDark ? AppColors.grey : AppColors.greyDark,
+                          color: AppColors.grey,
                         ),
                         onPressed: _discardChanges,
                       ),
@@ -950,8 +897,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
               Divider(
                 height: 1,
                 thickness: 1,
-                color:
-                    isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
+                color: isDark ? AppColors.borderDark : AppColors.greyLighter,
               ),
 
               // Content
@@ -972,12 +918,13 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   16 + MediaQuery.of(context).padding.bottom,
                 ),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDark : AppColors.surface,
+                  color: isDark
+                      ? AppColors.backgroundDarkElevated
+                      : AppColors.surface,
                   border: Border(
                     top: BorderSide(
-                      color: isDark
-                          ? AppColors.cardBorderDark
-                          : AppColors.greyLighter,
+                      color:
+                          isDark ? AppColors.borderDark : AppColors.greyLighter,
                       width: 1,
                     ),
                   ),
@@ -1001,7 +948,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           side: BorderSide(
                             color: isDark
-                                ? AppColors.borderDarkSubtle
+                                ? AppColors.borderDark
                                 : AppColors.greyLight,
                             width: 1.5,
                           ),
@@ -1018,48 +965,22 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                     // Übernehmen Button
                     Expanded(
                       flex: 2,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: isDark
-                                ? [
-                                    AppColors.success,
-                                    AppColors.success.withOpacity(0.85),
-                                  ]
-                                : [
-                                    AppColors.success,
-                                    AppColors.success.withOpacity(0.9),
-                                  ],
+                      child: FilledButton.icon(
+                        onPressed: _confirmChanges,
+                        icon: const Icon(Icons.check_rounded, size: 22),
+                        label: Text(
+                          AppStrings.apply,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.success.withOpacity(0.4),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
                         ),
-                        child: ElevatedButton.icon(
-                          onPressed: _confirmChanges,
-                          icon: const Icon(Icons.check_rounded, size: 22),
-                          label: Text(
-                            AppStrings.apply,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            foregroundColor: AppColors.textLight,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          foregroundColor: AppColors.textLight,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                       ),
@@ -1158,56 +1079,25 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
             errorBuilder: (_, __, ___) => Container(
               height: 200,
               decoration: BoxDecoration(
-                color:
-                    isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
+                color: isDark
+                    ? AppColors.toastBackgroundDark
+                    : AppColors.greyLighter,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
                 Icons.broken_image_rounded,
                 size: 64,
-                color:
-                    isDark ? AppColors.borderDarkSubtle : AppColors.greyLight,
+                color: AppColors.grey,
               ),
             ),
           ),
         ),
         const SizedBox(height: 20),
       ],
-      Container(
+      SizedBox(
         height: 56,
-        decoration: BoxDecoration(
-          gradient: _isUploading
-              ? null
-              : LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          AppColors.primaryLight,
-                          AppColors.primaryLight.withOpacity(0.85),
-                        ]
-                      : [
-                          AppColors.primary,
-                          AppColors.primary.withOpacity(0.9),
-                        ],
-                ),
-          color: _isUploading
-              ? (isDark ? AppColors.cardBorderDark : AppColors.greyLight)
-              : null,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: _isUploading
-              ? []
-              : [
-                  BoxShadow(
-                    color: isDark
-                        ? AppColors.primaryLight.withOpacity(0.3)
-                        : AppColors.primary.withOpacity(0.4),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-        ),
-        child: ElevatedButton.icon(
+        width: double.infinity,
+        child: FilledButton.icon(
           onPressed: _isUploading ? null : _handleImageUpload,
           icon: _isUploading
               ? const SizedBox(
@@ -1228,17 +1118,15 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           label: Text(
             _isUploading ? AppStrings.uploading : AppStrings.uploadImage,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 17,
               fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
             ),
           ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            foregroundColor: AppColors.textLight,
-            disabledBackgroundColor: Colors.transparent,
-            minimumSize: const Size(double.infinity, 56),
+          style: FilledButton.styleFrom(
+            backgroundColor: isDark ? AppColors.accent : AppColors.primary,
+            foregroundColor: isDark ? AppColors.primary : AppColors.background,
+            disabledBackgroundColor:
+                isDark ? AppColors.toastBackgroundDark : AppColors.greyLighter,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -1265,10 +1153,11 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       if (images.isNotEmpty) ...[
         Text(
           '${AppStrings.galleryLabel} (${images.length}/6)',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textLight : AppColors.textPrimary,
-              ),
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+          ),
         ),
         const SizedBox(height: 12),
         GridView.builder(
@@ -1287,9 +1176,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isDark
-                          ? AppColors.cardBorderDark
-                          : AppColors.greyLighter,
+                      color:
+                          isDark ? AppColors.borderDark : AppColors.greyLighter,
                       width: 1.5,
                     ),
                   ),
@@ -1302,13 +1190,11 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                       height: double.infinity,
                       errorBuilder: (_, __, ___) => Container(
                         color: isDark
-                            ? AppColors.cardBorderDark
+                            ? AppColors.toastBackgroundDark
                             : AppColors.greyLighter,
                         child: Icon(
                           Icons.broken_image_rounded,
-                          color: isDark
-                              ? AppColors.borderDarkSubtle
-                              : AppColors.greyLight,
+                          color: AppColors.grey,
                         ),
                       ),
                     ),
@@ -1322,14 +1208,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppColors.error,
-                            AppColors.error.withOpacity(0.85),
-                          ],
-                        ),
+                        color: AppColors.error,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
@@ -1357,41 +1236,10 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       ],
 
       // Upload Button
-      Container(
+      SizedBox(
         height: 56,
-        decoration: BoxDecoration(
-          gradient: _isUploading || images.length >= 6
-              ? null
-              : LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          AppColors.primaryLight,
-                          AppColors.primaryLight.withOpacity(0.85),
-                        ]
-                      : [
-                          AppColors.primary,
-                          AppColors.primary.withOpacity(0.9),
-                        ],
-                ),
-          color: _isUploading || images.length >= 6
-              ? (isDark ? AppColors.cardBorderDark : AppColors.greyLight)
-              : null,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: _isUploading || images.length >= 6
-              ? []
-              : [
-                  BoxShadow(
-                    color: isDark
-                        ? AppColors.primaryLight.withOpacity(0.3)
-                        : AppColors.primary.withOpacity(0.4),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-        ),
-        child: ElevatedButton.icon(
+        width: double.infinity,
+        child: FilledButton.icon(
           onPressed: _isUploading
               ? null
               : (images.length < 6 ? _handleGalleryImagesUpload : null),
@@ -1418,19 +1266,16 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                     ? '${AppStrings.addImages} (${6 - images.length}${AppStrings.remaining})'
                     : AppStrings.maxReachedGallery,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 17,
               fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
             ),
           ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            foregroundColor: AppColors.textLight,
-            disabledBackgroundColor: Colors.transparent,
-            disabledForegroundColor:
-                isDark ? AppColors.grey : AppColors.textSecondary,
-            minimumSize: const Size(double.infinity, 56),
+          style: FilledButton.styleFrom(
+            backgroundColor: isDark ? AppColors.accent : AppColors.primary,
+            foregroundColor: isDark ? AppColors.primary : AppColors.background,
+            disabledBackgroundColor:
+                isDark ? AppColors.toastBackgroundDark : AppColors.greyLighter,
+            disabledForegroundColor: AppColors.grey,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -1630,7 +1475,9 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                             ? (isDark
                                 ? AppColors.toastBackgroundDark
                                 : AppColors.background)
-                            : AppColors.primary.withOpacity(0.15),
+                            : (isDark
+                                ? AppColors.toastBackgroundDark
+                                : AppColors.primary.withOpacity(0.1)),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: _isUploading
@@ -1642,7 +1489,9 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                                   strokeWidth: 2,
                                   value: _videoUploadProgress,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    AppColors.primary,
+                                    isDark
+                                        ? AppColors.accent
+                                        : AppColors.primary,
                                   ),
                                 ),
                               ),
@@ -1650,7 +1499,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                           : Icon(
                               CupertinoIcons.videocam_fill,
                               size: 18,
-                              color: AppColors.primary,
+                              color:
+                                  isDark ? AppColors.accent : AppColors.primary,
                             ),
                     ),
                     const SizedBox(width: 12),
@@ -1691,7 +1541,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                       Icon(
                         CupertinoIcons.chevron_right,
                         size: 20,
-                        color: AppColors.greyLight,
+                        color: AppColors.grey,
                       ),
                   ],
                 ),
@@ -1707,8 +1557,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                       backgroundColor: isDark
                           ? AppColors.toastBackgroundDark
                           : AppColors.greyLighter,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          isDark ? AppColors.accent : AppColors.primary),
                     ),
                   ),
                 ),
@@ -1754,12 +1604,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           ),
         ),
         const SizedBox(height: 24),
-
-        // ============================================================
-        // NEU: Autoplay Toggle für iOS
-        // ============================================================
         _buildIOSAutoplayToggle(isDark, autoplay),
-
         const SizedBox(height: 24),
         Text(
           'Beschreibung',
@@ -1794,7 +1639,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
             ),
             placeholderStyle: TextStyle(
               fontSize: 17,
-              color: isDark ? AppColors.greyDark : AppColors.grey,
+              color: AppColors.grey,
               fontFamily: '.SF Pro Text',
             ),
             decoration: const BoxDecoration(
@@ -1835,7 +1680,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                         'Abbrechen',
                         style: TextStyle(
                           fontSize: 17,
-                          color: AppColors.primary,
+                          color: isDark ? AppColors.accent : AppColors.primary,
                           fontFamily: '.SF Pro Text',
                         ),
                       ),
@@ -1894,11 +1739,12 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           Container(
             height: 200,
             decoration: BoxDecoration(
-              color: isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
+              color: isDark
+                  ? AppColors.toastBackgroundDark
+                  : AppColors.greyLighter,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color:
-                    isDark ? AppColors.borderDarkSubtle : AppColors.greyLight,
+                color: isDark ? AppColors.borderDark : AppColors.greyLight,
                 width: 1.5,
               ),
             ),
@@ -1909,7 +1755,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   Icon(
                     Icons.play_circle_filled,
                     size: 64,
-                    color: isDark ? AppColors.primaryLight : AppColors.primary,
+                    color: isDark ? AppColors.accent : AppColors.primary,
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -1926,7 +1772,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                     'Tippe zum Abspielen',
                     style: TextStyle(
                       fontSize: 13,
-                      color: isDark ? AppColors.grey : AppColors.greyDark,
+                      color: AppColors.grey,
                     ),
                   ),
                 ],
@@ -1935,40 +1781,9 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           ),
           const SizedBox(height: 20),
         ],
-        Container(
+        SizedBox(
           height: 56,
-          decoration: BoxDecoration(
-            gradient: _isUploading
-                ? null
-                : LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [
-                            AppColors.primaryLight,
-                            AppColors.primaryLight.withOpacity(0.85),
-                          ]
-                        : [
-                            AppColors.primary,
-                            AppColors.primary.withOpacity(0.9),
-                          ],
-                  ),
-            color: _isUploading
-                ? (isDark ? AppColors.cardBorderDark : AppColors.greyLight)
-                : null,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: _isUploading
-                ? []
-                : [
-                    BoxShadow(
-                      color: isDark
-                          ? AppColors.primaryLight.withOpacity(0.3)
-                          : AppColors.primary.withOpacity(0.4),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-          ),
+          width: double.infinity,
           child: Stack(
             children: [
               if (_isUploading)
@@ -1980,46 +1795,51 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                       backgroundColor: Colors.transparent,
                       valueColor: AlwaysStoppedAnimation<Color>(
                         isDark
-                            ? AppColors.primaryLight.withOpacity(0.3)
+                            ? AppColors.accent.withOpacity(0.3)
                             : AppColors.primary.withOpacity(0.3),
                       ),
                     ),
                   ),
                 ),
-              ElevatedButton.icon(
-                onPressed: _isUploading ? null : _handleVideoUpload,
-                icon: _isUploading
-                    ? SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          value: _videoUploadProgress,
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                              AppColors.textLight),
-                        ),
-                      )
-                    : const Icon(Icons.videocam_rounded, size: 22),
-                label: Text(
-                  _isUploading
-                      ? 'Uploading... ${(_videoUploadProgress * 100).toInt()}%'
-                      : currentUrl.isEmpty
-                          ? 'Video hochladen (max. 15 Sek.)'
-                          : 'Video ersetzen',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
+              SizedBox(
+                height: 56,
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _isUploading ? null : _handleVideoUpload,
+                  icon: _isUploading
+                      ? SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            value: _videoUploadProgress,
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                                AppColors.textLight),
+                          ),
+                        )
+                      : const Icon(Icons.videocam_rounded, size: 22),
+                  label: Text(
+                    _isUploading
+                        ? 'Uploading... ${(_videoUploadProgress * 100).toInt()}%'
+                        : currentUrl.isEmpty
+                            ? 'Video hochladen (max. 15 Sek.)'
+                            : 'Video ersetzen',
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  foregroundColor: AppColors.textLight,
-                  disabledBackgroundColor: Colors.transparent,
-                  minimumSize: const Size(double.infinity, 56),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                  style: FilledButton.styleFrom(
+                    backgroundColor:
+                        isDark ? AppColors.accent : AppColors.primary,
+                    foregroundColor:
+                        isDark ? AppColors.primary : AppColors.background,
+                    disabledBackgroundColor: isDark
+                        ? AppColors.toastBackgroundDark
+                        : AppColors.greyLighter,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                 ),
               ),
@@ -2034,7 +1854,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
               Icon(
                 Icons.info_outline,
                 size: 16,
-                color: isDark ? AppColors.grey : AppColors.greyDark,
+                color: AppColors.grey,
               ),
               const SizedBox(width: 6),
               Expanded(
@@ -2042,7 +1862,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   'Maximale Länge: 15 Sekunden • Max. Größe: 50MB',
                   style: TextStyle(
                     fontSize: 12,
-                    color: isDark ? AppColors.grey : AppColors.greyDark,
+                    color: AppColors.grey,
                   ),
                 ),
               ),
@@ -2050,12 +1870,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           ),
         ),
         const SizedBox(height: 20),
-
-        // ============================================================
-        // NEU: Autoplay Toggle für Android
-        // ============================================================
         _buildAndroidAutoplayToggle(isDark, autoplay),
-
         const SizedBox(height: 20),
         _buildTextField(
           label: AppStrings.description,
@@ -2089,9 +1904,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     }
   }
 
-  // ============================================================
-  // NEU: iOS Autoplay Toggle Widget
-  // ============================================================
   Widget _buildIOSAutoplayToggle(bool isDark, bool autoplay) {
     return Container(
       decoration: BoxDecoration(
@@ -2160,18 +1972,15 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     );
   }
 
-  // ============================================================
-  // NEU: Android Autoplay Toggle Widget
-  // ============================================================
   Widget _buildAndroidAutoplayToggle(bool isDark, bool autoplay) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: autoplay
               ? AppColors.success.withOpacity(0.5)
-              : (isDark ? AppColors.cardBorderDark : AppColors.greyLighter),
+              : (isDark ? AppColors.borderDark : AppColors.greyLighter),
           width: 1.5,
         ),
         boxShadow: [
@@ -2197,30 +2006,17 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: autoplay
-                          ? [
-                              AppColors.success.withOpacity(0.2),
-                              AppColors.success.withOpacity(0.1),
-                            ]
-                          : isDark
-                              ? [
-                                  AppColors.grey.withOpacity(0.2),
-                                  AppColors.grey.withOpacity(0.1),
-                                ]
-                              : [
-                                  AppColors.greyLight.withOpacity(0.5),
-                                  AppColors.greyLight.withOpacity(0.3),
-                                ],
-                    ),
+                    color: autoplay
+                        ? AppColors.success.withOpacity(isDark ? 0.2 : 0.1)
+                        : (isDark
+                            ? AppColors.toastBackgroundDark
+                            : AppColors.greyLighter),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: autoplay
                           ? AppColors.success.withOpacity(0.3)
                           : (isDark
-                              ? AppColors.grey.withOpacity(0.3)
+                              ? AppColors.borderDark
                               : AppColors.greyLight),
                       width: 1.5,
                     ),
@@ -2230,9 +2026,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                         ? Icons.play_circle_filled_rounded
                         : Icons.play_circle_outline_rounded,
                     size: 24,
-                    color: autoplay
-                        ? AppColors.success
-                        : (isDark ? AppColors.grey : AppColors.greyDark),
+                    color: autoplay ? AppColors.success : AppColors.grey,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -2242,24 +2036,23 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                     children: [
                       Text(
                         'Autoplay',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark
-                                      ? AppColors.textLight
-                                      : AppColors.textPrimary,
-                                ),
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? AppColors.textLight
+                              : AppColors.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         autoplay
                             ? 'Video startet automatisch beim Laden'
                             : 'Video muss manuell gestartet werden',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: isDark
-                                  ? AppColors.textDarkSecondary
-                                  : AppColors.textSecondary,
-                            ),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.grey,
+                        ),
                       ),
                     ],
                   ),
@@ -2272,10 +2065,10 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   },
                   activeColor: AppColors.success,
                   activeTrackColor: AppColors.success.withOpacity(0.4),
-                  inactiveThumbColor:
-                      isDark ? AppColors.grey : AppColors.greyDark,
-                  inactiveTrackColor:
-                      isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
+                  inactiveThumbColor: AppColors.grey,
+                  inactiveTrackColor: isDark
+                      ? AppColors.toastBackgroundDark
+                      : AppColors.greyLighter,
                 ),
               ],
             ),
@@ -2331,7 +2124,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
               ),
               placeholderStyle: TextStyle(
                 fontSize: 17,
-                color: isDark ? AppColors.greyDark : AppColors.grey,
+                color: AppColors.grey,
                 fontFamily: '.SF Pro Text',
               ),
               decoration: const BoxDecoration(
@@ -2349,11 +2142,12 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                letterSpacing: 0.15,
-              ),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            letterSpacing: 0.15,
+          ),
         ),
         const SizedBox(height: 8),
         Container(
@@ -2371,35 +2165,34 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
             controller: _getController(key, defaultValue),
             style: TextStyle(
               color: isDark ? AppColors.textLight : AppColors.textPrimary,
-              fontSize: 15,
+              fontSize: 17,
             ),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(
-                color: isDark ? AppColors.greyDark : AppColors.greyLight,
+                color: AppColors.grey,
               ),
               filled: true,
-              fillColor: isDark ? AppColors.surfaceDark : AppColors.surface,
+              fillColor:
+                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color:
-                      isDark ? AppColors.cardBorderDark : AppColors.greyLight,
+                  color: isDark ? AppColors.borderDark : AppColors.greyLighter,
                   width: 1.5,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color:
-                      isDark ? AppColors.cardBorderDark : AppColors.greyLight,
+                  color: isDark ? AppColors.borderDark : AppColors.greyLighter,
                   width: 1.5,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  color: isDark ? AppColors.accent : AppColors.primary,
                   width: 2,
                 ),
               ),
@@ -2436,11 +2229,12 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   fontFamily: '.SF Pro Text',
                   fontWeight: FontWeight.w600,
                 )
-              : Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                    letterSpacing: 0.15,
-                  ),
+              : TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                  letterSpacing: 0.15,
+                ),
         ),
         const SizedBox(height: 8),
         Container(
@@ -2457,34 +2251,33 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           child: DropdownButtonFormField(
             value: value,
             dropdownColor:
-                isDark ? AppColors.cardBorderDark : AppColors.surface,
+                isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
             style: TextStyle(
               color: isDark ? AppColors.textLight : AppColors.textPrimary,
-              fontSize: 15,
+              fontSize: 17,
             ),
             decoration: InputDecoration(
               filled: true,
-              fillColor: isDark ? AppColors.surfaceDark : AppColors.surface,
+              fillColor:
+                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color:
-                      isDark ? AppColors.cardBorderDark : AppColors.greyLight,
+                  color: isDark ? AppColors.borderDark : AppColors.greyLighter,
                   width: 1.5,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color:
-                      isDark ? AppColors.cardBorderDark : AppColors.greyLight,
+                  color: isDark ? AppColors.borderDark : AppColors.greyLighter,
                   width: 1.5,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  color: isDark ? AppColors.accent : AppColors.primary,
                   width: 2,
                 ),
               ),
@@ -2534,45 +2327,35 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                       fontFamily: '.SF Pro Text',
                       fontWeight: FontWeight.w600,
                     )
-                  : Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isDark
-                            ? AppColors.textLight
-                            : AppColors.textPrimary,
-                        letterSpacing: 0.15,
-                      ),
+                  : TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                      letterSpacing: 0.15,
+                    ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          AppColors.primaryLight.withOpacity(0.2),
-                          AppColors.primaryLight.withOpacity(0.1),
-                        ]
-                      : [
-                          AppColors.primary.withOpacity(0.12),
-                          AppColors.primary.withOpacity(0.06),
-                        ],
-                ),
+                color: isDark
+                    ? AppColors.toastBackgroundDark
+                    : AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isDark
-                      ? AppColors.primaryLight.withOpacity(0.3)
+                      ? AppColors.borderDark
                       : AppColors.primary.withOpacity(0.2),
                   width: 1,
                 ),
               ),
               child: Text(
                 value.round().toString(),
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color:
-                          isDark ? AppColors.primaryLight : AppColors.primary,
-                    ),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppColors.accent : AppColors.primary,
+                ),
               ),
             ),
           ],
@@ -2580,14 +2363,13 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         const SizedBox(height: 4),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor:
-                isDark ? AppColors.primaryLight : AppColors.primary,
+            activeTrackColor: isDark ? AppColors.accent : AppColors.primary,
             inactiveTrackColor: isDark
-                ? AppColors.primaryLight.withOpacity(0.3)
+                ? AppColors.accent.withOpacity(0.3)
                 : AppColors.primary.withOpacity(0.3),
-            thumbColor: isDark ? AppColors.primaryLight : AppColors.primary,
+            thumbColor: isDark ? AppColors.accent : AppColors.primary,
             overlayColor: isDark
-                ? AppColors.primaryLight.withOpacity(0.2)
+                ? AppColors.accent.withOpacity(0.2)
                 : AppColors.primary.withOpacity(0.2),
             trackHeight: 4,
           ),
@@ -2621,11 +2403,12 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   fontFamily: '.SF Pro Text',
                   fontWeight: FontWeight.w600,
                 )
-              : Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                    letterSpacing: 0.15,
-                  ),
+              : TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                  letterSpacing: 0.15,
+                ),
         ),
         const SizedBox(height: 8),
         Row(
@@ -2678,29 +2461,16 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       child: Container(
         height: 52,
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          AppColors.primaryLight.withOpacity(0.25),
-                          AppColors.primaryLight.withOpacity(0.15),
-                        ]
-                      : [
-                          AppColors.primary.withOpacity(0.15),
-                          AppColors.primary.withOpacity(0.08),
-                        ],
-                )
-              : null,
-          color: !isSelected
-              ? (isDark ? AppColors.surfaceDark : AppColors.surface)
-              : null,
+          color: isSelected
+              ? (isDark
+                  ? AppColors.accent.withOpacity(0.2)
+                  : AppColors.primary.withOpacity(0.1))
+              : (isDark ? AppColors.backgroundDarkElevated : AppColors.surface),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
-                ? (isDark ? AppColors.primaryLight : AppColors.primary)
-                : (isDark ? AppColors.cardBorderDark : AppColors.greyLight),
+                ? (isDark ? AppColors.accent : AppColors.primary)
+                : (isDark ? AppColors.borderDark : AppColors.greyLighter),
             width: isSelected ? 2 : 1.5,
           ),
         ),
@@ -2713,8 +2483,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
               child: Icon(
                 icon,
                 color: isSelected
-                    ? (isDark ? AppColors.primaryLight : AppColors.primary)
-                    : (isDark ? AppColors.grey : AppColors.greyDark),
+                    ? (isDark ? AppColors.accent : AppColors.primary)
+                    : AppColors.grey,
                 size: 24,
               ),
             ),
@@ -2740,11 +2510,12 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                   fontFamily: '.SF Pro Text',
                   fontWeight: FontWeight.w600,
                 )
-              : Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                    letterSpacing: 0.15,
-                  ),
+              : TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                  letterSpacing: 0.15,
+                ),
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -2803,8 +2574,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
-                    ? (isDark ? AppColors.primaryLight : AppColors.primary)
-                    : (isDark ? AppColors.cardBorderDark : AppColors.greyLight),
+                    ? (isDark ? AppColors.accent : AppColors.primary)
+                    : (isDark ? AppColors.borderDark : AppColors.greyLighter),
                 width: isSelected ? 3 : 1.5,
               ),
             ),

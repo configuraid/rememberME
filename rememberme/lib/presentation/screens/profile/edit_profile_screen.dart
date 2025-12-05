@@ -206,7 +206,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       builder: (ctx) {
         return Container(
           decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : AppColors.surface,
+            color:
+                isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
           ),
           child: SafeArea(
@@ -218,9 +219,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   width: 36,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.textSecondary
-                        : AppColors.textSecondary.withOpacity(0.3),
+                    color: AppColors.grey.withOpacity(0.4),
                     borderRadius: BorderRadius.circular(2.5),
                   ),
                 ),
@@ -230,18 +229,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
+                    color: AppColors.grey,
+                    fontFamily: '.SF Pro Text',
                   ),
                 ),
                 const SizedBox(height: 8),
                 Divider(
                   height: 1,
-                  color: isDark
-                      ? AppColors.divider.withOpacity(0.2)
-                      : AppColors.divider,
+                  color: isDark ? AppColors.borderDark : AppColors.divider,
                 ),
                 _buildIOSActionSheetOption(
-                  icon: Icons.photo_library_outlined,
+                  icon: CupertinoIcons.photo,
                   title: AppStrings.chooseFromGallery,
                   isDark: isDark,
                   onTap: () {
@@ -253,12 +251,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   height: 1,
                   indent: 16,
                   endIndent: 16,
-                  color: isDark
-                      ? AppColors.divider.withOpacity(0.2)
-                      : AppColors.divider,
+                  color: isDark ? AppColors.borderDark : AppColors.divider,
                 ),
                 _buildIOSActionSheetOption(
-                  icon: Icons.camera_alt_outlined,
+                  icon: CupertinoIcons.camera,
                   title: AppStrings.takePhoto,
                   isDark: isDark,
                   onTap: () {
@@ -268,26 +264,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 Divider(
                   height: 1,
-                  color: isDark
-                      ? AppColors.divider.withOpacity(0.2)
-                      : AppColors.divider,
+                  color: isDark ? AppColors.borderDark : AppColors.divider,
                 ),
                 const SizedBox(height: 8),
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 8),
                   width: double.infinity,
-                  child: TextButton(
+                  child: CupertinoButton(
                     onPressed: () => Navigator.of(ctx).pop(),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
                     child: Text(
                       AppStrings.cancel,
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
                         color:
-                            isDark ? AppColors.accent : AppColors.interactive,
+                            isDark ? AppColors.primaryLight : AppColors.primary,
+                        fontFamily: '.SF Pro Text',
                       ),
                     ),
                   ),
@@ -307,8 +299,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required bool isDark,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
@@ -317,14 +310,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             Icon(
               icon,
               size: 22,
-              color: isDark ? AppColors.accent : AppColors.interactive,
+              color: isDark ? AppColors.accent : AppColors.primary,
             ),
             const SizedBox(width: 12),
             Text(
               title,
               style: TextStyle(
                 fontSize: 17,
-                color: isDark ? AppColors.accent : AppColors.interactive,
+                color: isDark ? AppColors.accent : AppColors.primary,
+                fontFamily: '.SF Pro Text',
               ),
             ),
           ],
@@ -341,8 +335,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : AppColors.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         ),
         child: SafeArea(
           child: Column(
@@ -350,24 +344,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             children: [
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 12),
-                width: 40,
-                height: 4,
+                width: 36,
+                height: 5,
                 decoration: BoxDecoration(
-                  color:
-                      isDark ? AppColors.borderDarkSubtle : AppColors.greyLight,
-                  borderRadius: BorderRadius.circular(2),
+                  color: AppColors.grey.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(2.5),
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
                 child: Text(
                   AppStrings.changeProfileImage,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isDark
-                            ? AppColors.textLight
-                            : AppColors.textPrimary,
-                      ),
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                  ),
                 ),
               ),
               _buildAndroidBottomSheetOption(
@@ -406,9 +398,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     child: Text(
                       AppStrings.cancel,
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 17,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.grey : AppColors.greyDark,
+                        color: AppColors.grey,
                       ),
                     ),
                   ),
@@ -437,37 +429,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [
-                            AppColors.accent.withOpacity(0.25),
-                            AppColors.accent.withOpacity(0.15),
-                          ]
-                        : [
-                            AppColors.primary.withOpacity(0.15),
-                            AppColors.primary.withOpacity(0.08),
-                          ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
+                  color: isDark
+                      ? AppColors.toastBackgroundDark
+                      : AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   icon,
                   color: isDark ? AppColors.accent : AppColors.primary,
-                  size: 24,
+                  size: 22,
                 ),
               ),
               const SizedBox(width: 16),
               Text(
                 title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color:
-                          isDark ? AppColors.textLight : AppColors.textPrimary,
-                    ),
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                ),
               ),
             ],
           ),
@@ -526,14 +508,366 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   // ==================== iOS LAYOUT ====================
   Widget _buildIOSLayout(
       BuildContext context, ProfileState state, bool isDark) {
+    return CupertinoPageScaffold(
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(
+          AppStrings.editProfile,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            fontFamily: '.SF Pro Text',
+          ),
+        ),
+        backgroundColor: isDark
+            ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+            : AppColors.surface.withOpacity(0.94),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: [
+              const SizedBox(height: 24),
+              _buildIOSProfileImageCard(state, isDark),
+              const SizedBox(height: 24),
+              _buildIOSSectionHeader('Persönliche Informationen', isDark),
+              const SizedBox(height: 8),
+              _buildIOSInfoCard(
+                isDark: isDark,
+                children: [
+                  _buildIOSCardTextField(
+                    controller: _nameController,
+                    label: AppStrings.name,
+                    icon: CupertinoIcons.person,
+                    isDark: isDark,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return AppStrings.enterName;
+                      }
+                      return null;
+                    },
+                  ),
+                  _buildIOSDivider(isDark),
+                  _buildIOSCardTextField(
+                    controller: _emailController,
+                    label: AppStrings.email,
+                    icon: CupertinoIcons.mail,
+                    isDark: isDark,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return AppStrings.enterEmail;
+                      }
+                      if (!value.contains('@')) {
+                        return AppStrings.enterValidEmail;
+                      }
+                      return null;
+                    },
+                  ),
+                  _buildIOSDivider(isDark),
+                  _buildIOSCardTextField(
+                    controller: _phoneController,
+                    label: AppStrings.phoneOptional,
+                    icon: CupertinoIcons.phone,
+                    isDark: isDark,
+                    keyboardType: TextInputType.phone,
+                    isLast: true,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _buildIOSSectionHeader('Über mich', isDark),
+              const SizedBox(height: 8),
+              _buildIOSInfoCard(
+                isDark: isDark,
+                children: [
+                  _buildIOSCardTextField(
+                    controller: _bioController,
+                    label: AppStrings.aboutMeOptional,
+                    icon: CupertinoIcons.info_circle,
+                    isDark: isDark,
+                    maxLines: 4,
+                    maxLength: 200,
+                    isLast: true,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+              _buildIOSSaveButton(state, isDark),
+              const SizedBox(height: 100),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIOSProfileImageCard(ProfileState state, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+        ),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.accent.withOpacity(0.4),
+                  border: Border.all(
+                    color: AppColors.accent,
+                    width: 3,
+                  ),
+                ),
+                child: ClipOval(
+                  child: _selectedImage != null
+                      ? Image.file(_selectedImage!, fit: BoxFit.cover)
+                      : (state.profileImageUrl != null
+                          ? Image.network(state.profileImageUrl!,
+                              fit: BoxFit.cover)
+                          : Center(
+                              child: Text(
+                                _nameController.text.isNotEmpty
+                                    ? _nameController.text[0].toUpperCase()
+                                    : 'U',
+                                style: TextStyle(
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.accent,
+                                  fontFamily: '.SF Pro Display',
+                                  decoration: TextDecoration.none,
+                                ),
+                              ),
+                            )),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: _showImageSourceDialog,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.accent,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isDark
+                            ? AppColors.backgroundDarkElevated
+                            : AppColors.surface,
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(
+                      CupertinoIcons.camera_fill,
+                      size: 16,
+                      color: isDark ? AppColors.primary : AppColors.background,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _nameController.text.isNotEmpty
+                ? _nameController.text
+                : 'Dein Name',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              fontFamily: '.SF Pro Display',
+              decoration: TextDecoration.none,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _emailController.text.isNotEmpty
+                ? _emailController.text
+                : 'deine@email.de',
+            style: TextStyle(
+              fontSize: 15,
+              color: AppColors.grey,
+              fontFamily: '.SF Pro Text',
+              decoration: TextDecoration.none,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIOSSectionHeader(String title, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16),
+      child: Text(
+        title.toUpperCase(),
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: AppColors.grey,
+          letterSpacing: 0.5,
+          fontFamily: '.SF Pro Text',
+          decoration: TextDecoration.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIOSInfoCard({
+    required bool isDark,
+    required List<Widget> children,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+        ),
+      ),
+      child: Column(
+        children: children,
+      ),
+    );
+  }
+
+  Widget _buildIOSDivider(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 52),
+      child: Divider(
+        height: 1,
+        thickness: 0.5,
+        color: isDark ? AppColors.borderDark : AppColors.divider,
+      ),
+    );
+  }
+
+  Widget _buildIOSCardTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required bool isDark,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    int maxLines = 1,
+    int? maxLength,
+    bool isLast = false,
+  }) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        maxLines > 1 ? 12 : 0,
+        16,
+        maxLines > 1 ? 12 : 0,
+      ),
+      child: Row(
+        crossAxisAlignment:
+            maxLines > 1 ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: AppColors.grey,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: TextFormField(
+              controller: controller,
+              keyboardType: keyboardType,
+              maxLines: maxLines,
+              maxLength: maxLength,
+              style: TextStyle(
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                fontSize: 17,
+                fontFamily: '.SF Pro Text',
+              ),
+              decoration: InputDecoration(
+                hintText: label,
+                hintStyle: TextStyle(
+                  color: AppColors.grey,
+                  fontSize: 17,
+                  fontFamily: '.SF Pro Text',
+                ),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(
+                  vertical: maxLines > 1 ? 8 : 12,
+                ),
+                counterText: '',
+              ),
+              validator: validator,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIOSSaveButton(ProfileState state, bool isDark) {
+    return SizedBox(
+      height: 50,
+      child: CupertinoButton(
+        padding: EdgeInsets.zero,
+        color: state.isLoading
+            ? (isDark ? AppColors.toastBackgroundDark : AppColors.greyLighter)
+            : (isDark ? AppColors.accent : AppColors.primary),
+        borderRadius: BorderRadius.circular(12),
+        onPressed: state.isLoading ? null : _saveProfile,
+        child: state.isLoading
+            ? CupertinoActivityIndicator(
+                color: AppColors.grey,
+              )
+            : Text(
+                AppStrings.saveChanges,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: state.isLoading
+                      ? AppColors.grey
+                      : (isDark ? AppColors.primary : AppColors.background),
+                  fontFamily: '.SF Pro Text',
+                ),
+              ),
+      ),
+    );
+  }
+
+  // ==================== ANDROID LAYOUT ====================
+  Widget _buildAndroidLayout(
+      BuildContext context, ProfileState state, bool isDark) {
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
       appBar: AppBar(
-        title: const Text(AppStrings.editProfile),
+        title: Text(
+          AppStrings.editProfile,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+          ),
+        ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
-        foregroundColor: AppColors.textLight,
+        scrolledUnderElevation: 0,
+        backgroundColor: isDark
+            ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+            : AppColors.surface.withOpacity(0.94),
+        foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
+        surfaceTintColor: Colors.transparent,
       ),
       body: Form(
         key: _formKey,
@@ -541,17 +875,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           children: [
             const SizedBox(height: 24),
-            _buildIOSProfileImageCard(state, isDark),
+            _buildAndroidProfileImageCard(state, isDark),
             const SizedBox(height: 24),
-            _buildIOSSectionHeader('Persönliche Informationen', isDark),
+            _buildAndroidSectionHeader('Persönliche Informationen', isDark),
             const SizedBox(height: 8),
-            _buildIOSInfoCard(
+            _buildAndroidInfoCard(
               isDark: isDark,
               children: [
-                _buildIOSCardTextField(
+                _buildAndroidCardTextField(
                   controller: _nameController,
                   label: AppStrings.name,
-                  icon: Icons.person_outline,
+                  icon: Icons.person_outline_rounded,
                   isDark: isDark,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -560,8 +894,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     return null;
                   },
                 ),
-                _buildIOSDivider(isDark),
-                _buildIOSCardTextField(
+                _buildAndroidDivider(isDark),
+                _buildAndroidCardTextField(
                   controller: _emailController,
                   label: AppStrings.email,
                   icon: Icons.email_outlined,
@@ -577,8 +911,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     return null;
                   },
                 ),
-                _buildIOSDivider(isDark),
-                _buildIOSCardTextField(
+                _buildAndroidDivider(isDark),
+                _buildAndroidCardTextField(
                   controller: _phoneController,
                   label: AppStrings.phoneOptional,
                   icon: Icons.phone_outlined,
@@ -589,15 +923,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ],
             ),
             const SizedBox(height: 24),
-            _buildIOSSectionHeader('Über mich', isDark),
+            _buildAndroidSectionHeader('Über mich', isDark),
             const SizedBox(height: 8),
-            _buildIOSInfoCard(
+            _buildAndroidInfoCard(
               isDark: isDark,
               children: [
-                _buildIOSCardTextField(
+                _buildAndroidCardTextField(
                   controller: _bioController,
                   label: AppStrings.aboutMeOptional,
-                  icon: Icons.info_outline,
+                  icon: Icons.info_outline_rounded,
                   isDark: isDark,
                   maxLines: 4,
                   maxLength: 200,
@@ -606,7 +940,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ],
             ),
             const SizedBox(height: 32),
-            _buildIOSSaveButton(state, isDark),
+            _buildAndroidSaveButton(state, isDark),
             const SizedBox(height: 100),
           ],
         ),
@@ -614,18 +948,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildIOSProfileImageCard(ProfileState state, bool isDark) {
+  Widget _buildAndroidProfileImageCard(ProfileState state, bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? AppColors.shadowDark : AppColors.shadow,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+        ),
       ),
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -639,7 +969,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   shape: BoxShape.circle,
                   color: AppColors.accent.withOpacity(0.4),
                   border: Border.all(
-                    color: AppColors.accent.withOpacity(0.4),
+                    color: AppColors.accent,
                     width: 3,
                   ),
                 ),
@@ -675,22 +1005,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       color: AppColors.accent,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: AppColors.accent,
-                        width: 3,
+                        color: isDark
+                            ? AppColors.backgroundDarkElevated
+                            : AppColors.surface,
+                        width: 2,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (isDark ? AppColors.accent : AppColors.primary)
-                              .withOpacity(0.4),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
                     ),
-                    child: const Icon(
-                      Icons.camera_alt,
+                    child: Icon(
+                      Icons.camera_alt_rounded,
                       size: 16,
-                      color: AppColors.textLight,
+                      color: isDark ? AppColors.primary : AppColors.background,
                     ),
                   ),
                 ),
@@ -713,9 +1037,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             _emailController.text.isNotEmpty
                 ? _emailController.text
                 : 'deine@email.de',
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
+            style: TextStyle(
+              fontSize: 15,
+              color: AppColors.grey,
             ),
           ),
         ],
@@ -723,36 +1047,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildIOSSectionHeader(String title, bool isDark) {
+  Widget _buildAndroidSectionHeader(String title, bool isDark) {
     return Padding(
       padding: const EdgeInsets.only(left: 16),
       child: Text(
         title.toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w500,
+          color: AppColors.grey,
           letterSpacing: 0.5,
         ),
       ),
     );
   }
 
-  Widget _buildIOSInfoCard({
+  Widget _buildAndroidInfoCard({
     required bool isDark,
     required List<Widget> children,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? AppColors.shadowDark : AppColors.shadow,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+        ),
       ),
       child: Column(
         children: children,
@@ -760,18 +1080,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildIOSDivider(bool isDark) {
+  Widget _buildAndroidDivider(bool isDark) {
     return Padding(
       padding: const EdgeInsets.only(left: 52),
       child: Divider(
         height: 1,
         thickness: 0.5,
-        color: isDark ? AppColors.divider.withOpacity(0.2) : AppColors.divider,
+        color: isDark ? AppColors.borderDark : AppColors.divider,
       ),
     );
   }
 
-  Widget _buildIOSCardTextField({
+  Widget _buildAndroidCardTextField({
     required TextEditingController controller,
     required String label,
     required IconData icon,
@@ -795,8 +1115,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         children: [
           Icon(
             icon,
-            size: 22,
-            color: isDark ? AppColors.background : AppColors.backgroundDark,
+            size: 20,
+            color: AppColors.grey,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -811,8 +1131,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               decoration: InputDecoration(
                 hintText: label,
-                hintStyle: const TextStyle(
-                  color: AppColors.textSecondary,
+                hintStyle: TextStyle(
+                  color: AppColors.grey,
                   fontSize: 17,
                 ),
                 border: InputBorder.none,
@@ -829,408 +1149,40 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildIOSSaveButton(ProfileState state, bool isDark) {
-    return Container(
+  Widget _buildAndroidSaveButton(ProfileState state, bool isDark) {
+    return SizedBox(
       height: 50,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: state.isLoading
-              ? [AppColors.grey, AppColors.greyDark]
-              : (isDark
-                  ? [AppColors.accent, AppColors.accentLight]
-                  : [AppColors.primary, AppColors.primaryLight]),
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: state.isLoading
-            ? []
-            : [
-                BoxShadow(
-                  color: (isDark ? AppColors.accent : AppColors.primary)
-                      .withOpacity(0.4),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-      ),
-      child: ElevatedButton(
+      child: FilledButton(
         onPressed: state.isLoading ? null : _saveProfile,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          foregroundColor: AppColors.textLight,
-          disabledBackgroundColor: Colors.transparent,
+        style: FilledButton.styleFrom(
+          backgroundColor: state.isLoading
+              ? (isDark ? AppColors.toastBackgroundDark : AppColors.greyLighter)
+              : (isDark ? AppColors.accent : AppColors.primary),
+          foregroundColor: state.isLoading
+              ? AppColors.grey
+              : (isDark ? AppColors.primary : AppColors.background),
+          disabledBackgroundColor:
+              isDark ? AppColors.toastBackgroundDark : AppColors.greyLighter,
+          disabledForegroundColor: AppColors.grey,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
         ),
         child: state.isLoading
-            ? const SizedBox(
+            ? SizedBox(
                 height: 20,
                 width: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(AppColors.textLight),
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.grey),
                 ),
               )
             : Text(
                 AppStrings.saveChanges,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: -0.4,
-                  color: isDark ? AppColors.primary : AppColors.background,
                 ),
-              ),
-      ),
-    );
-  }
-
-  // ==================== ANDROID LAYOUT ====================
-  Widget _buildAndroidLayout(
-      BuildContext context, ProfileState state, bool isDark) {
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
-      appBar: AppBar(
-        title: const Text(AppStrings.editProfile),
-        elevation: 0,
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
-        foregroundColor: AppColors.textLight,
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            const SizedBox(height: 8),
-            _buildAndroidProfileImage(state, isDark),
-            const SizedBox(height: 40),
-            _buildAndroidTextField(
-              controller: _nameController,
-              label: AppStrings.name,
-              icon: Icons.person_rounded,
-              isDark: isDark,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return AppStrings.enterName;
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 20),
-            _buildAndroidTextField(
-              controller: _emailController,
-              label: AppStrings.email,
-              icon: Icons.email_rounded,
-              isDark: isDark,
-              keyboardType: TextInputType.emailAddress,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return AppStrings.enterEmail;
-                }
-                if (!value.contains('@')) {
-                  return AppStrings.enterValidEmail;
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 20),
-            _buildAndroidTextField(
-              controller: _phoneController,
-              label: AppStrings.phoneOptional,
-              icon: Icons.phone_rounded,
-              isDark: isDark,
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 20),
-            _buildAndroidTextField(
-              controller: _bioController,
-              label: AppStrings.aboutMeOptional,
-              icon: Icons.info_outline_rounded,
-              isDark: isDark,
-              maxLines: 4,
-              maxLength: 200,
-            ),
-            const SizedBox(height: 32),
-            _buildAndroidSaveButton(state, isDark),
-            const SizedBox(height: 100),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAndroidProfileImage(ProfileState state, bool isDark) {
-    return Center(
-      child: Stack(
-        children: [
-          Container(
-            width: 136,
-            height: 136,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: isDark
-                    ? [
-                        AppColors.accent.withOpacity(0.3),
-                        AppColors.accentLight.withOpacity(0.2),
-                      ]
-                    : [
-                        AppColors.secondary.withOpacity(0.3),
-                        AppColors.secondaryLight.withOpacity(0.2),
-                      ],
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: Padding(
-              padding: const EdgeInsets.all(6),
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isDark ? AppColors.surfaceDark : AppColors.surface,
-                    width: 4,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: isDark ? AppColors.shadowDark : AppColors.shadow,
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: CircleAvatar(
-                  radius: 60,
-                  backgroundColor: isDark
-                      ? AppColors.primaryLight.withOpacity(0.3)
-                      : AppColors.primary.withOpacity(0.1),
-                  backgroundImage: _selectedImage != null
-                      ? FileImage(_selectedImage!)
-                      : (state.profileImageUrl != null
-                          ? NetworkImage(state.profileImageUrl!)
-                          : null) as ImageProvider?,
-                  child: _selectedImage == null && state.profileImageUrl == null
-                      ? Text(
-                          _nameController.text.isNotEmpty
-                              ? _nameController.text[0].toUpperCase()
-                              : 'U',
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color:
-                                isDark ? AppColors.accent : AppColors.primary,
-                          ),
-                        )
-                      : null,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 2,
-            right: 2,
-            child: GestureDetector(
-              onTap: _showImageSourceDialog,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [
-                            AppColors.accent,
-                            AppColors.accentLight,
-                          ]
-                        : [
-                            AppColors.primary,
-                            AppColors.primaryLight,
-                          ],
-                  ),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isDark ? AppColors.surfaceDark : AppColors.surface,
-                    width: 3,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (isDark ? AppColors.accent : AppColors.primary)
-                          .withOpacity(0.4),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.camera_alt_rounded,
-                  size: 22,
-                  color: AppColors.textLight,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAndroidTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    required bool isDark,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-    int maxLines = 1,
-    int? maxLength,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: isDark ? AppColors.surfaceDark : AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? AppColors.shadowDark : AppColors.shadow,
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        maxLength: maxLength,
-        style: TextStyle(
-          color: isDark ? AppColors.textLight : AppColors.textPrimary,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 15,
-          ),
-          prefixIcon: Container(
-            margin: const EdgeInsets.only(right: 12, left: 12),
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: isDark
-                    ? [
-                        AppColors.accent.withOpacity(0.25),
-                        AppColors.accent.withOpacity(0.12),
-                      ]
-                    : [
-                        AppColors.primary.withOpacity(0.15),
-                        AppColors.primary.withOpacity(0.08),
-                      ],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: isDark ? AppColors.accent : AppColors.primary,
-              size: 20,
-            ),
-          ),
-          filled: false,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 20,
-          ),
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          errorBorder: InputBorder.none,
-          focusedErrorBorder: InputBorder.none,
-          alignLabelWithHint: maxLines > 1,
-        ),
-        validator: validator,
-      ),
-    );
-  }
-
-  Widget _buildAndroidSaveButton(ProfileState state, bool isDark) {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: state.isLoading
-              ? [AppColors.grey, AppColors.greyDark]
-              : (isDark
-                  ? [
-                      AppColors.accent,
-                      AppColors.accentLight,
-                    ]
-                  : [
-                      AppColors.primary,
-                      AppColors.primaryLight,
-                    ]),
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: state.isLoading
-            ? []
-            : [
-                BoxShadow(
-                  color: (isDark ? AppColors.accent : AppColors.primary)
-                      .withOpacity(0.4),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-      ),
-      child: ElevatedButton(
-        onPressed: state.isLoading ? null : _saveProfile,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          foregroundColor: AppColors.textLight,
-          disabledBackgroundColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: state.isLoading
-            ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(AppColors.textLight),
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.save_rounded,
-                    size: 22,
-                    color: AppColors.textLight,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    AppStrings.saveChanges,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textLight,
-                          letterSpacing: 0.5,
-                        ),
-                  ),
-                ],
               ),
       ),
     );

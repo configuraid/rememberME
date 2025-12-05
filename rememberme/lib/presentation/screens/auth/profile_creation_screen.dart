@@ -35,6 +35,10 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
   bool _usePin = false;
   bool _isLoading = false;
 
+  // Getter um zu prüfen ob der Button aktiv sein soll (mehr als 1 Buchstabe)
+  bool get _isButtonEnabled =>
+      _nameController.text.trim().length > 1 && !_isLoading;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -83,22 +87,31 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
           title: Text(
             AppStrings.errorTitle,
             style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
               color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              fontFamily: '.SF Pro Text',
             ),
           ),
           content: Text(
             message,
             style: TextStyle(
+              fontSize: 13,
               color: AppColors.grey,
+              fontFamily: '.SF Pro Text',
             ),
           ),
           actions: [
             CupertinoDialogAction(
               onPressed: () => Navigator.of(ctx).pop(),
+              isDefaultAction: true,
               child: Text(
                 AppStrings.ok,
                 style: TextStyle(
-                  color: AppColors.interactive,
+                  fontSize: 17,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: '.SF Pro Text',
                 ),
               ),
             ),
@@ -145,17 +158,17 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
           ),
       // FIX: Alle TextStyles mit decoration: TextDecoration.none
       labelStyle: TextStyle(
-        color: AppColors.textSecondary,
+        color: AppColors.grey,
         fontSize: 15,
         decoration: TextDecoration.none,
       ),
       floatingLabelStyle: TextStyle(
-        color: isDark ? AppColors.primaryLight : AppColors.primary,
+        color: isDark ? AppColors.accent : AppColors.primary,
         fontSize: 14,
         decoration: TextDecoration.none,
       ),
       hintStyle: TextStyle(
-        color: AppColors.textSecondary,
+        color: AppColors.grey,
         fontSize: 15,
         decoration: TextDecoration.none,
       ),
@@ -184,8 +197,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
 
   // ===== ANDROID VIEW =====
   Widget _buildAndroidView() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final mediaQuery = MediaQuery.of(context);
     final screenHeight = mediaQuery.size.height;
     final keyboardVisible = mediaQuery.viewInsets.bottom > 0;
@@ -204,12 +216,23 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
       },
       child: Scaffold(
         backgroundColor:
-            isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
+            isDark ? AppColors.backgroundDark : AppColors.background,
         appBar: AppBar(
-          title: Text(AppStrings.createProfile),
+          title: Text(
+            AppStrings.createProfile,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            ),
+          ),
           elevation: 0,
-          backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
-          foregroundColor: AppColors.textLight,
+          scrolledUnderElevation: 0.5,
+          backgroundColor: isDark
+              ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+              : AppColors.surface.withOpacity(0.94),
+          foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
+          surfaceTintColor: Colors.transparent,
         ),
         body: SafeArea(
           child: LayoutBuilder(
@@ -239,7 +262,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
                                   color: isDark
-                                      ? AppColors.primaryLight.withOpacity(0.2)
+                                      ? AppColors.accent
                                       : AppColors.primary.withOpacity(0.1),
                                   shape: BoxShape.circle,
                                 ),
@@ -247,7 +270,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                   Icons.person_add_rounded,
                                   size: 48,
                                   color: isDark
-                                      ? AppColors.primaryLight
+                                      ? AppColors.background
                                       : AppColors.primary,
                                 ),
                               ),
@@ -258,11 +281,13 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                             // Titel
                             Text(
                               AppStrings.newProfile,
-                              style: theme.textTheme.headlineSmall?.copyWith(
+                              style: TextStyle(
+                                fontSize: 28,
                                 fontWeight: FontWeight.bold,
                                 color: isDark
                                     ? AppColors.textLight
                                     : AppColors.textPrimary,
+                                letterSpacing: -0.5,
                                 decoration: TextDecoration.none,
                               ),
                               textAlign: TextAlign.center,
@@ -273,10 +298,10 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                             // Untertitel
                             Text(
                               widget.organization.name,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: isDark
-                                    ? AppColors.textDarkSecondary
-                                    : AppColors.textSecondary,
+                              style: TextStyle(
+                                fontSize: 17,
+                                color: AppColors.grey,
+                                fontWeight: FontWeight.w400,
                                 decoration: TextDecoration.none,
                               ),
                               textAlign: TextAlign.center,
@@ -290,156 +315,168 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                           ],
 
                           // Formular Card
-                          Card(
-                            elevation: isDark ? 2 : 1,
-                            color: isDark
-                                ? AppColors.surfaceDark
-                                : AppColors.surface,
+                          Container(
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.backgroundDarkElevated
+                                  : AppColors.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.borderDark
+                                    : AppColors.greyLighter,
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: isDark
+                                      ? AppColors.shadowDark
+                                      : AppColors.shadow,
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   // Name Field
-                                  TextFormField(
-                                    controller: _nameController,
-                                    validator: Validators.validateName,
-                                    style: theme.textTheme.bodyLarge?.copyWith(
+                                  Container(
+                                    decoration: BoxDecoration(
                                       color: isDark
-                                          ? AppColors.textLight
-                                          : AppColors.textPrimary,
-                                      decoration: TextDecoration.none,
+                                          ? AppColors.toastBackgroundDark
+                                          : AppColors.greyLighter,
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
-                                    decoration: _buildInputDecoration(
-                                      labelText: AppStrings.name,
-                                      hintText: AppStrings.yourFullName,
-                                      prefixIcon: Icon(
-                                        Icons.person_outline_rounded,
+                                    child: TextFormField(
+                                      controller: _nameController,
+                                      validator: Validators.validateName,
+                                      onChanged: (_) => setState(() {}),
+                                      style: TextStyle(
+                                        fontSize: 17,
                                         color: isDark
-                                            ? AppColors.primaryLight
-                                            : AppColors.primary,
+                                            ? AppColors.textLight
+                                            : AppColors.textPrimary,
+                                        decoration: TextDecoration.none,
                                       ),
-                                      isDark: isDark,
+                                      decoration: _buildInputDecoration(
+                                        labelText: AppStrings.name,
+                                        hintText: AppStrings.yourFullName,
+                                        prefixIcon: Icon(
+                                          Icons.person_outline_rounded,
+                                          color: isDark
+                                              ? AppColors.accent
+                                              : AppColors.primary,
+                                        ),
+                                        isDark: isDark,
+                                      ),
                                     ),
                                   ),
 
                                   const SizedBox(height: 16),
 
                                   // Email Field
-                                  TextFormField(
-                                    controller: _emailController,
-                                    keyboardType: TextInputType.emailAddress,
-                                    style: theme.textTheme.bodyLarge?.copyWith(
+                                  Container(
+                                    decoration: BoxDecoration(
                                       color: isDark
-                                          ? AppColors.textLight
-                                          : AppColors.textPrimary,
-                                      decoration: TextDecoration.none,
+                                          ? AppColors.toastBackgroundDark
+                                          : AppColors.greyLighter,
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
-                                    decoration: _buildInputDecoration(
-                                      labelText: AppStrings.emailOptional,
-                                      hintText: AppStrings.emailExample,
-                                      prefixIcon: Icon(
-                                        Icons.email_outlined,
+                                    child: TextFormField(
+                                      controller: _emailController,
+                                      keyboardType: TextInputType.emailAddress,
+                                      style: TextStyle(
+                                        fontSize: 17,
                                         color: isDark
-                                            ? AppColors.primaryLight
-                                            : AppColors.primary,
+                                            ? AppColors.textLight
+                                            : AppColors.textPrimary,
+                                        decoration: TextDecoration.none,
                                       ),
-                                      isDark: isDark,
+                                      decoration: _buildInputDecoration(
+                                        labelText: AppStrings.emailOptional,
+                                        hintText: AppStrings.emailExample,
+                                        prefixIcon: Icon(
+                                          Icons.email_outlined,
+                                          color: isDark
+                                              ? AppColors.accent
+                                              : AppColors.primary,
+                                        ),
+                                        isDark: isDark,
+                                      ),
                                     ),
                                   ),
 
                                   const SizedBox(height: 16),
 
                                   // PIN Switch - kompakt
-                                  InkWell(
-                                    onTap: () =>
-                                        setState(() => _usePin = !_usePin),
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 12,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? AppColors.surfaceDark
-                                            : AppColors.primary
-                                                .withOpacity(0.05),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: isDark
-                                              ? AppColors.borderDarkSubtle
-                                              : AppColors.primary
-                                                  .withOpacity(0.2),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? AppColors.toastBackgroundDark
+                                          : AppColors.greyLighter,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                AppStrings
+                                                    .activatePinProtection,
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: isDark
+                                                      ? AppColors.textLight
+                                                      : AppColors.textPrimary,
+                                                  decoration:
+                                                      TextDecoration.none,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                AppStrings
+                                                    .protectProfileWithPin,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: AppColors.grey,
+                                                  decoration:
+                                                      TextDecoration.none,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.shield_outlined,
-                                            size: 20,
-                                            color: isDark
-                                                ? AppColors.primaryLight
-                                                : AppColors.primary,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  AppStrings.pinProtection,
-                                                  style: theme
-                                                      .textTheme.bodyMedium
-                                                      ?.copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                    color: isDark
-                                                        ? AppColors.textLight
-                                                        : AppColors.textPrimary,
-                                                    decoration:
-                                                        TextDecoration.none,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  AppStrings.fourDigitPin,
-                                                  style: theme
-                                                      .textTheme.bodySmall
-                                                      ?.copyWith(
-                                                    color: isDark
-                                                        ? AppColors
-                                                            .textDarkSecondary
-                                                        : AppColors
-                                                            .textSecondary,
-                                                    fontSize: 12,
-                                                    decoration:
-                                                        TextDecoration.none,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          Switch(
-                                            value: _usePin,
-                                            onChanged: (value) =>
-                                                setState(() => _usePin = value),
-                                            activeColor: isDark
-                                                ? AppColors.primaryLight
-                                                : AppColors.primary,
-                                            activeTrackColor: isDark
-                                                ? AppColors.primaryLight
-                                                    .withOpacity(0.3)
-                                                : AppColors.primary
-                                                    .withOpacity(0.3),
-                                            inactiveThumbColor: isDark
-                                                ? AppColors.greyDark
-                                                : AppColors.grey,
-                                            inactiveTrackColor: isDark
-                                                ? AppColors.cardBorderDark
-                                                : AppColors.greyLight,
-                                          ),
-                                        ],
-                                      ),
+                                        Switch(
+                                          value: _usePin,
+                                          onChanged: (value) =>
+                                              setState(() => _usePin = value),
+                                          activeColor: isDark
+                                              ? AppColors.accent
+                                              : AppColors.primary,
+                                          activeTrackColor: isDark
+                                              ? AppColors.accent
+                                                  .withOpacity(0.3)
+                                              : AppColors.primary
+                                                  .withOpacity(0.3),
+                                          inactiveThumbColor: isDark
+                                              ? AppColors.greyDark
+                                              : AppColors.grey,
+                                          inactiveTrackColor: isDark
+                                              ? AppColors.cardBorderDark
+                                              : AppColors.greyLight,
+                                        ),
+                                      ],
                                     ),
                                   ),
 
@@ -451,74 +488,96 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                     Row(
                                       children: [
                                         Expanded(
-                                          child: TextFormField(
-                                            controller: _pinController,
-                                            validator: _usePin
-                                                ? Validators.validatePin
-                                                : null,
-                                            obscureText: true,
-                                            keyboardType: TextInputType.number,
-                                            maxLength: 4,
-                                            style: theme.textTheme.bodyLarge
-                                                ?.copyWith(
+                                          child: Container(
+                                            decoration: BoxDecoration(
                                               color: isDark
-                                                  ? AppColors.textLight
-                                                  : AppColors.textPrimary,
-                                              decoration: TextDecoration.none,
+                                                  ? AppColors
+                                                      .toastBackgroundDark
+                                                  : AppColors.greyLighter,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
                                             ),
-                                            decoration: _buildInputDecoration(
-                                              labelText: AppStrings.pin,
-                                              hintText: '••••',
-                                              prefixIcon: Icon(
-                                                Icons.lock_outline_rounded,
-                                                size: 20,
+                                            child: TextFormField(
+                                              controller: _pinController,
+                                              validator: _usePin
+                                                  ? Validators.validatePin
+                                                  : null,
+                                              obscureText: true,
+                                              keyboardType:
+                                                  TextInputType.number,
+                                              maxLength: 4,
+                                              style: TextStyle(
+                                                fontSize: 17,
                                                 color: isDark
-                                                    ? AppColors.primaryLight
-                                                    : AppColors.primary,
+                                                    ? AppColors.textLight
+                                                    : AppColors.textPrimary,
+                                                decoration: TextDecoration.none,
                                               ),
-                                              isDark: isDark,
-                                              counterText: '',
-                                              contentPadding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 12,
-                                                vertical: 12,
+                                              decoration: _buildInputDecoration(
+                                                labelText: AppStrings.pin,
+                                                hintText: '••••',
+                                                prefixIcon: Icon(
+                                                  Icons.lock_outline_rounded,
+                                                  size: 20,
+                                                  color: isDark
+                                                      ? AppColors.accent
+                                                      : AppColors.primary,
+                                                ),
+                                                isDark: isDark,
+                                                counterText: '',
+                                                contentPadding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 12,
+                                                ),
                                               ),
                                             ),
                                           ),
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
-                                          child: TextFormField(
-                                            controller: _confirmPinController,
-                                            validator: _usePin
-                                                ? Validators.validatePin
-                                                : null,
-                                            obscureText: true,
-                                            keyboardType: TextInputType.number,
-                                            maxLength: 4,
-                                            style: theme.textTheme.bodyLarge
-                                                ?.copyWith(
+                                          child: Container(
+                                            decoration: BoxDecoration(
                                               color: isDark
-                                                  ? AppColors.textLight
-                                                  : AppColors.textPrimary,
-                                              decoration: TextDecoration.none,
+                                                  ? AppColors
+                                                      .toastBackgroundDark
+                                                  : AppColors.greyLighter,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
                                             ),
-                                            decoration: _buildInputDecoration(
-                                              labelText: AppStrings.confirm,
-                                              hintText: '••••',
-                                              prefixIcon: Icon(
-                                                Icons.lock_outline_rounded,
-                                                size: 20,
+                                            child: TextFormField(
+                                              controller: _confirmPinController,
+                                              validator: _usePin
+                                                  ? Validators.validatePin
+                                                  : null,
+                                              obscureText: true,
+                                              keyboardType:
+                                                  TextInputType.number,
+                                              maxLength: 4,
+                                              style: TextStyle(
+                                                fontSize: 17,
                                                 color: isDark
-                                                    ? AppColors.primaryLight
-                                                    : AppColors.primary,
+                                                    ? AppColors.textLight
+                                                    : AppColors.textPrimary,
+                                                decoration: TextDecoration.none,
                                               ),
-                                              isDark: isDark,
-                                              counterText: '',
-                                              contentPadding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 12,
-                                                vertical: 12,
+                                              decoration: _buildInputDecoration(
+                                                labelText: AppStrings.confirm,
+                                                hintText: '••••',
+                                                prefixIcon: Icon(
+                                                  Icons.lock_outline_rounded,
+                                                  size: 20,
+                                                  color: isDark
+                                                      ? AppColors.accent
+                                                      : AppColors.primary,
+                                                ),
+                                                isDark: isDark,
+                                                counterText: '',
+                                                contentPadding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 12,
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -529,45 +588,59 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
 
                                   const SizedBox(height: 20),
 
-                                  // Create Button
-                                  FilledButton(
-                                    onPressed: _isLoading
-                                        ? null
-                                        : _handleCreateProfile,
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: isDark
-                                          ? AppColors.primaryLight
-                                          : AppColors.primary,
-                                      foregroundColor: AppColors.textLight,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
+                                  // Create Button - nur aktiv wenn Name ausgefüllt
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 50,
+                                    child: FilledButton(
+                                      onPressed: _isButtonEnabled
+                                          ? _handleCreateProfile
+                                          : null,
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: isDark
+                                            ? AppColors.accent
+                                            : AppColors.primary,
+                                        foregroundColor: isDark
+                                            ? AppColors.primary
+                                            : AppColors.background,
+                                        disabledBackgroundColor: isDark
+                                            ? AppColors.accent.withOpacity(0.3)
+                                            : AppColors.primary
+                                                .withOpacity(0.3),
+                                        disabledForegroundColor: isDark
+                                            ? AppColors.primary.withOpacity(0.5)
+                                            : AppColors.background
+                                                .withOpacity(0.5),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        elevation: 0,
                                       ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      elevation: 2,
-                                    ),
-                                    child: _isLoading
-                                        ? const SizedBox(
-                                            height: 20,
-                                            width: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                AppColors.textLight,
+                                      child: _isLoading
+                                          ? SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                        Color>(
+                                                  isDark
+                                                      ? AppColors.primary
+                                                      : AppColors.background,
+                                                ),
+                                              ),
+                                            )
+                                          : Text(
+                                              AppStrings.createProfile,
+                                              style: TextStyle(
+                                                fontSize: 17,
+                                                fontWeight: FontWeight.w600,
+                                                decoration: TextDecoration.none,
                                               ),
                                             ),
-                                          )
-                                        : Text(
-                                            AppStrings.createProfile,
-                                            style: theme.textTheme.titleMedium
-                                                ?.copyWith(
-                                              color: AppColors.textLight,
-                                              fontWeight: FontWeight.w600,
-                                              decoration: TextDecoration.none,
-                                            ),
-                                          ),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -603,7 +676,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                 Expanded(
                                   child: Text(
                                     AppStrings.profileEditableLater,
-                                    style: theme.textTheme.bodySmall?.copyWith(
+                                    style: TextStyle(
                                       color: isDark
                                           ? AppColors.info.withOpacity(0.9)
                                           : AppColors.info,
@@ -653,11 +726,14 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
           middle: Text(
             AppStrings.createProfile,
             style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
               color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              fontFamily: '.SF Pro Text',
             ),
           ),
           backgroundColor: isDark
-              ? AppColors.backgroundDarkElevated.withOpacity(0.94)
+              ? AppColors.backgroundDarkElevated.withOpacity(0.8)
               : AppColors.surface.withOpacity(0.94),
         ),
         child: SafeArea(
@@ -668,10 +744,23 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    CupertinoIcons.person_add,
-                    size: 80,
-                    color: isDark ? AppColors.accent : AppColors.primary,
+                  // Icon mit Background
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.accent
+                            : AppColors.primary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        CupertinoIcons.person_add,
+                        size: 48,
+                        color:
+                            isDark ? AppColors.background : AppColors.primary,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -681,7 +770,9 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                       fontWeight: FontWeight.bold,
                       color:
                           isDark ? AppColors.textLight : AppColors.textPrimary,
+                      letterSpacing: -0.5,
                       decoration: TextDecoration.none,
+                      fontFamily: '.SF Pro Display',
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -689,9 +780,11 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                   Text(
                     '${AppStrings.createYourPersonalProfile}\n${widget.organization.name}',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 17,
                       color: AppColors.grey,
+                      fontWeight: FontWeight.w400,
                       decoration: TextDecoration.none,
+                      fontFamily: '.SF Pro Text',
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -706,6 +799,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                       color: AppColors.grey,
                     ),
                     isDark: isDark,
+                    onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 16),
 
@@ -749,6 +843,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                       ? AppColors.textLight
                                       : AppColors.textPrimary,
                                   decoration: TextDecoration.none,
+                                  fontFamily: '.SF Pro Text',
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -758,6 +853,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                   fontSize: 13,
                                   color: AppColors.grey,
                                   decoration: TextDecoration.none,
+                                  fontFamily: '.SF Pro Text',
                                 ),
                               ),
                             ],
@@ -802,22 +898,40 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
 
                   const SizedBox(height: 32),
 
-                  // Erstellen Button
+                  // Erstellen Button - nur aktiv wenn Name ausgefüllt
                   SizedBox(
                     width: double.infinity,
-                    child: CupertinoButton.filled(
-                      onPressed: _isLoading ? null : _handleCreateProfile,
+                    height: 50,
+                    child: CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      color: _isButtonEnabled
+                          ? (isDark ? AppColors.accent : AppColors.primary)
+                          : (isDark
+                              ? AppColors.accent.withOpacity(0.3)
+                              : AppColors.primary.withOpacity(0.3)),
+                      borderRadius: BorderRadius.circular(12),
+                      onPressed: _isButtonEnabled ? _handleCreateProfile : null,
                       child: _isLoading
                           ? CupertinoActivityIndicator(
-                              color: AppColors.textLight,
+                              color: isDark
+                                  ? AppColors.primary
+                                  : AppColors.background,
                             )
                           : Text(
                               AppStrings.createProfile,
                               style: TextStyle(
-                                color: isDark
-                                    ? AppColors.primary
-                                    : AppColors.background,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
+                                color: _isButtonEnabled
+                                    ? (isDark
+                                        ? AppColors.primary
+                                        : AppColors.background)
+                                    : (isDark
+                                        ? AppColors.primary.withOpacity(0.5)
+                                        : AppColors.background
+                                            .withOpacity(0.5)),
                                 decoration: TextDecoration.none,
+                                fontFamily: '.SF Pro Text',
                               ),
                             ),
                     ),
@@ -852,6 +966,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
                                   ? AppColors.info.withOpacity(0.9)
                                   : AppColors.info,
                               decoration: TextDecoration.none,
+                              fontFamily: '.SF Pro Text',
                             ),
                           ),
                         ),
@@ -874,6 +989,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
     Widget? prefix,
     bool obscureText = false,
     TextInputType? keyboardType,
+    ValueChanged<String>? onChanged,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -886,6 +1002,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
         placeholder: placeholder,
         obscureText: obscureText,
         keyboardType: keyboardType,
+        onChanged: onChanged,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         prefix: prefix != null
             ? Padding(
@@ -895,12 +1012,16 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
             : null,
         decoration: const BoxDecoration(),
         style: TextStyle(
+          fontSize: 17,
           color: isDark ? AppColors.textLight : AppColors.textPrimary,
           decoration: TextDecoration.none,
+          fontFamily: '.SF Pro Text',
         ),
         placeholderStyle: TextStyle(
+          fontSize: 17,
           color: AppColors.grey,
           decoration: TextDecoration.none,
+          fontFamily: '.SF Pro Text',
         ),
       ),
     );

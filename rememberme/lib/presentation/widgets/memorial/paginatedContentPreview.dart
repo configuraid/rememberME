@@ -46,11 +46,12 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: widget.isDark ? AppColors.surfaceDark : AppColors.surface,
+        color: widget.isDark
+            ? AppColors.backgroundDarkElevated
+            : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color:
-              widget.isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
+          color: widget.isDark ? AppColors.borderDark : AppColors.greyLighter,
           width: 1,
         ),
         boxShadow: [
@@ -87,12 +88,12 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: widget.isDark
-                    ? AppColors.cardBorderDark
-                    : AppColors.primary.withOpacity(0.08),
+                    ? AppColors.toastBackgroundDark
+                    : AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: widget.isDark
-                      ? AppColors.borderDarkSubtle
+                      ? AppColors.borderDark
                       : AppColors.primary.withOpacity(0.2),
                   width: 1.5,
                 ),
@@ -102,28 +103,20 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
                     ? CupertinoIcons.square_grid_2x2
                     : Icons.widgets_rounded,
                 size: 20,
-                color: widget.isDark ? AppColors.grey : AppColors.primary,
+                color: widget.isDark ? AppColors.accent : AppColors.primary,
               ),
             ),
             const SizedBox(width: 12),
             Text(
               AppStrings.contents,
-              style: widget.isIOS
-                  ? TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: widget.isDark
-                          ? AppColors.textLight
-                          : AppColors.textPrimary,
-                      fontFamily: '.SF Pro Display',
-                    )
-                  : widget.theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: widget.isDark
-                          ? AppColors.textLight
-                          : AppColors.textPrimary,
-                      letterSpacing: 0.15,
-                    ),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color:
+                    widget.isDark ? AppColors.textLight : AppColors.textPrimary,
+                fontFamily: widget.isIOS ? '.SF Pro Display' : null,
+                letterSpacing: 0.15,
+              ),
             ),
           ],
         ),
@@ -134,12 +127,12 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
           ),
           decoration: BoxDecoration(
             color: widget.isDark
-                ? AppColors.cardBorderDark
-                : AppColors.primary.withOpacity(0.12),
+                ? AppColors.toastBackgroundDark
+                : AppColors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: widget.isDark
-                  ? AppColors.borderDarkSubtle
+                  ? AppColors.borderDark
                   : AppColors.primary.withOpacity(0.3),
               width: 1,
             ),
@@ -149,9 +142,7 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: widget.isDark
-                  ? AppColors.textDarkSecondary
-                  : AppColors.primary,
+              color: widget.isDark ? AppColors.accent : AppColors.primary,
               fontFamily: widget.isIOS ? '.SF Pro Text' : null,
             ),
           ),
@@ -173,10 +164,12 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
       width: double.infinity,
       child: CupertinoSlidingSegmentedControl<int>(
         groupValue: _currentPage,
-        backgroundColor:
-            widget.isDark ? AppColors.cardBorderDark : AppColors.greyLighter,
-        thumbColor:
-            widget.isDark ? AppColors.borderDarkSubtle : AppColors.surface,
+        backgroundColor: widget.isDark
+            ? AppColors.toastBackgroundDark
+            : AppColors.greyLighter,
+        thumbColor: widget.isDark
+            ? AppColors.backgroundDarkElevated
+            : AppColors.surface,
         children: Map.fromEntries(
           List.generate(_totalPages, (index) {
             final startItem = index * _itemsPerPage + 1;
@@ -220,12 +213,11 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
       height: 44,
       decoration: BoxDecoration(
         color: widget.isDark
-            ? AppColors.backgroundDarkElevated
+            ? AppColors.toastBackgroundDark
             : AppColors.greyLighter,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color:
-              widget.isDark ? AppColors.borderDarkLight : AppColors.greyLight,
+          color: widget.isDark ? AppColors.borderDark : AppColors.greyLight,
           width: 1,
         ),
       ),
@@ -245,7 +237,7 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? (widget.isDark
-                          ? AppColors.primary.withOpacity(0.3)
+                          ? AppColors.accent.withOpacity(0.3)
                           : AppColors.primary)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
@@ -268,11 +260,9 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
                           isSelected ? FontWeight.w600 : FontWeight.w500,
                       color: isSelected
                           ? (widget.isDark
-                              ? AppColors.primaryLight
-                              : AppColors.textLight)
-                          : (widget.isDark
-                              ? AppColors.grey
-                              : AppColors.textSecondary),
+                              ? AppColors.accent
+                              : AppColors.background)
+                          : AppColors.grey,
                     ),
                   ),
                 ),
@@ -309,13 +299,11 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
           ),
           decoration: BoxDecoration(
             color: widget.isDark
-                ? AppColors.backgroundDarkElevated
+                ? AppColors.toastBackgroundDark
                 : AppColors.greyLighter,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: widget.isDark
-                  ? AppColors.borderDarkLight
-                  : AppColors.greyLight,
+              color: widget.isDark ? AppColors.borderDark : AppColors.greyLight,
               width: 1.5,
             ),
           ),
@@ -326,8 +314,8 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
                 height: 24,
                 decoration: BoxDecoration(
                   color: widget.isDark
-                      ? AppColors.borderDarkLight
-                      : AppColors.primary.withOpacity(0.12),
+                      ? AppColors.backgroundDarkElevated
+                      : AppColors.primary.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -336,9 +324,8 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: widget.isDark
-                          ? AppColors.textDarkSecondary
-                          : AppColors.primary,
+                      color:
+                          widget.isDark ? AppColors.accent : AppColors.primary,
                       decoration: TextDecoration.none,
                       fontFamily: widget.isIOS ? '.SF Pro Text' : null,
                     ),
@@ -349,28 +336,20 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
               Icon(
                 widget.getBlockIcon(block.type, widget.isIOS),
                 size: 16,
-                color: widget.isDark ? AppColors.grey : AppColors.primary,
+                color: widget.isDark ? AppColors.accent : AppColors.primary,
               ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   widget.getBlockTypeName(block.type),
-                  style: widget.isIOS
-                      ? TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: widget.isDark
-                              ? AppColors.textDarkSecondary
-                              : AppColors.textPrimary,
-                          fontFamily: '.SF Pro Text',
-                        )
-                      : widget.theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: widget.isDark
-                              ? AppColors.textDarkSecondary
-                              : AppColors.textPrimary,
-                        ),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: widget.isDark
+                        ? AppColors.textLight
+                        : AppColors.textPrimary,
+                    fontFamily: widget.isIOS ? '.SF Pro Text' : null,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -404,19 +383,19 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
             decoration: BoxDecoration(
               color: _currentPage > 0
                   ? (widget.isDark
-                      ? AppColors.cardBorderDark
+                      ? AppColors.toastBackgroundDark
                       : AppColors.primary.withOpacity(0.1))
                   : (widget.isDark
-                      ? AppColors.backgroundDarkSecondary
+                      ? AppColors.backgroundDark
                       : AppColors.greyLighter),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: _currentPage > 0
                     ? (widget.isDark
-                        ? AppColors.borderDarkSubtle
+                        ? AppColors.borderDark
                         : AppColors.primary.withOpacity(0.3))
                     : (widget.isDark
-                        ? AppColors.cardBorderDark
+                        ? AppColors.borderDark
                         : AppColors.greyLight),
                 width: 1,
               ),
@@ -425,8 +404,8 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
               CupertinoIcons.chevron_left,
               size: 16,
               color: _currentPage > 0
-                  ? (widget.isDark ? AppColors.textLight : AppColors.primary)
-                  : (widget.isDark ? AppColors.greyDark : AppColors.greyLight),
+                  ? (widget.isDark ? AppColors.accent : AppColors.primary)
+                  : AppColors.grey,
             ),
           ),
         ),
@@ -436,7 +415,7 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: widget.isDark ? AppColors.grey : AppColors.textSecondary,
+            color: AppColors.grey,
             fontFamily: '.SF Pro Text',
           ),
         ),
@@ -453,19 +432,19 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
             decoration: BoxDecoration(
               color: _currentPage < _totalPages - 1
                   ? (widget.isDark
-                      ? AppColors.cardBorderDark
+                      ? AppColors.toastBackgroundDark
                       : AppColors.primary.withOpacity(0.1))
                   : (widget.isDark
-                      ? AppColors.backgroundDarkSecondary
+                      ? AppColors.backgroundDark
                       : AppColors.greyLighter),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: _currentPage < _totalPages - 1
                     ? (widget.isDark
-                        ? AppColors.borderDarkSubtle
+                        ? AppColors.borderDark
                         : AppColors.primary.withOpacity(0.3))
                     : (widget.isDark
-                        ? AppColors.cardBorderDark
+                        ? AppColors.borderDark
                         : AppColors.greyLight),
                 width: 1,
               ),
@@ -474,8 +453,8 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
               CupertinoIcons.chevron_right,
               size: 16,
               color: _currentPage < _totalPages - 1
-                  ? (widget.isDark ? AppColors.textLight : AppColors.primary)
-                  : (widget.isDark ? AppColors.greyDark : AppColors.greyLight),
+                  ? (widget.isDark ? AppColors.accent : AppColors.primary)
+                  : AppColors.grey,
             ),
           ),
         ),
@@ -493,26 +472,26 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
           icon: Icon(
             Icons.chevron_left_rounded,
             color: _currentPage > 0
-                ? (widget.isDark ? AppColors.primaryLight : AppColors.primary)
-                : (widget.isDark ? AppColors.greyDark : AppColors.greyLight),
+                ? (widget.isDark ? AppColors.accent : AppColors.primary)
+                : AppColors.grey,
           ),
           style: IconButton.styleFrom(
             backgroundColor: _currentPage > 0
                 ? (widget.isDark
-                    ? AppColors.cardBorderDark
+                    ? AppColors.toastBackgroundDark
                     : AppColors.primary.withOpacity(0.1))
                 : (widget.isDark
-                    ? AppColors.backgroundDarkSecondary
+                    ? AppColors.backgroundDark
                     : AppColors.greyLighter),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
               side: BorderSide(
                 color: _currentPage > 0
                     ? (widget.isDark
-                        ? AppColors.borderDarkSubtle
+                        ? AppColors.borderDark
                         : AppColors.primary.withOpacity(0.3))
                     : (widget.isDark
-                        ? AppColors.cardBorderDark
+                        ? AppColors.borderDark
                         : AppColors.greyLight),
                 width: 1,
               ),
@@ -533,11 +512,9 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
                 margin: const EdgeInsets.symmetric(horizontal: 3),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? (widget.isDark
-                          ? AppColors.primaryLight
-                          : AppColors.primary)
+                      ? (widget.isDark ? AppColors.accent : AppColors.primary)
                       : (widget.isDark
-                          ? AppColors.borderDarkSubtle
+                          ? AppColors.borderDark
                           : AppColors.greyLight),
                   borderRadius: BorderRadius.circular(4),
                 ),
@@ -553,26 +530,26 @@ class _PaginatedContentPreviewState extends State<PaginatedContentPreview> {
           icon: Icon(
             Icons.chevron_right_rounded,
             color: _currentPage < _totalPages - 1
-                ? (widget.isDark ? AppColors.primaryLight : AppColors.primary)
-                : (widget.isDark ? AppColors.greyDark : AppColors.greyLight),
+                ? (widget.isDark ? AppColors.accent : AppColors.primary)
+                : AppColors.grey,
           ),
           style: IconButton.styleFrom(
             backgroundColor: _currentPage < _totalPages - 1
                 ? (widget.isDark
-                    ? AppColors.cardBorderDark
+                    ? AppColors.toastBackgroundDark
                     : AppColors.primary.withOpacity(0.1))
                 : (widget.isDark
-                    ? AppColors.backgroundDarkSecondary
+                    ? AppColors.backgroundDark
                     : AppColors.greyLighter),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
               side: BorderSide(
                 color: _currentPage < _totalPages - 1
                     ? (widget.isDark
-                        ? AppColors.borderDarkSubtle
+                        ? AppColors.borderDark
                         : AppColors.primary.withOpacity(0.3))
                     : (widget.isDark
-                        ? AppColors.cardBorderDark
+                        ? AppColors.borderDark
                         : AppColors.greyLight),
                 width: 1,
               ),

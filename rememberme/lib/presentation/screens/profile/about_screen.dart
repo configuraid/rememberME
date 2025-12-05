@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:io';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 
@@ -29,327 +31,215 @@ class _AboutScreenState extends State<AboutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (Platform.isIOS) {
+      return _buildIOSView(isDark);
+    }
+    return _buildAndroidView(isDark);
+  }
+
+  // ==================== iOS VIEW ====================
+  Widget _buildIOSView(bool isDark) {
+    return CupertinoPageScaffold(
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(
+          AppStrings.aboutTheApp,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            fontFamily: '.SF Pro Text',
+          ),
+        ),
+        backgroundColor: isDark
+            ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+            : AppColors.surface.withOpacity(0.94),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: _buildContent(isDark),
+      ),
+    );
+  }
+
+  // ==================== ANDROID VIEW ====================
+  Widget _buildAndroidView(bool isDark) {
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDarkSecondary : AppColors.background,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
       appBar: AppBar(
-        title: const Text(AppStrings.aboutTheApp),
+        title: Text(
+          AppStrings.aboutTheApp,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+          ),
+        ),
+        centerTitle: true,
         elevation: 0,
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
-        foregroundColor: AppColors.textLight,
+        scrolledUnderElevation: 0,
+        backgroundColor: isDark
+            ? AppColors.backgroundDarkElevated.withOpacity(0.8)
+            : AppColors.surface.withOpacity(0.94),
+        foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
+        surfaceTintColor: Colors.transparent,
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.only(top: 0, bottom: 32),
+        child: _buildContent(isDark),
+      ),
+    );
+  }
+
+  Widget _buildContent(bool isDark) {
+    return ListView(
+      padding: const EdgeInsets.only(top: 0, bottom: 32),
+      children: [
+        // App Logo & Name Header
+        _buildHeader(isDark),
+
+        const SizedBox(height: 24),
+
+        // Info Card
+        _buildInfoSection(isDark),
+
+        const SizedBox(height: 16),
+
+        // Kontakt Card
+        _buildContactSection(isDark),
+
+        const SizedBox(height: 40),
+
+        // Social Media Section
+        _buildSocialSection(isDark),
+
+        const SizedBox(height: 32),
+
+        // Copyright
+        _buildCopyright(isDark),
+      ],
+    );
+  }
+
+  Widget _buildHeader(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 32),
+      child: Column(
+        children: [
+          // Logo
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.accent
+                  : AppColors.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? AppColors.accent.withOpacity(0.3)
+                      : AppColors.primary.withOpacity(0.2),
+                  blurRadius: 30,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Icon(
+              Platform.isIOS
+                  ? CupertinoIcons.heart_fill
+                  : Icons.favorite_rounded,
+              size: 64,
+              color: isDark ? AppColors.background : AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            AppStrings.appNameRememberMe,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              fontFamily: Platform.isIOS ? '.SF Pro Display' : null,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.toastBackgroundDark
+                  : AppColors.greyLighter,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+              ),
+            ),
+            child: Text(
+              '${AppStrings.version}$_version',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.grey,
+                fontWeight: FontWeight.w600,
+                fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoSection(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+          ),
+        ),
+        child: Column(
           children: [
-            // App Logo & Name Header
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 32),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: isDark
-                      ? [
-                          AppColors.primaryLight.withOpacity(0.2),
-                          AppColors.backgroundDarkSecondary,
-                        ]
-                      : [
-                          AppColors.primary.withOpacity(0.1),
-                          Colors.transparent,
-                        ],
-                ),
-              ),
-              child: Column(
-                children: [
-                  // Logo mit Gradient und Glow
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: isDark
-                            ? [
-                                AppColors.primaryLight.withOpacity(0.4),
-                                AppColors.accent.withOpacity(0.3),
-                              ]
-                            : [
-                                AppColors.primary.withOpacity(0.15),
-                                AppColors.accent.withOpacity(0.1),
-                              ],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: isDark
-                              ? AppColors.primaryLight.withOpacity(0.4)
-                              : AppColors.primary.withOpacity(0.2),
-                          blurRadius: 30,
-                          spreadRadius: 5,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.favorite_rounded,
-                      size: 64,
-                      color:
-                          isDark ? AppColors.primaryLight : AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    AppStrings.appNameRememberMe,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color:
-                          isDark ? AppColors.textLight : AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.surfaceDark
-                          : AppColors.greyLighter,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: isDark
-                            ? AppColors.primaryLight.withOpacity(0.3)
-                            : AppColors.greyLight,
-                      ),
-                    ),
-                    child: Text(
-                      '${AppStrings.version}$_version',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: isDark
-                            ? AppColors.primaryLight.withOpacity(0.9)
-                            : AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
+            _buildListTile(
+              icon: Platform.isIOS
+                  ? CupertinoIcons.info_circle
+                  : Icons.info_outline_rounded,
+              title: AppStrings.whatIsRememberMe,
+              subtitle: AppStrings.dignifiedPlatform,
+              isDark: isDark,
+              onTap: () => _showInfoDialog(
+                context,
+                AppStrings.aboutRememberMe,
+                AppStrings.aboutRememberMeDescription,
+                isDark,
               ),
             ),
-
-            const SizedBox(height: 16),
-
-            // Info Card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Card(
-                elevation: 0,
-                color: isDark ? AppColors.surfaceDark : AppColors.surface,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    color: isDark
-                        ? AppColors.cardBorderDark
-                        : AppColors.greyLighter,
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    _buildListTile(
-                      context,
-                      icon: Icons.info_outline_rounded,
-                      title: AppStrings.whatIsRememberMe,
-                      subtitle: AppStrings.dignifiedPlatform,
-                      isDark: isDark,
-                      onTap: () => _showInfoDialog(
-                        context,
-                        AppStrings.aboutRememberMe,
-                        AppStrings.aboutRememberMeDescription,
-                        isDark,
-                      ),
-                    ),
-                    Divider(
-                      height: 1,
-                      thickness: 1,
-                      indent: 84,
-                      endIndent: 20,
-                      color: isDark
-                          ? AppColors.cardBorderDark
-                          : AppColors.greyLighter,
-                    ),
-                    _buildListTile(
-                      context,
-                      icon: Icons.article_outlined,
-                      title: AppStrings.termsOfService,
-                      trailing: Icons.open_in_new_rounded,
-                      isDark: isDark,
-                      onTap: () => _launchUrl('https://example.com/terms'),
-                    ),
-                    Divider(
-                      height: 1,
-                      thickness: 1,
-                      indent: 84,
-                      endIndent: 20,
-                      color: isDark
-                          ? AppColors.cardBorderDark
-                          : AppColors.greyLighter,
-                    ),
-                    _buildListTile(
-                      context,
-                      icon: Icons.privacy_tip_outlined,
-                      title: AppStrings.privacyPolicy,
-                      trailing: Icons.open_in_new_rounded,
-                      isDark: isDark,
-                      onTap: () => _launchUrl('https://example.com/privacy'),
-                    ),
-                  ],
-                ),
-              ),
+            _buildDivider(isDark),
+            _buildListTile(
+              icon: Platform.isIOS
+                  ? CupertinoIcons.doc_text
+                  : Icons.article_outlined,
+              title: AppStrings.termsOfService,
+              showExternalIcon: true,
+              isDark: isDark,
+              onTap: () => _launchUrl('https://example.com/terms'),
             ),
-
-            const SizedBox(height: 16),
-
-            // Kontakt Card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Card(
-                elevation: 0,
-                color: isDark ? AppColors.surfaceDark : AppColors.surface,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    color: isDark
-                        ? AppColors.cardBorderDark
-                        : AppColors.greyLighter,
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    _buildListTile(
-                      context,
-                      icon: Icons.language_rounded,
-                      title: AppStrings.website,
-                      subtitle: AppStrings.websiteUrl,
-                      trailing: Icons.open_in_new_rounded,
-                      isDark: isDark,
-                      onTap: () =>
-                          _launchUrl('https://www.digital-memorial.com'),
-                    ),
-                    Divider(
-                      height: 1,
-                      thickness: 1,
-                      indent: 84,
-                      endIndent: 20,
-                      color: isDark
-                          ? AppColors.cardBorderDark
-                          : AppColors.greyLighter,
-                    ),
-                    _buildListTile(
-                      context,
-                      icon: Icons.email_outlined,
-                      title: AppStrings.contact,
-                      subtitle: AppStrings.supportEmail,
-                      trailing: Icons.open_in_new_rounded,
-                      isDark: isDark,
-                      onTap: () =>
-                          _launchUrl('mailto:${AppStrings.supportEmail}'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 40),
-
-            // Social Media Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Column(
-                children: [
-                  Text(
-                    AppStrings.followUs,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color:
-                          isDark ? AppColors.textLight : AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildSocialButton(
-                        Icons.facebook_rounded,
-                        isDark,
-                        () => _launchUrl('https://facebook.com'),
-                      ),
-                      const SizedBox(width: 16),
-                      _buildSocialButton(
-                        Icons.public_rounded,
-                        isDark,
-                        () => _launchUrl('https://twitter.com'),
-                      ),
-                      const SizedBox(width: 16),
-                      _buildSocialButton(
-                        Icons.camera_alt_rounded,
-                        isDark,
-                        () => _launchUrl('https://instagram.com'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Copyright
-            Center(
-              child: Column(
-                children: [
-                  Text(
-                    AppStrings.copyright,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: isDark ? AppColors.grey : AppColors.greyDark,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        AppStrings.madeWith,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: isDark ? AppColors.grey : AppColors.greyDark,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Icon(
-                        Icons.favorite_rounded,
-                        size: 16,
-                        color: isDark
-                            ? AppColors.accent.withOpacity(0.9)
-                            : AppColors.error,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        AppStrings.inGermany,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: isDark ? AppColors.grey : AppColors.greyDark,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            _buildDivider(isDark),
+            _buildListTile(
+              icon: Platform.isIOS
+                  ? CupertinoIcons.shield
+                  : Icons.privacy_tip_outlined,
+              title: AppStrings.privacyPolicy,
+              showExternalIcon: true,
+              isDark: isDark,
+              onTap: () => _launchUrl('https://example.com/privacy'),
             ),
           ],
         ),
@@ -357,124 +247,171 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
-  Widget _buildListTile(
-    BuildContext context, {
+  Widget _buildContactSection(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+          ),
+        ),
+        child: Column(
+          children: [
+            _buildListTile(
+              icon: Platform.isIOS
+                  ? CupertinoIcons.globe
+                  : Icons.language_rounded,
+              title: AppStrings.website,
+              subtitle: AppStrings.websiteUrl,
+              showExternalIcon: true,
+              isDark: isDark,
+              onTap: () => _launchUrl('https://www.digital-memorial.com'),
+            ),
+            _buildDivider(isDark),
+            _buildListTile(
+              icon: Platform.isIOS ? CupertinoIcons.mail : Icons.email_outlined,
+              title: AppStrings.contact,
+              subtitle: AppStrings.supportEmail,
+              showExternalIcon: true,
+              isDark: isDark,
+              onTap: () => _launchUrl('mailto:${AppStrings.supportEmail}'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDivider(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 64),
+      child: Divider(
+        height: 1,
+        color: isDark ? AppColors.borderDark : AppColors.divider,
+      ),
+    );
+  }
+
+  Widget _buildListTile({
     required IconData icon,
     required String title,
     String? subtitle,
-    IconData? trailing,
+    bool showExternalIcon = false,
     required bool isDark,
     required VoidCallback onTap,
   }) {
-    final theme = Theme.of(context);
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        splashColor: isDark
-            ? AppColors.primaryLight.withOpacity(0.1)
-            : AppColors.primary.withOpacity(0.08),
-        highlightColor: isDark
-            ? AppColors.primaryLight.withOpacity(0.05)
-            : AppColors.primary.withOpacity(0.04),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              // Icon Container mit Gradient
               Container(
-                width: 48,
-                height: 48,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [
-                            AppColors.primaryLight.withOpacity(0.25),
-                            AppColors.primaryLight.withOpacity(0.15),
-                          ]
-                        : [
-                            AppColors.primary.withOpacity(0.15),
-                            AppColors.primary.withOpacity(0.08),
-                          ],
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isDark
-                        ? AppColors.primaryLight.withOpacity(0.3)
-                        : AppColors.primary.withOpacity(0.2),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: isDark
-                          ? AppColors.primaryLight.withOpacity(0.1)
-                          : AppColors.primary.withOpacity(0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  color: isDark
+                      ? AppColors.toastBackgroundDark
+                      : AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   icon,
-                  color: isDark ? AppColors.primaryLight : AppColors.primary,
-                  size: 24,
+                  color: isDark ? AppColors.accent : AppColors.primary,
+                  size: 20,
                 ),
               ),
-              const SizedBox(width: 16),
-              // Text Content
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w500,
                         color: isDark
                             ? AppColors.textLight
                             : AppColors.textPrimary,
-                        letterSpacing: 0.15,
+                        fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
                       ),
                     ),
                     if (subtitle != null) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: isDark
-                              ? AppColors.textDarkSecondary
-                              : AppColors.textSecondary,
-                          height: 1.4,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.grey,
+                          fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
                         ),
                       ),
                     ],
                   ],
                 ),
               ),
-              if (trailing != null) ...[
-                const SizedBox(width: 12),
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.cardBorderDark
-                        : AppColors.greyLighter,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    trailing,
-                    size: 16,
-                    color: isDark ? AppColors.greyDark : AppColors.greyDark,
-                  ),
+              if (showExternalIcon)
+                Icon(
+                  Platform.isIOS
+                      ? CupertinoIcons.arrow_up_right
+                      : Icons.open_in_new_rounded,
+                  size: 18,
+                  color: AppColors.grey,
                 ),
-              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSocialSection(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        children: [
+          Text(
+            AppStrings.followUs,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildSocialButton(
+                Icons.facebook_rounded,
+                isDark,
+                () => _launchUrl('https://facebook.com'),
+              ),
+              const SizedBox(width: 16),
+              _buildSocialButton(
+                Icons.public_rounded,
+                isDark,
+                () => _launchUrl('https://twitter.com'),
+              ),
+              const SizedBox(width: 16),
+              _buildSocialButton(
+                Platform.isIOS
+                    ? CupertinoIcons.camera
+                    : Icons.camera_alt_rounded,
+                isDark,
+                () => _launchUrl('https://instagram.com'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -486,26 +423,73 @@ class _AboutScreenState extends State<AboutScreen> {
   ) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isDark
-              ? AppColors.surfaceDark
+              ? AppColors.toastBackgroundDark
               : AppColors.primary.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isDark
-                ? AppColors.primaryLight.withOpacity(0.3)
-                : AppColors.primary.withOpacity(0.2),
-            width: 1.5,
+            color: isDark ? AppColors.borderDark : AppColors.greyLighter,
           ),
         ),
         child: Icon(
           icon,
-          color: isDark ? AppColors.primaryLight : AppColors.primary,
-          size: 28,
+          color: isDark ? AppColors.accent : AppColors.primary,
+          size: 24,
         ),
+      ),
+    );
+  }
+
+  Widget _buildCopyright(bool isDark) {
+    return Center(
+      child: Column(
+        children: [
+          Text(
+            AppStrings.copyright,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.grey,
+              fontWeight: FontWeight.w500,
+              fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                AppStrings.madeWith,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.grey,
+                  fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(
+                Platform.isIOS
+                    ? CupertinoIcons.heart_fill
+                    : Icons.favorite_rounded,
+                size: 16,
+                color: AppColors.accent,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                AppStrings.inGermany,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.grey,
+                  fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -516,174 +500,128 @@ class _AboutScreenState extends State<AboutScreen> {
     String content,
     bool isDark,
   ) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : AppColors.surface,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: isDark
-                  ? AppColors.primaryLight.withOpacity(0.2)
-                  : AppColors.greyLighter,
-              width: 1,
+    if (Platform.isIOS) {
+      showCupertinoDialog(
+        context: context,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: Text(
+            title,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              fontFamily: '.SF Pro Text',
             ),
-            boxShadow: [
-              BoxShadow(
-                color: isDark ? AppColors.shadowDark : AppColors.shadow,
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header mit Icon und Titel
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [
-                            AppColors.primaryLight.withOpacity(0.15),
-                            AppColors.primaryLight.withOpacity(0.08),
-                          ]
-                        : [
-                            AppColors.primary.withOpacity(0.08),
-                            AppColors.primary.withOpacity(0.04),
-                          ],
-                  ),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: isDark
-                              ? [
-                                  AppColors.primaryLight.withOpacity(0.3),
-                                  AppColors.primaryLight.withOpacity(0.2),
-                                ]
-                              : [
-                                  AppColors.primary.withOpacity(0.15),
-                                  AppColors.primary.withOpacity(0.1),
-                                ],
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isDark
-                              ? AppColors.primaryLight.withOpacity(0.4)
-                              : AppColors.primary.withOpacity(0.3),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: isDark
-                                ? AppColors.primaryLight.withOpacity(0.15)
-                                : AppColors.primary.withOpacity(0.12),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.info_outline_rounded,
-                        color:
-                            isDark ? AppColors.primaryLight : AppColors.primary,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: isDark
-                                  ? AppColors.textLight
-                                  : AppColors.textPrimary,
-                              letterSpacing: 0.15,
-                            ),
-                      ),
-                    ),
-                  ],
-                ),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(
+              content,
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.grey,
+                fontFamily: '.SF Pro Text',
+                height: 1.5,
               ),
-
-              // Content
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  content,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        height: 1.6,
-                        color: isDark
-                            ? AppColors.textDarkSecondary
-                            : AppColors.textSecondary,
-                        letterSpacing: 0.25,
-                      ),
-                ),
-              ),
-
-              // Action Button
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(ctx).pop(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          isDark ? AppColors.primaryLight : AppColors.primary,
-                      foregroundColor: AppColors.textLight,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      AppStrings.close,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textLight,
-                            letterSpacing: 0.5,
-                          ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                AppStrings.close,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  fontFamily: '.SF Pro Text',
+                ),
+              ),
+            ),
+          ],
         ),
-      ),
-    );
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor:
+              isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          icon: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.toastBackgroundDark
+                  : AppColors.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.info_outline_rounded,
+              size: 24,
+              color: isDark ? AppColors.accent : AppColors.primary,
+            ),
+          ),
+          title: Text(
+            title,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            ),
+          ),
+          content: Text(
+            content,
+            style: TextStyle(
+              fontSize: 15,
+              color: AppColors.grey,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                style: FilledButton.styleFrom(
+                  backgroundColor:
+                      isDark ? AppColors.accent : AppColors.primary,
+                  foregroundColor:
+                      isDark ? AppColors.primary : AppColors.background,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Text(
+                  AppStrings.close,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   Future<void> _launchUrl(String urlString) async {
     final Uri url = Uri.parse(urlString);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                '${AppStrings.couldNotOpen}$urlString${AppStrings.notOpen}'),
+              '${AppStrings.couldNotOpen}$urlString${AppStrings.notOpen}',
+              style: const TextStyle(color: AppColors.textLight),
+            ),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
