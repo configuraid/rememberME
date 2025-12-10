@@ -14,6 +14,7 @@ import 'business_logic/memorial/memorial_bloc.dart';
 import 'business_logic/license/license_bloc.dart';
 import 'business_logic/profile/profile_bloc.dart';
 import 'business_logic/page_builder/page_builder_bloc.dart';
+import 'data/services/qr_decryption_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +23,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  await QrDecryptionService.instance.initialize();
   // System-UI Styling
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(

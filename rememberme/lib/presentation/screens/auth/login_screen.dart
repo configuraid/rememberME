@@ -6,6 +6,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:rememberme/business_logic/auth/auth_bloc.dart';
 import 'package:rememberme/business_logic/auth/auth_event.dart';
 import 'package:rememberme/business_logic/auth/auth_state.dart';
+import 'package:rememberme/data/services/qr_decryption_service.dart';
 import 'dart:io';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
@@ -96,10 +97,21 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // ============================================================
+  // ANGEPASST: QR-Code Entschlüsselung
+  // ============================================================
   void _handleQRCodeScanned(String code) {
-    // Validiere den QR-Code (Auth-Key)
-    if (code.length < 10) {
-      _showError(AppStrings.invalidAuthKey);
+    // 1. Prüfen ob verschlüsseltes Format (iv:encrypted)
+    if (!QrDecryptionService.instance.isValidFormat(code)) {
+      _showError('Ungültiges QR-Code Format');
+      return;
+    }
+
+    // 2. Entschlüsseln
+    final authKey = QrDecryptionService.instance.decrypt(code);
+
+    if (authKey == null) {
+      _showError('QR-Code konnte nicht entschlüsselt werden');
       return;
     }
 
@@ -112,8 +124,8 @@ class _LoginScreenState extends State<LoginScreen> {
       HapticFeedback.mediumImpact();
     }
 
-    // Login mit dem gescannten Auth-Key
-    context.read<AuthBloc>().add(AuthLoginWithKeyRequested(code));
+    // 3. Login mit dem entschlüsselten Auth-Key
+    context.read<AuthBloc>().add(AuthLoginWithKeyRequested(authKey));
   }
 
   @override
