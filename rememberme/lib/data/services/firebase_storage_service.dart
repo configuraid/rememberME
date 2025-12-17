@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class FirebaseStorageService {
@@ -225,6 +226,8 @@ class FirebaseStorageService {
     }
   }
 
+  /// Upload video for a content block
+  /// Path: memorials/{memorialId}/blocks/{blockId}/video.mp4
   Future<String> uploadBlockVideo({
     required String memorialId,
     required String blockId,
@@ -282,6 +285,50 @@ class FirebaseStorageService {
     }
   }
 
+  /// Upload video thumbnail
+  /// Path: memorials/{memorialId}/blocks/{blockId}/thumbnail.jpg
+  Future<String> uploadVideoThumbnail({
+    required String memorialId,
+    required String blockId,
+    required Uint8List thumbnailData,
+  }) async {
+    try {
+      print('📤 Uploading video thumbnail for block: $blockId');
+
+      // Build storage path
+      final String path = 'memorials/$memorialId/blocks/$blockId/thumbnail.jpg';
+
+      // Create reference
+      final Reference ref = _storage.ref().child(path);
+
+      // Upload thumbnail data
+      final UploadTask uploadTask = ref.putData(
+        thumbnailData,
+        SettableMetadata(
+          contentType: 'image/jpeg',
+          customMetadata: {
+            'memorialId': memorialId,
+            'blockId': blockId,
+            'type': 'video_thumbnail',
+            'uploadedAt': DateTime.now().toIso8601String(),
+          },
+        ),
+      );
+
+      // Wait for upload to complete
+      final TaskSnapshot snapshot = await uploadTask;
+
+      // Get download URL
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+
+      print('✅ Video thumbnail uploaded successfully: $downloadUrl');
+      return downloadUrl;
+    } catch (e) {
+      print('❌ Error uploading video thumbnail: $e');
+      rethrow;
+    }
+  }
+
   /// Delete video for a content block
   Future<void> deleteBlockVideo({
     required String memorialId,
@@ -295,8 +342,30 @@ class FirebaseStorageService {
 
       await ref.delete();
       print('✅ Video deleted successfully');
+
+      // Also try to delete thumbnail
+      await deleteVideoThumbnail(memorialId: memorialId, blockId: blockId);
     } catch (e) {
       print('❌ Error deleting video: $e');
+      // Don't rethrow - file might not exist
+    }
+  }
+
+  /// Delete video thumbnail
+  Future<void> deleteVideoThumbnail({
+    required String memorialId,
+    required String blockId,
+  }) async {
+    try {
+      print('🗑️ Deleting video thumbnail for block: $blockId');
+
+      final String path = 'memorials/$memorialId/blocks/$blockId/thumbnail.jpg';
+      final Reference ref = _storage.ref().child(path);
+
+      await ref.delete();
+      print('✅ Video thumbnail deleted successfully');
+    } catch (e) {
+      print('❌ Error deleting video thumbnail: $e');
       // Don't rethrow - file might not exist
     }
   }

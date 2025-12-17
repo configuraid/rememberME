@@ -10,8 +10,8 @@ enum ContentBlockType {
   image, // Einzelbild
   gallery, // Bildergalerie
   quote, // Zitat
-  divider, // Trennlinie
   video, // Video
+  audio, // Audio/Sprachmemo
 }
 
 /// Simplified content block for memorial pages
@@ -60,17 +60,19 @@ class ContentBlock {
           'author': '',
           'color': '#666666',
         };
-      case ContentBlockType.divider:
-        return {
-          'color': '#E0E0E0',
-          'thickness': 1.0,
-          'margin': 20.0,
-        };
       case ContentBlockType.video:
         return {
           'url': '',
           'caption': '',
           'autoplay': false,
+          'thumbnailUrl': '',
+        };
+      case ContentBlockType.audio:
+        return {
+          'url': '',
+          'title': '',
+          'duration': 0,
+          'waveformData': <double>[], // Waveform-Daten für Visualisierung
         };
     }
   }
@@ -141,10 +143,10 @@ class BlockTypeInfo {
         return 'Bildergalerie';
       case ContentBlockType.quote:
         return 'Zitat';
-      case ContentBlockType.divider:
-        return 'Trennlinie';
       case ContentBlockType.video:
         return 'Video';
+      case ContentBlockType.audio:
+        return 'Sprachmemo';
     }
   }
 
@@ -164,10 +166,10 @@ class BlockTypeInfo {
           return CupertinoIcons.photo_on_rectangle;
         case ContentBlockType.quote:
           return CupertinoIcons.quote_bubble;
-        case ContentBlockType.divider:
-          return CupertinoIcons.minus_rectangle;
         case ContentBlockType.video:
           return CupertinoIcons.videocam;
+        case ContentBlockType.audio:
+          return CupertinoIcons.mic_fill;
       }
     } else {
       switch (type) {
@@ -181,10 +183,10 @@ class BlockTypeInfo {
           return Icons.photo_library_outlined;
         case ContentBlockType.quote:
           return Icons.format_quote_rounded;
-        case ContentBlockType.divider:
-          return Icons.horizontal_rule_rounded;
         case ContentBlockType.video:
           return Icons.videocam_outlined;
+        case ContentBlockType.audio:
+          return Icons.mic_rounded;
       }
     }
   }
@@ -201,10 +203,10 @@ class BlockTypeInfo {
         return 'Mehrere Bilder';
       case ContentBlockType.quote:
         return 'Bedeutsames Zitat';
-      case ContentBlockType.divider:
-        return 'Visueller Trenner';
       case ContentBlockType.video:
         return 'Video einbetten';
+      case ContentBlockType.audio:
+        return 'Sprachnachricht aufnehmen';
     }
   }
 }

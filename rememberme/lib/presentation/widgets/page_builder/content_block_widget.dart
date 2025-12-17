@@ -310,10 +310,10 @@ class ContentBlockWidget extends StatelessWidget {
         return _buildGalleryContent(context);
       case ContentBlockType.quote:
         return _buildQuoteContent(context);
-      case ContentBlockType.divider:
-        return _buildDividerContent(context);
       case ContentBlockType.video:
         return _buildVideoContent(context);
+      case ContentBlockType.audio:
+        return _buildAudioContent(context);
     }
   }
 
@@ -591,32 +591,13 @@ class ContentBlockWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildDividerContent(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final colorHex = block.getContent('color', '#E0E0E0');
-    final thickness = block.getContent('thickness', 1.0);
-
-    Color dividerColor = _hexToColor(colorHex);
-    if (colorHex == '#E0E0E0') {
-      dividerColor = isDark ? AppColors.borderDark : AppColors.greyLighter;
-    }
-
-    return Container(
-      height: thickness,
-      decoration: BoxDecoration(
-        color: dividerColor,
-        borderRadius: BorderRadius.circular(thickness / 2),
-      ),
-    );
-  }
-
   Widget _buildVideoContent(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final url = block.getContent('url', '');
     final caption = block.getContent('caption', '');
     final autoplay = block.getContent('autoplay', false);
+    final thumbnailUrl = block.getContent('thumbnailUrl', '');
 
     if (url.isEmpty) {
       return Container(
@@ -633,7 +614,9 @@ class ContentBlockWidget extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.play_circle_outline_rounded,
+              Platform.isIOS
+                  ? CupertinoIcons.videocam
+                  : Icons.play_circle_outline_rounded,
               size: 64,
               color: AppColors.grey,
             ),
@@ -656,19 +639,87 @@ class ContentBlockWidget extends StatelessWidget {
       children: [
         Stack(
           children: [
+            // Thumbnail oder Fallback
             Container(
               height: 200,
               decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.backgroundDark
-                    : AppColors.backgroundDark,
+                color: AppColors.backgroundDark,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Center(
-                child: Icon(
-                  Icons.play_circle_outline_rounded,
-                  size: 64,
-                  color: AppColors.textLight.withOpacity(0.9),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: thumbnailUrl.isNotEmpty
+                    ? Image.network(
+                        thumbnailUrl,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                isDark ? AppColors.accent : AppColors.primary,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) => Center(
+                          child: Icon(
+                            Platform.isIOS
+                                ? CupertinoIcons.video_camera_solid
+                                : Icons.videocam_rounded,
+                            size: 64,
+                            color: AppColors.textLight.withOpacity(0.5),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Icon(
+                          Platform.isIOS
+                              ? CupertinoIcons.video_camera_solid
+                              : Icons.videocam_rounded,
+                          size: 64,
+                          color: AppColors.textLight.withOpacity(0.5),
+                        ),
+                      ),
+              ),
+            ),
+            // Play Button Overlay
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.backgroundDark.withOpacity(0.3),
+                ),
+                child: Center(
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface.withOpacity(0.9),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.shadowDark,
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Platform.isIOS
+                          ? CupertinoIcons.play_fill
+                          : Icons.play_arrow_rounded,
+                      size: 32,
+                      color: isDark ? AppColors.accent : AppColors.primary,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -679,6 +730,50 @@ class ContentBlockWidget extends StatelessWidget {
                 right: 12,
                 child: _buildAutoplayBadge(context, isDark),
               ),
+            // "Video bereit" Badge
+            Positioned(
+              bottom: 12,
+              left: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.success,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.shadowDark,
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Platform.isIOS
+                          ? CupertinoIcons.checkmark_circle_fill
+                          : Icons.check_circle,
+                      size: 14,
+                      color: AppColors.textLight,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Video bereit',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textLight,
+                        fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
         if (caption.isNotEmpty) ...[
@@ -694,6 +789,324 @@ class ContentBlockWidget extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildAudioContent(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final url = block.getContent('url', '');
+    final title = block.getContent('title', '');
+    final duration = block.getContent('duration', 0);
+    final waveformData = block.getContent<List>('waveformData', []);
+
+    // Format duration
+    String formatDuration(int seconds) {
+      final minutes = seconds ~/ 60;
+      final secs = seconds % 60;
+      return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+    }
+
+    if (url.isEmpty) {
+      // Empty state - no audio uploaded yet
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.toastBackgroundDark : AppColors.greyLighter,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+            width: 1,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.accent.withOpacity(0.2)
+                    : AppColors.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Platform.isIOS ? CupertinoIcons.mic_fill : Icons.mic_rounded,
+                size: 36,
+                color: isDark ? AppColors.accent : AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Sprachmemo aufnehmen',
+              style: TextStyle(
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tippe zum Konfigurieren',
+              style: TextStyle(
+                color: AppColors.grey,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Audio uploaded - show player UI
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  AppColors.backgroundDarkElevated,
+                  AppColors.backgroundDark,
+                ]
+              : [
+                  AppColors.surface,
+                  AppColors.greyLighter.withOpacity(0.5),
+                ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? AppColors.shadowDark : AppColors.shadow,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title and duration row
+          Row(
+            children: [
+              // Mic icon
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [AppColors.accent, AppColors.accent.withOpacity(0.7)]
+                        : [
+                            AppColors.primary,
+                            AppColors.primary.withOpacity(0.8)
+                          ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isDark ? AppColors.accent : AppColors.primary)
+                          .withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Platform.isIOS ? CupertinoIcons.mic_fill : Icons.mic_rounded,
+                  color: isDark ? AppColors.primary : AppColors.background,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Title and info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title.isNotEmpty ? title : 'Sprachmemo',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.textLight
+                            : AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Icon(
+                          Platform.isIOS
+                              ? CupertinoIcons.clock
+                              : Icons.access_time_rounded,
+                          size: 14,
+                          color: AppColors.grey,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          formatDuration(duration),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Ready badge
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppColors.success.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Platform.isIOS
+                          ? CupertinoIcons.checkmark_circle_fill
+                          : Icons.check_circle,
+                      size: 14,
+                      color: AppColors.success,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Bereit',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Waveform visualization
+          Container(
+            height: 48,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.backgroundDark.withOpacity(0.5)
+                  : AppColors.greyLighter.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                // Play button
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.accent : AppColors.primary,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                      bottomLeft: Radius.circular(8),
+                    ),
+                  ),
+                  child: Icon(
+                    Platform.isIOS
+                        ? CupertinoIcons.play_fill
+                        : Icons.play_arrow_rounded,
+                    color: isDark ? AppColors.primary : AppColors.background,
+                    size: 24,
+                  ),
+                ),
+                // Waveform bars
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: List.generate(
+                        20,
+                        (index) {
+                          // Generate random-looking but consistent heights
+                          final heights = [
+                            0.3,
+                            0.5,
+                            0.7,
+                            0.4,
+                            0.8,
+                            0.6,
+                            0.9,
+                            0.5,
+                            0.7,
+                            0.4,
+                            0.6,
+                            0.8,
+                            0.5,
+                            0.7,
+                            0.3,
+                            0.6,
+                            0.9,
+                            0.4,
+                            0.7,
+                            0.5
+                          ];
+                          final heightFactor = waveformData.isNotEmpty &&
+                                  index < waveformData.length
+                              ? (waveformData[index] as num)
+                                  .toDouble()
+                                  .clamp(0.1, 1.0)
+                              : heights[index % heights.length];
+
+                          return Container(
+                            width: 3,
+                            height: 32 * heightFactor,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.accent.withOpacity(0.7)
+                                  : AppColors.primary.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+                // Duration
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Text(
+                    formatDuration(duration),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.grey,
+                      fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

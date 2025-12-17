@@ -13,6 +13,7 @@ import '../../widgets/page_builder/content_block_widget.dart';
 import '../../widgets/page_builder/add_block_bottom_sheet.dart';
 import '../../widgets/page_builder/block_settings_bottom_sheet.dart';
 import '../../widgets/preview/web_preview_mixin.dart';
+import 'block_configuration_screen.dart';
 
 class IntuitivePageBuilderScreen extends StatefulWidget {
   final MemorialPageModel memorial;
@@ -1117,19 +1118,50 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
       backgroundColor: Colors.transparent,
       builder: (context) => AddBlockBottomSheet(
         onBlockTypeSelected: (type) {
-          _addBlock(type);
-          Navigator.pop(context);
+          Navigator.pop(context); // Schließe das BottomSheet
+          _navigateToBlockConfiguration(
+              type); // Navigiere zur Konfigurations-Seite
         },
       ),
     );
   }
 
-  void _addBlock(ContentBlockType type) {
+  // ============================================================
+  // NEU: Navigation zur Block-Konfigurationsseite
+  // ============================================================
+  Future<void> _navigateToBlockConfiguration(ContentBlockType type) async {
+    // Navigiere zur Konfigurations-Seite und warte auf das Ergebnis
+    final ContentBlock? configuredBlock = await Navigator.push<ContentBlock>(
+      context,
+      Platform.isIOS
+          ? CupertinoPageRoute(
+              builder: (context) => BlockConfigurationScreen(
+                blockType: type,
+                memorialId: widget.memorial.id,
+              ),
+            )
+          : MaterialPageRoute(
+              builder: (context) => BlockConfigurationScreen(
+                blockType: type,
+                memorialId: widget.memorial.id,
+              ),
+            ),
+    );
+
+    // Wenn ein Block zurückgegeben wurde, füge ihn hinzu
+    if (configuredBlock != null && mounted) {
+      _addConfiguredBlock(configuredBlock);
+    }
+  }
+
+  // ============================================================
+  // NEU: Füge einen fertig konfigurierten Block hinzu
+  // ============================================================
+  void _addConfiguredBlock(ContentBlock block) {
     setState(() {
-      final newBlock = ContentBlock(type: type);
-      _blocks.add(newBlock);
-      _selectedBlockId = newBlock.id;
-      _shakingBlockId = newBlock.id;
+      _blocks.add(block);
+      _selectedBlockId = block.id;
+      _shakingBlockId = block.id;
       _markAsChanged();
     });
 
@@ -1155,16 +1187,10 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
           HapticFeedback.selectionClick();
         });
       }
-
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (mounted &&
-            _blocks.isNotEmpty &&
-            (type == ContentBlockType.text ||
-                type == ContentBlockType.header)) {
-          _showBlockSettings(_blocks.last);
-        }
-      });
     });
+
+    // Zeige Success Toast
+    _showSuccessToast('Block erfolgreich hinzugefügt');
   }
 
   void _duplicateBlock(ContentBlock block) {

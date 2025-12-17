@@ -313,15 +313,6 @@ class PageBuilderRepository {
       ),
       ContentBlock(
         id: _uuid.v4(),
-        type: ContentBlockType.divider,
-        content: {
-          'color': '#E0E0E0',
-          'thickness': 2.0,
-          'margin': 20.0,
-        },
-      ),
-      ContentBlock(
-        id: _uuid.v4(),
         type: ContentBlockType.text,
         content: {
           'text': 'Eine kurze Biografie...',
