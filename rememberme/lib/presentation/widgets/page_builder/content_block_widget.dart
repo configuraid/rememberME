@@ -27,18 +27,29 @@ class ContentBlockWidget extends StatelessWidget {
     required this.onContentChanged,
   });
 
+  /// Helper to get content with empty string check
+  /// Returns placeholder if value is empty string
+  String _getTextContent(String key, String placeholder) {
+    final value = block.getContent<String>(key, '');
+    return value.isEmpty ? placeholder : value;
+  }
+
+  /// Check if text content is empty (for styling purposes)
+  bool _isTextEmpty(String key) {
+    final value = block.getContent<String>(key, '');
+    return value.isEmpty;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isPreview) {
       return _buildPreviewContent(context);
     }
 
-    // Für Android: Material Design 3
     if (Platform.isAndroid) {
       return _buildAndroidContent(context);
     }
 
-    // Für iOS: Ursprüngliches Design
     return _buildIOSContent(context);
   }
 
@@ -72,17 +83,12 @@ class ContentBlockWidget extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header with type and actions (ohne Edit-Button)
                 _buildAndroidHeader(context),
-
-                // Divider
                 Divider(
                   height: 1,
                   color: isDark ? AppColors.borderDark : AppColors.greyLighter,
                   thickness: 1,
                 ),
-
-                // Content
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: _buildContent(context),
@@ -144,15 +150,12 @@ class ContentBlockWidget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          // Drag Handle mit Theme-Farben
           Icon(
             Icons.drag_indicator_rounded,
             color: AppColors.grey,
             size: 24,
           ),
           const SizedBox(width: 12),
-
-          // Icon & Type mit Chip-Design
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -189,9 +192,7 @@ class ContentBlockWidget extends StatelessWidget {
               ],
             ),
           ),
-
           const Spacer(),
-
           _buildAndroidIconButton(
             context,
             icon: Icons.content_copy_rounded,
@@ -314,6 +315,8 @@ class ContentBlockWidget extends StatelessWidget {
         return _buildVideoContent(context);
       case ContentBlockType.audio:
         return _buildAudioContent(context);
+      case ContentBlockType.imageText:
+        return _buildImageTextContent(context);
     }
   }
 
@@ -329,7 +332,8 @@ class ContentBlockWidget extends StatelessWidget {
   Widget _buildHeaderContent(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final text = block.getContent('text', AppStrings.headerPlaceholder);
+    final text = _getTextContent('text', 'Überschrift eingeben');
+    final isEmpty = _isTextEmpty('text');
     final level = block.getContent('level', 1);
     final align = block.getContent('align', 'center');
     final colorHex = block.getContent('color', '#000000');
@@ -340,10 +344,13 @@ class ContentBlockWidget extends StatelessWidget {
             ? 24
             : 20;
 
-    // Theme-bewusste Farben
-    Color textColor = _hexToColor(colorHex);
-    if (colorHex == '#000000') {
+    Color textColor;
+    if (isEmpty) {
+      textColor = AppColors.grey;
+    } else if (colorHex == '#000000') {
       textColor = isDark ? AppColors.textLight : AppColors.textPrimary;
+    } else {
+      textColor = _hexToColor(colorHex);
     }
 
     return Text(
@@ -353,6 +360,7 @@ class ContentBlockWidget extends StatelessWidget {
         fontWeight: FontWeight.bold,
         color: textColor,
         letterSpacing: -0.5,
+        fontStyle: isEmpty ? FontStyle.italic : FontStyle.normal,
       ),
       textAlign: align == 'center'
           ? TextAlign.center
@@ -365,15 +373,19 @@ class ContentBlockWidget extends StatelessWidget {
   Widget _buildTextContent(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final text = block.getContent('text', AppStrings.textPlaceholder);
+    final text = _getTextContent('text', 'Text eingeben...');
+    final isEmpty = _isTextEmpty('text');
     final align = block.getContent('align', 'left');
     final fontSize = block.getContent('fontSize', 16.0);
     final colorHex = block.getContent('color', '#333333');
 
-    // Theme-bewusste Farben
-    Color textColor = _hexToColor(colorHex);
-    if (colorHex == '#333333') {
+    Color textColor;
+    if (isEmpty) {
+      textColor = AppColors.grey;
+    } else if (colorHex == '#333333') {
       textColor = isDark ? AppColors.textLight : AppColors.textSecondary;
+    } else {
+      textColor = _hexToColor(colorHex);
     }
 
     return Text(
@@ -382,6 +394,7 @@ class ContentBlockWidget extends StatelessWidget {
         fontSize: fontSize,
         color: textColor,
         height: 1.6,
+        fontStyle: isEmpty ? FontStyle.italic : FontStyle.normal,
       ),
       textAlign: align == 'center'
           ? TextAlign.center
@@ -545,7 +558,8 @@ class ContentBlockWidget extends StatelessWidget {
   Widget _buildQuoteContent(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final text = block.getContent('text', AppStrings.quotePlaceholder);
+    final text = _getTextContent('text', 'Zitat eingeben...');
+    final isEmpty = _isTextEmpty('text');
     final author = block.getContent('author', '');
     final colorHex = block.getContent('color', '#666666');
 
@@ -559,21 +573,19 @@ class ContentBlockWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppColors.toastBackgroundDark : AppColors.greyLighter,
         borderRadius: BorderRadius.circular(12),
-        border: Border(
-          left: BorderSide(color: quoteColor, width: 4),
-        ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             '"$text"',
             style: TextStyle(
               fontSize: 18,
               fontStyle: FontStyle.italic,
-              color: isDark ? AppColors.textLight : AppColors.textSecondary,
+              color: isEmpty ? AppColors.grey : quoteColor,
               height: 1.6,
             ),
+            textAlign: TextAlign.center,
           ),
           if (author.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -581,9 +593,10 @@ class ContentBlockWidget extends StatelessWidget {
               '— $author',
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.grey,
+                color: quoteColor,
                 fontWeight: FontWeight.w500,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ],
@@ -639,7 +652,6 @@ class ContentBlockWidget extends StatelessWidget {
       children: [
         Stack(
           children: [
-            // Thumbnail oder Fallback
             Container(
               height: 200,
               decoration: BoxDecoration(
@@ -654,21 +666,6 @@ class ContentBlockWidget extends StatelessWidget {
                         fit: BoxFit.cover,
                         width: double.infinity,
                         height: double.infinity,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                isDark ? AppColors.accent : AppColors.primary,
-                              ),
-                            ),
-                          );
-                        },
                         errorBuilder: (_, __, ___) => Center(
                           child: Icon(
                             Platform.isIOS
@@ -690,7 +687,6 @@ class ContentBlockWidget extends StatelessWidget {
                       ),
               ),
             ),
-            // Play Button Overlay
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -704,13 +700,6 @@ class ContentBlockWidget extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppColors.surface.withOpacity(0.9),
                       shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.shadowDark,
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
                     child: Icon(
                       Platform.isIOS
@@ -723,14 +712,12 @@ class ContentBlockWidget extends StatelessWidget {
                 ),
               ),
             ),
-            // Autoplay Badge
             if (autoplay)
               Positioned(
                 top: 12,
                 right: 12,
                 child: _buildAutoplayBadge(context, isDark),
               ),
-            // "Video bereit" Badge
             Positioned(
               bottom: 12,
               left: 12,
@@ -742,13 +729,6 @@ class ContentBlockWidget extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.success,
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.shadowDark,
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -767,7 +747,6 @@ class ContentBlockWidget extends StatelessWidget {
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textLight,
-                        fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
                       ),
                     ),
                   ],
@@ -800,7 +779,6 @@ class ContentBlockWidget extends StatelessWidget {
     final duration = block.getContent('duration', 0);
     final waveformData = block.getContent<List>('waveformData', []);
 
-    // Format duration
     String formatDuration(int seconds) {
       final minutes = seconds ~/ 60;
       final secs = seconds % 60;
@@ -808,7 +786,6 @@ class ContentBlockWidget extends StatelessWidget {
     }
 
     if (url.isEmpty) {
-      // Empty state - no audio uploaded yet
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -859,7 +836,6 @@ class ContentBlockWidget extends StatelessWidget {
       );
     }
 
-    // Audio uploaded - show player UI
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -881,28 +857,17 @@ class ContentBlockWidget extends StatelessWidget {
           color: isDark ? AppColors.borderDark : AppColors.greyLighter,
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? AppColors.shadowDark : AppColors.shadow,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title and duration row
           Row(
             children: [
-              // Mic icon
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
                     colors: isDark
                         ? [AppColors.accent, AppColors.accent.withOpacity(0.7)]
                         : [
@@ -911,14 +876,6 @@ class ContentBlockWidget extends StatelessWidget {
                           ],
                   ),
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (isDark ? AppColors.accent : AppColors.primary)
-                          .withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
                 child: Icon(
                   Platform.isIOS ? CupertinoIcons.mic_fill : Icons.mic_rounded,
@@ -927,7 +884,6 @@ class ContentBlockWidget extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Title and info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -967,17 +923,12 @@ class ContentBlockWidget extends StatelessWidget {
                   ],
                 ),
               ),
-              // Ready badge
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.success.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppColors.success.withOpacity(0.3),
-                    width: 1,
-                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1004,7 +955,6 @@ class ContentBlockWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          // Waveform visualization
           Container(
             height: 48,
             decoration: BoxDecoration(
@@ -1015,7 +965,6 @@ class ContentBlockWidget extends StatelessWidget {
             ),
             child: Row(
               children: [
-                // Play button
                 Container(
                   width: 48,
                   height: 48,
@@ -1034,7 +983,6 @@ class ContentBlockWidget extends StatelessWidget {
                     size: 24,
                   ),
                 ),
-                // Waveform bars
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1044,7 +992,6 @@ class ContentBlockWidget extends StatelessWidget {
                       children: List.generate(
                         20,
                         (index) {
-                          // Generate random-looking but consistent heights
                           final heights = [
                             0.3,
                             0.5,
@@ -1089,7 +1036,6 @@ class ContentBlockWidget extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Duration
                 Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: Text(
@@ -1098,7 +1044,6 @@ class ContentBlockWidget extends StatelessWidget {
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: AppColors.grey,
-                      fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
                     ),
                   ),
                 ),
@@ -1110,6 +1055,195 @@ class ContentBlockWidget extends StatelessWidget {
     );
   }
 
+  // ===== IMAGE TEXT CONTENT =====
+  Widget _buildImageTextContent(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final imageUrl = block.getContent('imageUrl', '');
+    final title = block.getContent('title', '');
+    final text = _getTextContent('text', 'Text eingeben...');
+    final isTextEmpty = _isTextEmpty('text');
+    final layout = block.getContent('layout', 'left');
+    final imageSize = block.getContent('imageSize', 0.4);
+    final imageCaption = block.getContent('imageCaption', '');
+
+    // Leerer Zustand - kein Bild
+    if (imageUrl.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.toastBackgroundDark : AppColors.greyLighter,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+            width: 1,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Platform.isIOS
+                  ? CupertinoIcons.text_badge_plus
+                  : Icons.article_rounded,
+              size: 48,
+              color: AppColors.grey,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Bild mit Text',
+              style: TextStyle(
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tippe zum Konfigurieren',
+              style: TextStyle(
+                color: AppColors.grey,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Bild-Widget
+    Widget imageWidget = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            height: layout == 'top' || layout == 'bottom' ? 180 : null,
+            errorBuilder: (_, __, ___) => Container(
+              height: 150,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.toastBackgroundDark
+                    : AppColors.greyLighter,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.broken_image_outlined,
+                size: 48,
+                color: AppColors.grey,
+              ),
+            ),
+          ),
+        ),
+        if (imageCaption.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            imageCaption,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.grey,
+              fontStyle: FontStyle.italic,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ],
+    );
+
+    // Text-Widget
+    Widget textWidget = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (title.isNotEmpty) ...[
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 15,
+            color: isTextEmpty
+                ? AppColors.grey
+                : (isDark ? AppColors.textLight : AppColors.textSecondary),
+            height: 1.6,
+            fontStyle: isTextEmpty ? FontStyle.italic : FontStyle.normal,
+          ),
+        ),
+      ],
+    );
+
+    // Layout basierend auf Einstellung
+    switch (layout) {
+      case 'top':
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            imageWidget,
+            const SizedBox(height: 16),
+            textWidget,
+          ],
+        );
+
+      case 'bottom':
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            textWidget,
+            const SizedBox(height: 16),
+            imageWidget,
+          ],
+        );
+
+      case 'right':
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: ((1 - imageSize) * 10).round(),
+              child: Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: textWidget,
+              ),
+            ),
+            Expanded(
+              flex: (imageSize * 10).round(),
+              child: imageWidget,
+            ),
+          ],
+        );
+
+      case 'left':
+      default:
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: (imageSize * 10).round(),
+              child: imageWidget,
+            ),
+            Expanded(
+              flex: ((1 - imageSize) * 10).round(),
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: textWidget,
+              ),
+            ),
+          ],
+        );
+    }
+  }
+
   Widget _buildAutoplayBadge(BuildContext context, bool isDark) {
     if (Platform.isIOS) {
       return Container(
@@ -1117,13 +1251,6 @@ class ContentBlockWidget extends StatelessWidget {
         decoration: BoxDecoration(
           color: isDark ? AppColors.accent : AppColors.primary,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.shadowDark,
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1140,8 +1267,6 @@ class ContentBlockWidget extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: isDark ? AppColors.primary : AppColors.background,
-                fontFamily: '.SF Pro Text',
-                letterSpacing: -0.2,
               ),
             ),
           ],
@@ -1153,13 +1278,6 @@ class ContentBlockWidget extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.success,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.success.withOpacity(0.4),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1176,7 +1294,6 @@ class ContentBlockWidget extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textLight,
-                letterSpacing: 0.3,
               ),
             ),
           ],

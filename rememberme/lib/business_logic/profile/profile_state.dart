@@ -86,7 +86,6 @@ class ProfileState extends Equatable {
   final String? name;
   final String? email;
   final String? phone;
-  final String? bio;
 
   const ProfileState({
     this.status = ProfileStatus.initial,
@@ -98,7 +97,6 @@ class ProfileState extends Equatable {
     this.name,
     this.email,
     this.phone,
-    this.bio,
   });
 
   factory ProfileState.initial() {
@@ -126,7 +124,6 @@ class ProfileState extends Equatable {
       name: name,
       email: email,
       phone: phone,
-      bio: bio,
     );
   }
 
@@ -178,7 +175,6 @@ class ProfileState extends Equatable {
       name: name ?? this.name,
       email: email ?? this.email,
       phone: phone ?? this.phone,
-      bio: bio ?? this.bio,
     );
   }
 
@@ -193,6 +189,5 @@ class ProfileState extends Equatable {
         name,
         email,
         phone,
-        bio,
       ];
 }

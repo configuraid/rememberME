@@ -24,7 +24,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
-  late TextEditingController _bioController;
 
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
@@ -44,9 +43,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _phoneController = TextEditingController(
       text: profileState.phone ?? '',
     );
-    _bioController = TextEditingController(
-      text: profileState.bio ?? '',
-    );
   }
 
   @override
@@ -54,7 +50,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _bioController.dispose();
     super.dispose();
   }
 
@@ -468,7 +463,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 name: _nameController.text,
                 email: _emailController.text,
                 phone: _phoneController.text,
-                bio: _bioController.text,
               ),
             );
       }
@@ -529,9 +523,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              MediaQuery.of(context).padding.top +
+                  44 +
+                  24, // SafeArea top + NavBar height + spacing
+              16,
+              0,
+            ),
             children: [
-              const SizedBox(height: 24),
               _buildIOSProfileImageCard(state, isDark),
               const SizedBox(height: 24),
               _buildIOSSectionHeader('Persönliche Informationen', isDark),
@@ -571,28 +571,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   _buildIOSDivider(isDark),
                   _buildIOSCardTextField(
                     controller: _phoneController,
-                    label: AppStrings.phoneOptional,
+                    label: AppStrings.phone,
                     icon: CupertinoIcons.phone,
                     isDark: isDark,
                     keyboardType: TextInputType.phone,
                     isLast: true,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              _buildIOSSectionHeader('Über mich', isDark),
-              const SizedBox(height: 8),
-              _buildIOSInfoCard(
-                isDark: isDark,
-                children: [
-                  _buildIOSCardTextField(
-                    controller: _bioController,
-                    label: AppStrings.aboutMeOptional,
-                    icon: CupertinoIcons.info_circle,
-                    isDark: isDark,
-                    maxLines: 4,
-                    maxLength: 200,
-                    isLast: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return AppStrings.enterPhone;
+                      }
+                      return null;
+                    },
                   ),
                 ],
               ),
@@ -867,6 +856,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ? AppColors.backgroundDarkElevated.withOpacity(0.8)
             : AppColors.surface.withOpacity(0.94),
         foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
+        iconTheme: IconThemeData(
+          color: isDark ? AppColors.textLight : AppColors.textPrimary,
+        ),
         surfaceTintColor: Colors.transparent,
       ),
       body: Form(
@@ -914,28 +906,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 _buildAndroidDivider(isDark),
                 _buildAndroidCardTextField(
                   controller: _phoneController,
-                  label: AppStrings.phoneOptional,
+                  label: AppStrings.phone,
                   icon: Icons.phone_outlined,
                   isDark: isDark,
                   keyboardType: TextInputType.phone,
                   isLast: true,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _buildAndroidSectionHeader('Über mich', isDark),
-            const SizedBox(height: 8),
-            _buildAndroidInfoCard(
-              isDark: isDark,
-              children: [
-                _buildAndroidCardTextField(
-                  controller: _bioController,
-                  label: AppStrings.aboutMeOptional,
-                  icon: Icons.info_outline_rounded,
-                  isDark: isDark,
-                  maxLines: 4,
-                  maxLength: 200,
-                  isLast: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return AppStrings.enterPhone;
+                    }
+                    return null;
+                  },
                 ),
               ],
             ),

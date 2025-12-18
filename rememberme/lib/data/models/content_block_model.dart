@@ -3,7 +3,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:io';
 
-/// Simple content block types for memorial pages
 enum ContentBlockType {
   header, // Überschrift
   text, // Text/Absatz
@@ -12,6 +11,7 @@ enum ContentBlockType {
   quote, // Zitat
   video, // Video
   audio, // Audio/Sprachmemo
+  imageText, // Bild mit Text
 }
 
 /// Simplified content block for memorial pages
@@ -31,14 +31,14 @@ class ContentBlock {
     switch (type) {
       case ContentBlockType.header:
         return {
-          'text': 'Überschrift eingeben',
+          'text': '',
           'level': 1, // h1, h2, h3
           'align': 'center',
           'color': '#000000',
         };
       case ContentBlockType.text:
         return {
-          'text': 'Text eingeben...',
+          'text': '',
           'align': 'left',
           'fontSize': 16.0,
           'color': '#333333',
@@ -56,7 +56,7 @@ class ContentBlock {
         };
       case ContentBlockType.quote:
         return {
-          'text': 'Zitat eingeben...',
+          'text': '',
           'author': '',
           'color': '#666666',
         };
@@ -73,6 +73,15 @@ class ContentBlock {
           'title': '',
           'duration': 0,
           'waveformData': <double>[], // Waveform-Daten für Visualisierung
+        };
+      case ContentBlockType.imageText:
+        return {
+          'imageUrl': '',
+          'title': '',
+          'text': '',
+          'layout': 'left', // left, right, top, bottom
+          'imageSize': 0.4, // 40% der Breite
+          'imageCaption': '',
         };
     }
   }
@@ -147,6 +156,8 @@ class BlockTypeInfo {
         return 'Video';
       case ContentBlockType.audio:
         return 'Sprachmemo';
+      case ContentBlockType.imageText:
+        return 'Bild mit Text';
     }
   }
 
@@ -170,6 +181,8 @@ class BlockTypeInfo {
           return CupertinoIcons.videocam;
         case ContentBlockType.audio:
           return CupertinoIcons.mic_fill;
+        case ContentBlockType.imageText:
+          return CupertinoIcons.text_badge_plus;
       }
     } else {
       switch (type) {
@@ -187,6 +200,8 @@ class BlockTypeInfo {
           return Icons.videocam_outlined;
         case ContentBlockType.audio:
           return Icons.mic_rounded;
+        case ContentBlockType.imageText:
+          return Icons.article_rounded;
       }
     }
   }
@@ -207,6 +222,8 @@ class BlockTypeInfo {
         return 'Video einbetten';
       case ContentBlockType.audio:
         return 'Sprachnachricht aufnehmen';
+      case ContentBlockType.imageText:
+        return 'Bild und Text kombiniert';
     }
   }
 }

@@ -1045,6 +1045,8 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
   }
 
   Widget _proxyDecorator(Widget child, int index, Animation<double> animation) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (Platform.isIOS) {
       return AnimatedBuilder(
         animation: animation,
@@ -1082,21 +1084,36 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
         builder: (context, child) {
           final double scale = Tween<double>(
             begin: 1.0,
-            end: 1.05,
+            end: 1.03,
           ).evaluate(CurvedAnimation(
             parent: animation,
             curve: Curves.easeInOut,
           ));
 
+          final double elevation = Tween<double>(
+            begin: 0.0,
+            end: 1.0,
+          ).evaluate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOut,
+          ));
+
           return Transform.scale(
             scale: scale,
-            child: Material(
-              elevation: 8,
-              borderRadius: BorderRadius.circular(16),
-              child: Opacity(
-                opacity: 0.9,
-                child: child,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: (isDark ? AppColors.shadowDark : AppColors.shadow)
+                        .withOpacity(0.3 + (0.4 * elevation)),
+                    blurRadius: 12 + (12 * elevation),
+                    spreadRadius: 2 * elevation,
+                    offset: Offset(0, 4 + (6 * elevation)),
+                  ),
+                ],
               ),
+              child: child,
             ),
           );
         },

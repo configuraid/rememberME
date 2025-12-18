@@ -120,9 +120,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ============================================================
-  // NEU: Navigation nach Account-Löschung
-  // ============================================================
   void _handleAccountDeleted(BuildContext context) {
     // 1. Auth-State zurücksetzen
     context.read<AuthBloc>().add(const AuthLogoutRequested());
@@ -138,9 +135,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return BlocConsumer<ProfileBloc, ProfileState>(
       listener: (context, state) {
-        // ============================================================
-        // NEU: Auf deleted Status reagieren
-        // ============================================================
         if (state.isDeleted) {
           _handleAccountDeleted(context);
           return;
@@ -176,7 +170,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         middle: Text(
           AppStrings.profile,
           style: TextStyle(
-            fontSize: 17,
+            fontSize: 20,
             fontWeight: FontWeight.w600,
             color: isDark ? AppColors.textLight : AppColors.textPrimary,
             fontFamily: '.SF Pro Text',
@@ -193,6 +187,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Icon(
             CupertinoIcons.pencil,
             color: isDark ? AppColors.accent : AppColors.primary,
+            size: 32,
           ),
         ),
         backgroundColor: isDark
@@ -355,30 +350,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: AppColors.grey,
             ),
           ),
-          if (profileState.bio != null && profileState.bio!.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.backgroundDarkElevated
-                    : AppColors.greyLighter,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                profileState.bio!,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.grey,
-                  height: 1.4,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -470,32 +441,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               decoration: TextDecoration.none,
             ),
           ),
-          if (profileState.bio != null && profileState.bio!.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.backgroundDarkElevated
-                    : AppColors.greyLighter,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                profileState.bio!,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.grey,
-                  height: 1.4,
-                  fontFamily: '.SF Pro Text',
-                  decoration: TextDecoration.none,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
         ],
       ),
     );

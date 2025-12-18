@@ -381,116 +381,294 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color:
-                isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            color: isDark ? AppColors.backgroundDark : AppColors.background,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
           child: Column(
             children: [
+              // Handle
               Container(
-                margin: const EdgeInsets.symmetric(vertical: 12),
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.borderDark : AppColors.greyLight,
+                  color: isDark
+                      ? AppColors.grey.withOpacity(0.5)
+                      : AppColors.greyLight,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 16, 16),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.toastBackgroundDark
-                            : AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        BlockTypeInfo.getIcon(widget.block.type),
-                        size: 24,
-                        color: isDark ? AppColors.accent : AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        '${BlockTypeInfo.getTitle(widget.block.type)} bearbeiten',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: isDark
-                              ? AppColors.textLight
-                              : AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: _discardChanges,
-                    ),
-                  ],
-                ),
-              ),
-              Divider(
-                height: 1,
-                color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-              ),
-              Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(20),
-                  children: _buildSettings(),
-                ),
-              ),
+
+              // Header mit Gradient
               Container(
-                padding: EdgeInsets.fromLTRB(
-                  20,
-                  16,
-                  20,
-                  16 + MediaQuery.of(context).padding.bottom,
-                ),
+                margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.backgroundDarkElevated
-                      : AppColors.surface,
-                  border: Border(
-                    top: BorderSide(
-                      color:
-                          isDark ? AppColors.borderDark : AppColors.greyLighter,
-                      width: 1,
-                    ),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            AppColors.accent.withOpacity(0.15),
+                            AppColors.accent.withOpacity(0.05),
+                          ]
+                        : [
+                            AppColors.primary.withOpacity(0.12),
+                            AppColors.primary.withOpacity(0.04),
+                          ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.accent.withOpacity(0.2)
+                        : AppColors.primary.withOpacity(0.15),
+                    width: 1.5,
                   ),
                 ),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _discardChanges,
-                        child: Text(AppStrings.cancel),
+                    // Icon mit Gradient
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: isDark
+                              ? [
+                                  AppColors.accent,
+                                  AppColors.accent.withOpacity(0.7)
+                                ]
+                              : [
+                                  AppColors.primary,
+                                  AppColors.primary.withOpacity(0.8)
+                                ],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                (isDark ? AppColors.accent : AppColors.primary)
+                                    .withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        BlockTypeInfo.getIcon(widget.block.type),
+                        size: 24,
+                        color:
+                            isDark ? AppColors.primary : AppColors.background,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 14),
                     Expanded(
-                      flex: 2,
-                      child: FilledButton.icon(
-                        onPressed: _confirmChanges,
-                        icon: const Icon(Icons.check_rounded),
-                        label: Text(AppStrings.apply),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.success,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            BlockTypeInfo.getTitle(widget.block.type),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? AppColors.textLight
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Block bearbeiten',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Close Button
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _discardChanges,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.toastBackgroundDark
+                                : AppColors.greyLighter.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 22,
+                            color: AppColors.grey,
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
+
+              // Content
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  children: _buildSettings(),
+                ),
+              ),
+
+              // Bottom Buttons
+              _buildAndroidBottomButtons(isDark),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildAndroidBottomButtons(bool isDark) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        20,
+        20,
+        20 + MediaQuery.of(context).padding.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Abbrechen Button
+          Expanded(
+            child: Container(
+              height: 56,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.toastBackgroundDark
+                    : AppColors.greyLighter.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.borderDark
+                      : AppColors.greyLight.withOpacity(0.5),
+                  width: 1.5,
+                ),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _discardChanges,
+                  borderRadius: BorderRadius.circular(16),
+                  splashColor: AppColors.error.withOpacity(0.1),
+                  highlightColor: AppColors.error.withOpacity(0.05),
+                  child: Center(
+                    child: Text(
+                      AppStrings.cancel,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.textLight : AppColors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          // Übernehmen Button
+          Expanded(
+            flex: 2,
+            child: Container(
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.success,
+                    AppColors.success.withOpacity(0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.success.withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _confirmChanges,
+                  borderRadius: BorderRadius.circular(16),
+                  splashColor: Colors.white.withOpacity(0.2),
+                  highlightColor: Colors.white.withOpacity(0.1),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check_rounded,
+                          size: 20,
+                          color: AppColors.textLight,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        AppStrings.apply,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textLight,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -510,6 +688,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         return _buildVideoSettings();
       case ContentBlockType.audio:
         return _buildAudioSettings();
+      case ContentBlockType.imageText:
+        return _buildImageTextSettings();
     }
   }
 
@@ -518,7 +698,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       _buildTextField(
         label: 'Überschrift',
         key: 'text',
-        defaultValue: 'Überschrift eingeben',
+        hint: 'Überschrift eingeben',
         maxLines: 2,
       ),
       const SizedBox(height: 20),
@@ -540,7 +720,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       _buildTextField(
         label: 'Text',
         key: 'text',
-        defaultValue: 'Text eingeben...',
+        hint: 'Text eingeben...',
         maxLines: 10,
       ),
       const SizedBox(height: 20),
@@ -590,7 +770,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       _buildTextField(
         label: 'Bildunterschrift',
         key: 'caption',
-        defaultValue: '',
+        hint: 'Bildunterschrift eingeben...',
         maxLines: 2,
       ),
     ];
@@ -783,14 +963,14 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       _buildTextField(
         label: 'Zitat',
         key: 'text',
-        defaultValue: 'Zitat eingeben...',
+        hint: 'Zitat eingeben...',
         maxLines: 4,
       ),
       const SizedBox(height: 20),
       _buildTextField(
         label: 'Autor',
         key: 'author',
-        defaultValue: '',
+        hint: 'Name des Autors',
       ),
       const SizedBox(height: 20),
       _buildColorPicker('color', 'Farbe'),
@@ -844,7 +1024,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       _buildTextField(
         label: 'Beschreibung',
         key: 'caption',
-        defaultValue: '',
+        hint: 'Beschreibung eingeben...',
         maxLines: 2,
       ),
     ];
@@ -998,7 +1178,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
             children: [
               Row(
                 children: [
-                  // Play button
                   Container(
                     width: 56,
                     height: 56,
@@ -1015,7 +1194,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  // Waveform
                   Expanded(
                     child: SizedBox(
                       height: 40,
@@ -1155,7 +1333,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
       const SizedBox(height: 8),
 
-      // Info
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Row(
@@ -1172,7 +1349,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         ),
       ),
 
-      // Upload Progress
       if (_isUploading) ...[
         const SizedBox(height: 20),
         ClipRRect(
@@ -1194,15 +1370,12 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
       const SizedBox(height: 24),
 
-      // Title field
       _buildTextField(
         label: 'Titel (optional)',
         key: 'title',
-        defaultValue: '',
         hint: 'z.B. "Persönliche Nachricht"',
       ),
 
-      // Delete button if audio exists
       if (currentUrl.isNotEmpty) ...[
         const SizedBox(height: 24),
         OutlinedButton.icon(
@@ -1246,7 +1419,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       HapticFeedback.mediumImpact();
     }
 
-    // Simulate recording timer
     Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 1));
       if (!_isRecording || !mounted) return false;
@@ -1286,7 +1458,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       _updateLocalValue('duration', _recordingDuration);
       _updateLocalValue('waveformData', _waveformData);
 
-      // Simulate upload
       await _uploadAudio();
     }
   }
@@ -1300,7 +1471,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     });
 
     try {
-      // Simulate upload
       for (var i = 0; i <= 100; i += 10) {
         await Future.delayed(const Duration(milliseconds: 100));
         if (mounted) {
@@ -1310,7 +1480,6 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         }
       }
 
-      // Simulated URL
       final downloadUrl =
           'https://firebasestorage.example.com/audio/${widget.block.id}.m4a';
 
@@ -1334,14 +1503,362 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
   }
 
   // ============================================================
+  // IMAGE TEXT SETTINGS
+  // ============================================================
+  List<Widget> _buildImageTextSettings() {
+    final currentImageUrl = _getContent('imageUrl', '');
+    final currentLayout = _getContent('layout', 'left');
+    final currentImageSize = _getContent('imageSize', 0.4);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return [
+      // Bild-Vorschau
+      if (currentImageUrl.isNotEmpty) ...[
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Image.network(
+            currentImageUrl,
+            height: 180,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              height: 180,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.toastBackgroundDark
+                    : AppColors.greyLighter,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(Icons.broken_image_rounded,
+                  size: 64, color: AppColors.grey),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+
+      // Upload Button
+      SizedBox(
+        height: 56,
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: _isUploading ? null : _handleImageTextUpload,
+          icon: _isUploading
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(AppColors.textLight)),
+                )
+              : Icon(
+                  Platform.isIOS
+                      ? CupertinoIcons.cloud_upload
+                      : Icons.upload_rounded,
+                  size: 22),
+          label: Text(
+            _isUploading
+                ? 'Wird hochgeladen...'
+                : currentImageUrl.isEmpty
+                    ? 'Bild hochladen'
+                    : 'Bild ersetzen',
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+          ),
+          style: FilledButton.styleFrom(
+            backgroundColor: isDark ? AppColors.accent : AppColors.primary,
+            foregroundColor: isDark ? AppColors.primary : AppColors.background,
+            disabledBackgroundColor:
+                isDark ? AppColors.toastBackgroundDark : AppColors.greyLighter,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+        ),
+      ),
+
+      const SizedBox(height: 24),
+
+      // Titel
+      _buildTextField(
+        label: 'Titel (optional)',
+        key: 'title',
+        hint: 'z.B. "Eine besondere Erinnerung"',
+      ),
+
+      const SizedBox(height: 20),
+
+      // Text
+      _buildTextField(
+        label: 'Text',
+        key: 'text',
+        hint: 'Text eingeben...',
+        maxLines: 6,
+      ),
+
+      const SizedBox(height: 20),
+
+      // Bildunterschrift
+      _buildTextField(
+        label: 'Bildunterschrift (optional)',
+        key: 'imageCaption',
+        hint: 'Kurze Beschreibung des Bildes',
+      ),
+
+      const SizedBox(height: 24),
+
+      // Layout-Auswahl
+      _buildLayoutPicker(currentLayout, isDark),
+
+      const SizedBox(height: 24),
+
+      // Bildgröße (nur bei left/right Layout)
+      if (currentLayout == 'left' || currentLayout == 'right') ...[
+        _buildImageSizeSlider(currentImageSize, isDark),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            'Bestimmt das Verhältnis zwischen Bild und Text (${((currentImageSize is double ? currentImageSize : 0.4) * 100).round()}% Bild)',
+            style: TextStyle(fontSize: 12, color: AppColors.grey),
+          ),
+        ),
+      ],
+
+      // Bild entfernen Button
+      if (currentImageUrl.isNotEmpty) ...[
+        const SizedBox(height: 24),
+        OutlinedButton.icon(
+          onPressed: () {
+            _updateLocalValue('imageUrl', '');
+          },
+          icon: const Icon(Icons.delete_outline, color: AppColors.error),
+          label: const Text(
+            'Bild entfernen',
+            style: TextStyle(color: AppColors.error),
+          ),
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: AppColors.error.withOpacity(0.5)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ],
+    ];
+  }
+
+  Widget _buildLayoutPicker(String currentLayout, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Layout',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.grey,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _buildLayoutOption('left', 'Bild links', Icons.border_left_rounded,
+                currentLayout, isDark),
+            const SizedBox(width: 8),
+            _buildLayoutOption('right', 'Bild rechts',
+                Icons.border_right_rounded, currentLayout, isDark),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            _buildLayoutOption('top', 'Bild oben',
+                Icons.vertical_align_top_rounded, currentLayout, isDark),
+            const SizedBox(width: 8),
+            _buildLayoutOption('bottom', 'Bild unten',
+                Icons.vertical_align_bottom_rounded, currentLayout, isDark),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLayoutOption(
+    String value,
+    String label,
+    IconData icon,
+    String currentLayout,
+    bool isDark,
+  ) {
+    final isSelected = currentLayout == value;
+
+    return Expanded(
+      child: Container(
+        height: 72,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark
+                  ? AppColors.accent.withOpacity(0.2)
+                  : AppColors.primary.withOpacity(0.1))
+              : (isDark ? AppColors.backgroundDarkElevated : AppColors.surface),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? (isDark ? AppColors.accent : AppColors.primary)
+                : (isDark ? AppColors.borderDark : AppColors.greyLighter),
+            width: isSelected ? 2 : 1.5,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: (isDark ? AppColors.accent : AppColors.primary)
+                        .withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              _updateLocalValue('layout', value);
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected
+                      ? (isDark ? AppColors.accent : AppColors.primary)
+                      : AppColors.grey,
+                  size: 24,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected
+                        ? (isDark ? AppColors.accent : AppColors.primary)
+                        : AppColors.grey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageSizeSlider(dynamic currentImageSize, bool isDark) {
+    final value = currentImageSize is double ? currentImageSize : 0.4;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Bildbreite',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.grey,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.toastBackgroundDark
+                    : AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '${(value * 100).round()}%',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppColors.accent : AppColors.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: isDark ? AppColors.accent : AppColors.primary,
+            inactiveTrackColor: isDark
+                ? AppColors.accent.withOpacity(0.3)
+                : AppColors.primary.withOpacity(0.3),
+            thumbColor: isDark ? AppColors.accent : AppColors.primary,
+            trackHeight: 4,
+          ),
+          child: Slider(
+            value: value.clamp(0.3, 0.7),
+            min: 0.3,
+            max: 0.7,
+            divisions: 8,
+            onChanged: (newValue) => _updateLocalValue('imageSize', newValue),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleImageTextUpload() async {
+    if (_isUploading) return;
+
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
+
+      if (image == null) return;
+
+      setState(() => _isUploading = true);
+
+      final String downloadUrl = await _storageService.uploadBlockImage(
+        memorialId: widget.memorialId,
+        blockId: widget.block.id,
+        imageFile: File(image.path),
+      );
+
+      _updateLocalValue('imageUrl', downloadUrl);
+
+      if (mounted) {
+        _showSuccessSnackBar('Bild erfolgreich hochgeladen!');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog('Fehler', e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    }
+  }
+
+  // ============================================================
   // Common UI Builders
   // ============================================================
   Widget _buildTextField({
     required String label,
     required String key,
-    required String defaultValue,
-    int maxLines = 1,
     String? hint,
+    int maxLines = 1,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -1358,13 +1875,14 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         ),
         const SizedBox(height: 8),
         TextField(
-          controller: _getController(key, defaultValue),
+          controller: _getController(key, ''),
           maxLines: maxLines,
           style: TextStyle(
             color: isDark ? AppColors.textLight : AppColors.textPrimary,
           ),
           decoration: InputDecoration(
-            hintText: hint,
+            hintText: hint ?? label,
+            hintStyle: TextStyle(color: AppColors.grey),
             filled: true,
             fillColor:
                 isDark ? AppColors.backgroundDarkElevated : AppColors.surface,

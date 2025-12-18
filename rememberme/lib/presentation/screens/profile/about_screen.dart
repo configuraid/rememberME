@@ -59,7 +59,7 @@ class _AboutScreenState extends State<AboutScreen> {
       ),
       child: Material(
         type: MaterialType.transparency,
-        child: _buildContent(isDark),
+        child: _buildContent(isDark, isIOS: true),
       ),
     );
   }
@@ -87,14 +87,19 @@ class _AboutScreenState extends State<AboutScreen> {
         surfaceTintColor: Colors.transparent,
       ),
       body: SafeArea(
-        child: _buildContent(isDark),
+        child: _buildContent(isDark, isIOS: false),
       ),
     );
   }
 
-  Widget _buildContent(bool isDark) {
+  Widget _buildContent(bool isDark, {required bool isIOS}) {
+    final topPadding = isIOS
+        ? MediaQuery.of(context).padding.top +
+            44 // SafeArea top + NavBar height
+        : 0.0;
+
     return ListView(
-      padding: const EdgeInsets.only(top: 0, bottom: 32),
+      padding: EdgeInsets.only(top: topPadding, bottom: 32),
       children: [
         // App Logo & Name Header
         _buildHeader(isDark),

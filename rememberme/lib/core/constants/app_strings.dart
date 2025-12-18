@@ -186,8 +186,8 @@ class AppStrings {
   static const String enterEmail = 'Bitte geben Sie eine E-Mail-Adresse ein';
   static const String enterValidEmail =
       'Bitte geben Sie eine gültige E-Mail-Adresse ein';
-  static const String phoneOptional = 'Telefon (optional)';
-  static const String aboutMeOptional = 'Über mich (optional)';
+  static const String phone = 'Telefon';
+  static const String enterPhone = 'Bitte Telefonnummer eingeben';
 
   // Actions
   static const String save = 'Speichern';
