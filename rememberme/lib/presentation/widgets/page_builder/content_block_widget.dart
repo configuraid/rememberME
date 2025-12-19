@@ -1055,7 +1055,7 @@ class ContentBlockWidget extends StatelessWidget {
     );
   }
 
-  // ===== IMAGE TEXT CONTENT =====
+// ===== IMAGE TEXT CONTENT =====
   Widget _buildImageTextContent(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -1066,6 +1066,29 @@ class ContentBlockWidget extends StatelessWidget {
     final layout = block.getContent('layout', 'left');
     final imageSize = block.getContent('imageSize', 0.4);
     final imageCaption = block.getContent('imageCaption', '');
+
+    // NEU: Farbe auslesen
+    final colorHex = block.getContent('color', '#333333');
+
+    // NEU: Textfarbe basierend auf Einstellung
+    Color textColor;
+    if (isTextEmpty) {
+      textColor = AppColors.grey;
+    } else if (colorHex == '#333333') {
+      // Standard-Farbe: Theme-basiert
+      textColor = isDark ? AppColors.textLight : AppColors.textSecondary;
+    } else {
+      // Benutzerdefinierte Farbe
+      textColor = _hexToColor(colorHex);
+    }
+
+    // NEU: Titelfarbe (etwas dunkler/prominenter als Text)
+    Color titleColor;
+    if (colorHex == '#333333') {
+      titleColor = isDark ? AppColors.textLight : AppColors.textPrimary;
+    } else {
+      titleColor = _hexToColor(colorHex);
+    }
 
     // Leerer Zustand - kein Bild
     if (imageUrl.isEmpty) {
@@ -1152,7 +1175,7 @@ class ContentBlockWidget extends StatelessWidget {
       ],
     );
 
-    // Text-Widget
+    // Text-Widget - JETZT MIT FARBE
     Widget textWidget = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -1163,7 +1186,7 @@ class ContentBlockWidget extends StatelessWidget {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              color: titleColor,
               height: 1.3,
             ),
           ),
@@ -1173,9 +1196,7 @@ class ContentBlockWidget extends StatelessWidget {
           text,
           style: TextStyle(
             fontSize: 15,
-            color: isTextEmpty
-                ? AppColors.grey
-                : (isDark ? AppColors.textLight : AppColors.textSecondary),
+            color: textColor,
             height: 1.6,
             fontStyle: isTextEmpty ? FontStyle.italic : FontStyle.normal,
           ),

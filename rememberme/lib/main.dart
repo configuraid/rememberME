@@ -11,7 +11,6 @@ import 'data/repositories/profile_repository.dart';
 import 'data/repositories/page_builder_repository.dart';
 import 'business_logic/auth/auth_bloc.dart';
 import 'business_logic/memorial/memorial_bloc.dart';
-import 'business_logic/license/license_bloc.dart';
 import 'business_logic/profile/profile_bloc.dart';
 import 'business_logic/page_builder/page_builder_bloc.dart';
 import 'data/services/qr_decryption_service.dart';
@@ -57,11 +56,6 @@ void main() async {
           BlocProvider(
             create: (context) => MemorialBloc(
               memorialRepository: context.read<MemorialRepository>(),
-            ),
-          ),
-          BlocProvider(
-            create: (context) => LicenseBloc(
-              licenseRepository: context.read<LicenseRepository>(),
             ),
           ),
           BlocProvider(

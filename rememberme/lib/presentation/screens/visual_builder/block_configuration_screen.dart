@@ -4,8 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:rememberme/presentation/widgets/common/custom_color_picker_dialog.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:rememberme/data/models/content_block_model.dart';
 import 'package:rememberme/data/services/firebase_storage_service.dart';
 import 'package:rememberme/core/constants/app_colors.dart';
@@ -44,17 +48,62 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
   double _audioUploadProgress = 0.0;
   List<double> _waveformData = [];
 
+  // Audio Player
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isPlaying = false;
+  Duration _audioPosition = Duration.zero;
+  Duration _audioDuration = Duration.zero;
+
+  // Audio Recorder
+  final AudioRecorder _audioRecorder = AudioRecorder();
+
   @override
   void initState() {
     super.initState();
     _block = ContentBlock(type: widget.blockType);
     _controllers = {};
     _localContent = Map.from(_block.content);
+    _initAudioPlayer();
+  }
+
+  void _initAudioPlayer() {
+    _audioPlayer.playerStateStream.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = state.playing;
+        });
+      }
+    });
+
+    _audioPlayer.positionStream.listen((position) {
+      if (mounted) {
+        setState(() {
+          _audioPosition = position;
+        });
+      }
+    });
+
+    _audioPlayer.durationStream.listen((duration) {
+      if (mounted && duration != null) {
+        setState(() {
+          _audioDuration = duration;
+        });
+      }
+    });
+
+    _audioPlayer.processingStateStream.listen((state) {
+      if (state == ProcessingState.completed) {
+        _audioPlayer.seek(Duration.zero);
+        _audioPlayer.pause();
+      }
+    });
   }
 
   @override
   void dispose() {
     _controllers.values.forEach((c) => c.dispose());
+    _audioPlayer.dispose();
+    _audioRecorder.dispose();
     super.dispose();
   }
 
@@ -65,7 +114,71 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
     });
   }
 
+  void _showValidationError() {
+    String message;
+
+    switch (widget.blockType) {
+      case ContentBlockType.imageText:
+        message = 'Bitte lade zuerst ein Bild hoch.';
+        break;
+      case ContentBlockType.image:
+        message = 'Bitte lade zuerst ein Bild hoch.';
+        break;
+      case ContentBlockType.video:
+        message = 'Bitte lade zuerst ein Video hoch.';
+        break;
+      case ContentBlockType.audio:
+        message = 'Bitte nimm zuerst ein Sprachmemo auf.';
+        break;
+      case ContentBlockType.gallery:
+        message = 'Bitte lade mindestens ein Bild hoch.';
+        break;
+      default:
+        message = 'Bitte fülle alle Pflichtfelder aus.';
+    }
+
+    if (Platform.isIOS) {
+      HapticFeedback.heavyImpact();
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Pflichtfeld fehlt'),
+          content: Text(message),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
+    } else {
+      HapticFeedback.vibrate();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(child: Text(message)),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
+  }
+
   void _confirmAndCreate() {
+    // Validierung prüfen
+    if (!_isBlockValid()) {
+      _showValidationError();
+      return;
+    }
+
     if (Platform.isIOS) {
       HapticFeedback.mediumImpact();
     } else {
@@ -88,6 +201,41 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
     if (!_hasChanges) return true;
     final result = await _showDiscardDialogWithResult();
     return result ?? false;
+  }
+
+  bool _isBlockValid() {
+    switch (widget.blockType) {
+      case ContentBlockType.imageText:
+        // imageText erfordert ein Bild
+        final imageUrl = _getContent('imageUrl', '');
+        return imageUrl.isNotEmpty;
+
+      case ContentBlockType.image:
+        // Einzelbild erfordert auch ein Bild
+        final url = _getContent('url', '');
+        return url.isNotEmpty;
+
+      case ContentBlockType.video:
+        // Video erfordert eine URL
+        final videoUrl = _getContent('url', '');
+        return videoUrl.isNotEmpty;
+
+      case ContentBlockType.audio:
+        // Audio erfordert eine URL
+        final audioUrl = _getContent('url', '');
+        return audioUrl.isNotEmpty;
+
+      case ContentBlockType.gallery:
+        // Galerie erfordert mindestens ein Bild
+        final images = _getContent<List>('images', []);
+        return images.isNotEmpty;
+
+      // Diese Blöcke können auch leer erstellt werden
+      case ContentBlockType.header:
+      case ContentBlockType.text:
+      case ContentBlockType.quote:
+        return true;
+    }
   }
 
   Future<bool?> _showDiscardDialogWithResult() async {
@@ -223,6 +371,8 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
   }
 
   Widget _buildIOSBottomButtons(bool isDark) {
+    final isValid = _isBlockValid();
+
     return Container(
       padding: EdgeInsets.fromLTRB(
           16, 12, 16, 12 + MediaQuery.of(context).padding.bottom),
@@ -256,28 +406,33 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
           const SizedBox(width: 12),
           Expanded(
             flex: 2,
-            child: CupertinoButton(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              color: isDark ? AppColors.accent : AppColors.primary,
-              borderRadius: BorderRadius.circular(12),
-              onPressed: _confirmAndCreate,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    CupertinoIcons.checkmark_alt,
-                    size: 20,
-                    color: isDark ? AppColors.primary : AppColors.background,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Block erstellen',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
+            child: Opacity(
+              opacity: isValid ? 1.0 : 0.5, // Visuell deaktiviert wenn ungültig
+              child: CupertinoButton(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                color: isDark ? AppColors.accent : AppColors.primary,
+                borderRadius: BorderRadius.circular(12),
+                onPressed:
+                    _confirmAndCreate, // Validierung passiert in der Methode
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      CupertinoIcons.checkmark_alt,
+                      size: 20,
                       color: isDark ? AppColors.primary : AppColors.background,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Text(
+                      'Block erstellen',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color:
+                            isDark ? AppColors.primary : AppColors.background,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1060,6 +1215,9 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
     );
   }
 
+  // ============================================================
+  // AUDIO SETTINGS - MIT PLAYBACK FUNKTIONALITÄT
+  // ============================================================
   List<Widget> _buildAudioSettings() {
     final currentUrl = _getContent('url', '');
     final duration = _getContent('duration', 0);
@@ -1067,7 +1225,7 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
 
     return [
       if (currentUrl.isNotEmpty || _recordedAudioPath != null) ...[
-        _buildAudioPreview(isDark, duration),
+        _buildAudioPreview(isDark, duration, currentUrl),
         const SizedBox(height: 24),
       ],
       _buildRecordButton(isDark, currentUrl),
@@ -1088,12 +1246,19 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
     ];
   }
 
-  Widget _buildAudioPreview(bool isDark, int duration) {
-    String formatDuration(int seconds) {
-      final minutes = seconds ~/ 60;
-      final secs = seconds % 60;
-      return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+  Widget _buildAudioPreview(bool isDark, int duration, String currentUrl) {
+    String formatDuration(Duration d) {
+      final minutes = d.inMinutes;
+      final seconds = d.inSeconds % 60;
+      return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
     }
+
+    final totalDuration = _audioDuration.inSeconds > 0
+        ? _audioDuration
+        : Duration(seconds: duration);
+    final progress = totalDuration.inMilliseconds > 0
+        ? _audioPosition.inMilliseconds / totalDuration.inMilliseconds
+        : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1119,66 +1284,140 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
         children: [
           Row(
             children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                    color: isDark ? AppColors.accent : AppColors.primary,
-                    shape: BoxShape.circle),
-                child: Icon(Icons.play_arrow_rounded,
+              // Play/Pause Button
+              GestureDetector(
+                onTap: currentUrl.isNotEmpty
+                    ? () => _toggleAudioPlayback(currentUrl)
+                    : null,
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                      color: isDark ? AppColors.accent : AppColors.primary,
+                      shape: BoxShape.circle),
+                  child: Icon(
+                    _isPlaying
+                        ? (Platform.isIOS
+                            ? CupertinoIcons.pause_fill
+                            : Icons.pause_rounded)
+                        : (Platform.isIOS
+                            ? CupertinoIcons.play_fill
+                            : Icons.play_arrow_rounded),
                     color: isDark ? AppColors.primary : AppColors.background,
-                    size: 28),
+                    size: 28,
+                  ),
+                ),
               ),
               const SizedBox(width: 16),
+              // Waveform / Progress
               Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: List.generate(20, (index) {
-                    final heights = [
-                      0.3,
-                      0.5,
-                      0.8,
-                      0.4,
-                      0.9,
-                      0.6,
-                      0.7,
-                      0.5,
-                      0.8,
-                      0.4,
-                      0.6,
-                      0.9,
-                      0.5,
-                      0.7,
-                      0.3,
-                      0.8,
-                      0.6,
-                      0.4,
-                      0.7,
-                      0.5
-                    ];
-                    return Container(
-                      width: 3,
-                      height: 32 * heights[index],
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.accent.withOpacity(0.8)
-                            : AppColors.primary.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(2),
+                child: Column(
+                  children: [
+                    // Waveform Visualization
+                    SizedBox(
+                      height: 32,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: List.generate(20, (index) {
+                          final heights = [
+                            0.3,
+                            0.5,
+                            0.8,
+                            0.4,
+                            0.9,
+                            0.6,
+                            0.7,
+                            0.5,
+                            0.8,
+                            0.4,
+                            0.6,
+                            0.9,
+                            0.5,
+                            0.7,
+                            0.3,
+                            0.8,
+                            0.6,
+                            0.4,
+                            0.7,
+                            0.5
+                          ];
+                          final barProgress = index / 20;
+                          final isActive = barProgress <= progress;
+
+                          return Container(
+                            width: 3,
+                            height: 32 * heights[index],
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? (isDark
+                                      ? AppColors.accent
+                                      : AppColors.primary)
+                                  : (isDark
+                                      ? AppColors.accent.withOpacity(0.3)
+                                      : AppColors.primary.withOpacity(0.3)),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          );
+                        }),
                       ),
-                    );
-                  }),
+                    ),
+                    const SizedBox(height: 8),
+                    // Progress Slider
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 4,
+                        thumbShape:
+                            const RoundSliderThumbShape(enabledThumbRadius: 6),
+                        overlayShape:
+                            const RoundSliderOverlayShape(overlayRadius: 14),
+                        activeTrackColor:
+                            isDark ? AppColors.accent : AppColors.primary,
+                        inactiveTrackColor: isDark
+                            ? AppColors.accent.withOpacity(0.3)
+                            : AppColors.primary.withOpacity(0.3),
+                        thumbColor:
+                            isDark ? AppColors.accent : AppColors.primary,
+                      ),
+                      child: Slider(
+                        value: progress.clamp(0.0, 1.0),
+                        onChanged: currentUrl.isNotEmpty
+                            ? (value) {
+                                final newPosition = Duration(
+                                  milliseconds:
+                                      (value * totalDuration.inMilliseconds)
+                                          .round(),
+                                );
+                                _audioPlayer.seek(newPosition);
+                              }
+                            : null,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                  formatDuration(
-                      _recordingDuration > 0 ? _recordingDuration : duration),
-                  style: TextStyle(
-                      fontSize: 15,
+              // Duration
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    formatDuration(_audioPosition),
+                    style: TextStyle(
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? AppColors.textLight
-                          : AppColors.textPrimary)),
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    formatDuration(totalDuration),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.grey,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -1204,6 +1443,68 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _toggleAudioPlayback(String url) async {
+    try {
+      if (_isPlaying) {
+        await _audioPlayer.pause();
+      } else {
+        // Prüfe ob wir neu laden müssen
+        final bool needsReload = _audioPlayer.audioSource == null;
+
+        if (needsReload) {
+          // PRIORITÄT 1: Echte Firebase URL verwenden (nicht example.com)
+          if (url.isNotEmpty &&
+              (url.startsWith('https://firebasestorage.googleapis.com') ||
+                  (url.startsWith('http') && !url.contains('example.com')))) {
+            await _audioPlayer.setUrl(url);
+            debugPrint('🎵 Playing Firebase URL: $url');
+          }
+          // PRIORITÄT 2: Lokale Datei nur wenn KEINE echte URL existiert
+          else if (_recordedAudioPath != null &&
+              _recordedAudioPath!.isNotEmpty &&
+              !_recordedAudioPath!.contains('simulated')) {
+            final file = File(_recordedAudioPath!);
+            if (await file.exists()) {
+              await _audioPlayer.setFilePath(_recordedAudioPath!);
+              debugPrint(
+                  '🎵 Playing local file (no Firebase URL yet): $_recordedAudioPath');
+            } else {
+              throw Exception('Lokale Datei nicht gefunden');
+            }
+          } else {
+            throw Exception('NO_VALID_SOURCE');
+          }
+        }
+
+        await _audioPlayer.play();
+      }
+    } catch (e) {
+      debugPrint('❌ Audio playback error: $e');
+      if (mounted) {
+        String errorMessage;
+
+        if (e.toString().contains('SIMULATED_URL') ||
+            e.toString().contains('NO_VALID_SOURCE')) {
+          errorMessage = 'Das Audio ist noch nicht verfügbar.\n\n'
+              'Bitte nimm ein neues Sprachmemo auf oder wähle eine Audiodatei aus.';
+        } else if (e.toString().contains('Lokale Datei nicht gefunden')) {
+          errorMessage = 'Die lokale Audiodatei wurde nicht gefunden.';
+        } else if (e.toString().contains('404') ||
+            e.toString().contains('Not Found')) {
+          errorMessage = 'Die Audiodatei wurde auf dem Server nicht gefunden.';
+        } else if (e.toString().contains('Connection') ||
+            e.toString().contains('SocketException')) {
+          errorMessage = 'Keine Internetverbindung verfügbar.';
+        } else {
+          errorMessage =
+              'Audio konnte nicht abgespielt werden.\n\nFehler: ${e.toString()}';
+        }
+
+        _showErrorDialog('Wiedergabefehler', errorMessage);
+      }
+    }
   }
 
   Widget _buildRecordButton(bool isDark, String currentUrl) {
@@ -1289,14 +1590,16 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  value: _audioUploadProgress,
+                  value: _audioUploadProgress.isNaN
+                      ? 0.0
+                      : _audioUploadProgress.clamp(0.0, 1.0),
                   valueColor: AlwaysStoppedAnimation<Color>(
                       isDark ? AppColors.accent : AppColors.primary),
                 ),
               ),
               const SizedBox(width: 12),
               Text(
-                  'Wird hochgeladen... ${(_audioUploadProgress * 100).toInt()}%',
+                  'Wird hochgeladen... ${_audioUploadProgress.isNaN ? 0 : (_audioUploadProgress * 100).toInt()}%',
                   style: TextStyle(
                       fontSize: 15,
                       color: isDark
@@ -1308,7 +1611,9 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
-              value: _audioUploadProgress,
+              value: _audioUploadProgress.isNaN
+                  ? 0.0
+                  : _audioUploadProgress.clamp(0.0, 1.0),
               backgroundColor: isDark
                   ? AppColors.toastBackgroundDark
                   : AppColors.greyLighter,
@@ -1330,14 +1635,55 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
   }
 
   Future<void> _startRecording() async {
-    setState(() {
-      _isRecording = true;
-      _recordingDuration = 0;
-    });
+    // Stop any playing audio first
+    await _audioPlayer.stop();
 
-    _startRecordingTimer();
+    try {
+      // Check microphone permission
+      if (!await _audioRecorder.hasPermission()) {
+        if (mounted) {
+          _showErrorDialog(
+            'Berechtigung erforderlich',
+            'Bitte erlaube den Zugriff auf das Mikrofon in den Einstellungen.',
+          );
+        }
+        return;
+      }
 
-    if (Platform.isIOS) HapticFeedback.mediumImpact();
+      // Get temp directory for recording
+      final Directory tempDir = await getTemporaryDirectory();
+      final String filePath =
+          '${tempDir.path}/audio_recording_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+      // Configure recording
+      const config = RecordConfig(
+        encoder: AudioEncoder.aacLc,
+        bitRate: 128000,
+        sampleRate: 44100,
+      );
+
+      // Start recording
+      await _audioRecorder.start(config, path: filePath);
+
+      setState(() {
+        _isRecording = true;
+        _recordingDuration = 0;
+        _waveformData = [];
+        _recordedAudioPath = filePath;
+      });
+
+      _startRecordingTimer();
+
+      if (Platform.isIOS) HapticFeedback.mediumImpact();
+
+      debugPrint('🎤 Recording started: $filePath');
+    } catch (e) {
+      debugPrint('❌ Error starting recording: $e');
+      if (mounted) {
+        _showErrorDialog(
+            'Aufnahmefehler', 'Aufnahme konnte nicht gestartet werden: $e');
+      }
+    }
   }
 
   void _startRecordingTimer() {
@@ -1345,13 +1691,31 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
       await Future.delayed(const Duration(seconds: 1));
       if (!_isRecording || !mounted) return false;
 
-      setState(() {
-        _recordingDuration++;
-        if (_waveformData.length < 24) {
-          _waveformData.add(0.3 +
-              (0.7 * (DateTime.now().millisecondsSinceEpoch % 100) / 100));
-        }
-      });
+      // Get amplitude for waveform visualization
+      try {
+        final amplitude = await _audioRecorder.getAmplitude();
+        final normalizedAmplitude =
+            ((amplitude.current + 60) / 60).clamp(0.1, 1.0);
+
+        setState(() {
+          _recordingDuration++;
+          if (_waveformData.length < 24) {
+            _waveformData.add(normalizedAmplitude);
+          } else {
+            // Shift waveform data
+            _waveformData.removeAt(0);
+            _waveformData.add(normalizedAmplitude);
+          }
+        });
+      } catch (e) {
+        setState(() {
+          _recordingDuration++;
+          if (_waveformData.length < 24) {
+            _waveformData.add(0.3 +
+                (0.7 * (DateTime.now().millisecondsSinceEpoch % 100) / 100));
+          }
+        });
+      }
 
       if (_recordingDuration >= 120) {
         _stopRecording();
@@ -1363,20 +1727,38 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
   }
 
   Future<void> _stopRecording() async {
-    setState(() => _isRecording = false);
+    try {
+      // Stop the recorder and get the file path
+      final String? path = await _audioRecorder.stop();
 
-    if (Platform.isIOS) HapticFeedback.mediumImpact();
+      setState(() => _isRecording = false);
 
-    if (_recordingDuration > 0) {
-      setState(() {
-        _recordedAudioPath = '/simulated/path/audio.m4a';
-        _hasChanges = true;
-      });
+      if (Platform.isIOS) HapticFeedback.mediumImpact();
 
-      _updateLocalValue('duration', _recordingDuration);
-      _updateLocalValue('waveformData', _waveformData);
+      if (path != null && _recordingDuration > 0) {
+        final file = File(path);
+        if (await file.exists()) {
+          setState(() {
+            _recordedAudioPath = path;
+            _hasChanges = true;
+          });
 
-      _showUploadAudioDialog();
+          _updateLocalValue('duration', _recordingDuration);
+          _updateLocalValue('waveformData', _waveformData);
+
+          debugPrint('🎤 Recording stopped: $path');
+          _showUploadAudioDialog();
+        } else {
+          throw Exception('Aufnahmedatei nicht gefunden');
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error stopping recording: $e');
+      setState(() => _isRecording = false);
+      if (mounted) {
+        _showErrorDialog(
+            'Aufnahmefehler', 'Aufnahme konnte nicht gespeichert werden: $e');
+      }
     }
   }
 
@@ -1403,6 +1785,9 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
   Future<void> _pickAudioFile() async {
     if (_isUploading || _isRecording) return;
 
+    // Stop any playing audio first
+    await _audioPlayer.stop();
+
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -1427,20 +1812,39 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
         return;
       }
 
-      final estimatedDuration = (fileSize / 16000).round().clamp(1, 120);
+      // Versuche die echte Dauer zu ermitteln
+      int audioDuration;
+      try {
+        await _audioPlayer.setFilePath(file.path!);
+        final duration = _audioPlayer.duration;
+        audioDuration =
+            duration?.inSeconds ?? (fileSize / 16000).round().clamp(1, 120);
+        await _audioPlayer.stop();
+      } catch (e) {
+        // Fallback: Geschätzte Dauer basierend auf Dateigröße
+        audioDuration = (fileSize / 16000).round().clamp(1, 120);
+      }
 
       setState(() {
-        _recordedAudioPath = file.path;
-        _recordingDuration = estimatedDuration;
+        _recordedAudioPath = file.path; // Echte lokale Datei!
+        _recordingDuration = audioDuration;
         _hasChanges = true;
         _waveformData = List.generate(
             24, (index) => 0.3 + (0.7 * ((index * 7 + 3) % 10) / 10));
+        // Reset audio player für neue Quelle
+        _audioPosition = Duration.zero;
+        _audioDuration = Duration(seconds: audioDuration);
       });
 
       _updateLocalValue('duration', _recordingDuration);
       _updateLocalValue('waveformData', _waveformData);
+      // Setze eine Markierung dass wir eine lokale Datei haben
+      _updateLocalValue('localPath', file.path);
 
-      _showUploadAudioDialog();
+      if (mounted) {
+        _showSuccessSnackBar(
+            'Audiodatei "${file.name}" geladen! Tippe auf Play zum Anhören.');
+      }
     } catch (e) {
       _showErrorDialog('Fehler', e.toString());
     }
@@ -1455,15 +1859,39 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
     });
 
     try {
-      for (var i = 0; i <= 100; i += 10) {
-        await Future.delayed(const Duration(milliseconds: 100));
-        if (mounted) setState(() => _audioUploadProgress = i / 100);
+      final audioFile = File(_recordedAudioPath!);
+
+      // Check if file exists
+      if (!await audioFile.exists()) {
+        throw Exception('Audio-Datei nicht gefunden');
       }
 
-      final downloadUrl =
-          'https://firebasestorage.example.com/audio/${_block.id}.m4a';
+      final String downloadUrl = await _storageService.uploadBlockAudio(
+        memorialId: widget.memorialId,
+        blockId: _block.id,
+        audioFile: audioFile,
+        onProgress: (progress) {
+          if (mounted) setState(() => _audioUploadProgress = progress);
+        },
+      );
 
       _updateLocalValue('url', downloadUrl);
+
+      // Reset audio player completely for new Firebase URL
+      await _audioPlayer.stop();
+
+      // Clear local path so Firebase URL will be used
+      setState(() {
+        _recordedAudioPath = null;
+      });
+
+      // Force reload by setting new URL
+      try {
+        await _audioPlayer.setUrl(downloadUrl);
+        debugPrint('🎵 AudioPlayer loaded with Firebase URL: $downloadUrl');
+      } catch (e) {
+        debugPrint('⚠️ Could not preload audio: $e');
+      }
 
       if (mounted) _showSuccessSnackBar('Sprachmemo erfolgreich hochgeladen!');
     } catch (e) {
@@ -1478,9 +1906,9 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
     }
   }
 
-  // ============================================================
-  // IMAGE TEXT SETTINGS - NEU
-  // ============================================================
+// ============================================================
+  // IMAGE TEXT SETTINGS - MIT COLOR PICKER
+  // =======================================================================================================================
   List<Widget> _buildImageTextSettings() {
     final currentImageUrl = _getContent('imageUrl', '');
     final currentLayout = _getContent('layout', 'left');
@@ -1553,6 +1981,13 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
         defaultValue: '',
         hint: 'Kurze Beschreibung des Bildes',
       ),
+
+      const SizedBox(height: 24),
+
+      // ========================================
+      // NEU: Color Picker für Textfarbe
+      // ========================================
+      _buildColorPicker('color', 'Textfarbe'),
 
       const SizedBox(height: 24),
 
@@ -2008,60 +2443,116 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textLight : AppColors.textPrimary)),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            '#000000',
-            '#333333',
-            '#666666',
-            '#2C3E50',
-            '#E74C3C',
-            '#3498DB',
-            '#2ECC71',
-            '#F39C12',
-          ].map((color) {
-            return _buildColorOption(color, currentColor, key, isDark);
-          }).toList(),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+          ),
         ),
-      ],
-    );
-  }
+        const SizedBox(height: 12),
 
-  Widget _buildColorOption(
-      String color, String currentColor, String key, bool isDark) {
-    final isSelected = color == currentColor;
+        // Color Preview Button - öffnet den Color Picker
+        GestureDetector(
+          onTap: () async {
+            final selectedColor = await showColorPickerDialog(
+              context: context,
+              currentColor: currentColor,
+              title: label,
+            );
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _updateLocalValue(key, color),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: _hexToColor(color),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected
-                  ? (isDark ? AppColors.accent : AppColors.primary)
-                  : (isDark ? AppColors.borderDark : AppColors.greyLighter),
-              width: isSelected ? 3 : 1.5,
+            if (selectedColor != null) {
+              _updateLocalValue(key, selectedColor);
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color:
+                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              children: [
+                // Farbvorschau
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: _hexToColor(currentColor),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color:
+                          isDark ? AppColors.borderDark : AppColors.greyLight,
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _hexToColor(currentColor).withOpacity(0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+
+                // Hex Code
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ausgewählte Farbe',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        currentColor.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: Platform.isIOS ? 'SF Mono' : 'monospace',
+                          letterSpacing: 1.5,
+                          color: isDark
+                              ? AppColors.textLight
+                              : AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Pfeil Icon
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.accent.withOpacity(0.2)
+                        : AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Platform.isIOS
+                        ? CupertinoIcons.color_filter
+                        : Icons.palette_rounded,
+                    size: 22,
+                    color: isDark ? AppColors.accent : AppColors.primary,
+                  ),
+                ),
+              ],
             ),
           ),
-          child: isSelected
-              ? const Icon(Icons.check_rounded,
-                  color: AppColors.textLight, size: 24)
-              : null,
         ),
-      ),
+      ],
     );
   }
 

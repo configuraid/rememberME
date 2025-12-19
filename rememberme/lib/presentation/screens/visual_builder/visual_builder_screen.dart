@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rememberme/business_logic/page_builder/page_builder_bloc.dart';
+import 'package:rememberme/business_logic/page_builder/page_builder_event.dart';
+import 'package:rememberme/business_logic/page_builder/page_builder_state.dart';
 import 'dart:io';
 import 'package:rememberme/data/models/content_block_model.dart';
 import 'package:rememberme/data/models/memorial_page_model.dart';
@@ -34,6 +37,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
   String? _selectedBlockId;
   bool _hasUnsavedChanges = false;
   bool _isSaving = false;
+  bool _isRefreshing = false; // NEU: Für Refresh-Status
 
   final ScrollController _scrollController = ScrollController();
 
@@ -89,6 +93,58 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
     _blocks = List.from(widget.memorial.contentBlocks);
   }
 
+  Future<void> _refreshFromBackend() async {
+    if (_isRefreshing) return;
+
+    setState(() {
+      _isRefreshing = true;
+    });
+
+    // Event an Bloc senden (positional parameter, nicht named!)
+    context.read<PageBuilderBloc>().add(
+          PageBuilderLoadRequested(widget.memorial.id),
+        );
+
+    // Warte auf Antwort (der BlocListener wird die Daten aktualisieren)
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    if (mounted) {
+      setState(() {
+        _isRefreshing = false;
+      });
+    }
+  }
+
+  // ============================================================
+  // NEU: Verarbeite Bloc State Updates
+  // ============================================================
+  void _handlePageBuilderStateChange(
+      BuildContext context, PageBuilderState state) {
+    if (state.status == PageBuilderStatus.loaded && state.blocks.isNotEmpty) {
+      // Nur aktualisieren wenn es KEINE ungespeicherten Änderungen gibt
+      // oder wenn explizit refreshed wurde
+      if (!_hasUnsavedChanges || _isRefreshing) {
+        setState(() {
+          _blocks = List.from(state.blocks);
+          _hasUnsavedChanges = false;
+          _isRefreshing = false;
+        });
+
+        _showSuccessToast('Daten aktualisiert');
+        debugPrint(
+            '✅ IntuitivePageBuilder - ${_blocks.length} Blocks vom Backend geladen');
+      }
+    } else if (state.status == PageBuilderStatus.error) {
+      setState(() {
+        _isRefreshing = false;
+      });
+
+      if (state.errorMessage != null) {
+        _showErrorToast(state.errorMessage!);
+      }
+    }
+  }
+
   void _markAsChanged() {
     if (!_hasUnsavedChanges) {
       setState(() {
@@ -114,17 +170,25 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
   }
 
   // ============================================================
-  // Native Toast Implementierung
+  // Toast Implementierung
   // ============================================================
   void _showSuccessToast(String message) {
     if (Platform.isIOS) {
-      _showIOSToast(message);
+      _showIOSToast(message, isError: false);
     } else {
-      _showAndroidSnackBar(message);
+      _showAndroidSnackBar(message, isError: false);
     }
   }
 
-  void _showIOSToast(String message) {
+  void _showErrorToast(String message) {
+    if (Platform.isIOS) {
+      _showIOSToast(message, isError: true);
+    } else {
+      _showAndroidSnackBar(message, isError: true);
+    }
+  }
+
+  void _showIOSToast(String message, {bool isError = false}) {
     final overlay = Overlay.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -133,6 +197,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
       builder: (context) => _IOSBottomToast(
         message: message,
         isDark: isDark,
+        isError: isError,
         onDismiss: () {
           if (overlayEntry.mounted) {
             overlayEntry.remove();
@@ -150,7 +215,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
     });
   }
 
-  void _showAndroidSnackBar(String message) {
+  void _showAndroidSnackBar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -162,8 +227,8 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                 color: AppColors.textLight.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.check_rounded,
+              child: Icon(
+                isError ? Icons.error_outline : Icons.check_rounded,
                 color: AppColors.textLight,
                 size: 16,
               ),
@@ -181,7 +246,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             ),
           ],
         ),
-        backgroundColor: AppColors.success,
+        backgroundColor: isError ? AppColors.error : AppColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -398,10 +463,13 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (Platform.isIOS) {
-      return _buildIOSLayout(context);
-    }
-    return _buildAndroidLayout(context);
+    // NEU: BlocListener um auf State-Änderungen zu reagieren
+    return BlocListener<PageBuilderBloc, PageBuilderState>(
+      listener: _handlePageBuilderStateChange,
+      child: Platform.isIOS
+          ? _buildIOSLayout(context)
+          : _buildAndroidLayout(context),
+    );
   }
 
   // ============================================================
@@ -567,87 +635,105 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
   }
 
   Widget _buildIOSEmptyState(bool isDark) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      slivers: [
+        CupertinoSliverRefreshControl(
+          onRefresh: _refreshFromBackend,
+        ),
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.backgroundDarkElevated
-                    : AppColors.surface,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: isDark ? AppColors.shadowDark : AppColors.shadow,
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Icon(
-                CupertinoIcons.doc_text,
-                size: 64,
-                color: isDark ? AppColors.accent : AppColors.primary,
-              ),
-            ),
-            const SizedBox(height: 32),
-            Text(
-              AppStrings.noContentYet,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                fontFamily: '.SF Pro Display',
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              AppStrings.noContentMessage,
-              style: TextStyle(
-                fontSize: 15,
-                color: AppColors.grey,
-                height: 1.5,
-                fontFamily: '.SF Pro Text',
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 40),
-            CupertinoButton(
-              onPressed: _showAddBlockSheet,
-              color: isDark ? AppColors.accent : AppColors.primary,
-              borderRadius: BorderRadius.circular(12),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 32,
-                vertical: 14,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    CupertinoIcons.add,
-                    color: isDark ? AppColors.primary : AppColors.background,
-                    size: 22,
+                  Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppColors.backgroundDarkElevated
+                          : AppColors.surface,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              isDark ? AppColors.shadowDark : AppColors.shadow,
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      CupertinoIcons.doc_text,
+                      size: 64,
+                      color: isDark ? AppColors.accent : AppColors.primary,
+                    ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(height: 32),
                   Text(
-                    AppStrings.addBlock,
+                    AppStrings.noContentYet,
                     style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.primary : AppColors.background,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                      fontFamily: '.SF Pro Display',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    AppStrings.noContentMessage,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: AppColors.grey,
+                      height: 1.5,
                       fontFamily: '.SF Pro Text',
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 40),
+                  CupertinoButton(
+                    onPressed: _showAddBlockSheet,
+                    color: isDark ? AppColors.accent : AppColors.primary,
+                    borderRadius: BorderRadius.circular(12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 14,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          CupertinoIcons.add,
+                          color:
+                              isDark ? AppColors.primary : AppColors.background,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          AppStrings.addBlock,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.primary
+                                : AppColors.background,
+                            fontFamily: '.SF Pro Text',
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -659,9 +745,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
       ),
       slivers: [
         CupertinoSliverRefreshControl(
-          onRefresh: () async {
-            await Future.delayed(const Duration(milliseconds: 500));
-          },
+          onRefresh: _refreshFromBackend,
         ),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
@@ -863,184 +947,201 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
   }
 
   Widget _buildAndroidEmptyState(bool isDark) {
-    return Center(
+    return RefreshIndicator(
+      onRefresh: _refreshFromBackend,
+      color: isDark ? AppColors.accent : AppColors.primary,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height - 200,
+          child: Center(
+            child: Padding(
               padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          AppColors.accent.withOpacity(0.2),
-                          AppColors.accent.withOpacity(0.1),
-                        ]
-                      : [
-                          AppColors.primary.withOpacity(0.15),
-                          AppColors.primary.withOpacity(0.08),
-                        ],
-                ),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isDark
-                      ? AppColors.accent.withOpacity(0.3)
-                      : AppColors.primary.withOpacity(0.2),
-                  width: 2,
-                ),
-              ),
-              child: Icon(
-                Icons.article_outlined,
-                size: 80,
-                color: isDark ? AppColors.accent : AppColors.primary,
-              ),
-            ),
-            const SizedBox(height: 32),
-            Text(
-              AppStrings.noContentYet,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textLight : AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              AppStrings.noContentMessage,
-              style: TextStyle(
-                fontSize: 15,
-                color: AppColors.grey,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 40),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          AppColors.accent,
-                          AppColors.accent.withOpacity(0.8),
-                        ]
-                      : [
-                          AppColors.primary,
-                          AppColors.primary.withOpacity(0.9),
-                        ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: isDark
-                        ? AppColors.accent.withOpacity(0.3)
-                        : AppColors.primary.withOpacity(0.4),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: isDark
+                            ? [
+                                AppColors.accent.withOpacity(0.2),
+                                AppColors.accent.withOpacity(0.1),
+                              ]
+                            : [
+                                AppColors.primary.withOpacity(0.15),
+                                AppColors.primary.withOpacity(0.08),
+                              ],
+                      ),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isDark
+                            ? AppColors.accent.withOpacity(0.3)
+                            : AppColors.primary.withOpacity(0.2),
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.article_outlined,
+                      size: 80,
+                      color: isDark ? AppColors.accent : AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    AppStrings.noContentYet,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    AppStrings.noContentMessage,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: AppColors.grey,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 40),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: isDark
+                            ? [
+                                AppColors.accent,
+                                AppColors.accent.withOpacity(0.8),
+                              ]
+                            : [
+                                AppColors.primary,
+                                AppColors.primary.withOpacity(0.9),
+                              ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark
+                              ? AppColors.accent.withOpacity(0.3)
+                              : AppColors.primary.withOpacity(0.4),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: _showAddBlockSheet,
+                      icon: Icon(
+                        Icons.add_rounded,
+                        size: 24,
+                        color:
+                            isDark ? AppColors.primary : AppColors.background,
+                      ),
+                      label: Text(
+                        AppStrings.addBlock,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                          color:
+                              isDark ? AppColors.primary : AppColors.background,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        foregroundColor:
+                            isDark ? AppColors.primary : AppColors.background,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
-              child: ElevatedButton.icon(
-                onPressed: _showAddBlockSheet,
-                icon: Icon(
-                  Icons.add_rounded,
-                  size: 24,
-                  color: isDark ? AppColors.primary : AppColors.background,
-                ),
-                label: Text(
-                  AppStrings.addBlock,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                    color: isDark ? AppColors.primary : AppColors.background,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  foregroundColor:
-                      isDark ? AppColors.primary : AppColors.background,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildAndroidBlockList(bool isDark) {
-    return CustomScrollView(
-      controller: _scrollController,
-      physics: const ClampingScrollPhysics(),
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-          sliver: SliverReorderableList(
-            itemCount: _blocks.length,
-            onReorder: _reorderBlocks,
-            proxyDecorator: _proxyDecorator,
-            onReorderStart: (index) {
-              HapticFeedback.mediumImpact();
-            },
-            onReorderEnd: (index) {
-              HapticFeedback.lightImpact();
-            },
-            itemBuilder: (context, index) {
-              final block = _blocks[index];
-              final isSelected = block.id == _selectedBlockId;
-              final isShaking = block.id == _shakingBlockId;
+    return RefreshIndicator(
+      onRefresh: _refreshFromBackend,
+      color: isDark ? AppColors.accent : AppColors.primary,
+      child: CustomScrollView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+            sliver: SliverReorderableList(
+              itemCount: _blocks.length,
+              onReorder: _reorderBlocks,
+              proxyDecorator: _proxyDecorator,
+              onReorderStart: (index) {
+                HapticFeedback.mediumImpact();
+              },
+              onReorderEnd: (index) {
+                HapticFeedback.lightImpact();
+              },
+              itemBuilder: (context, index) {
+                final block = _blocks[index];
+                final isSelected = block.id == _selectedBlockId;
+                final isShaking = block.id == _shakingBlockId;
 
-              return ReorderableDelayedDragStartListener(
-                key: ValueKey(block.id),
-                index: index,
-                child: AnimatedBuilder(
-                  animation:
-                      _shakeController ?? const AlwaysStoppedAnimation(0.0),
-                  builder: (context, child) {
-                    double offsetX = 0.0;
-                    if (isShaking && _shakeAnimation != null) {
-                      try {
-                        offsetX = _shakeAnimation!.value;
-                      } catch (e) {
-                        offsetX = 0.0;
+                return ReorderableDelayedDragStartListener(
+                  key: ValueKey(block.id),
+                  index: index,
+                  child: AnimatedBuilder(
+                    animation:
+                        _shakeController ?? const AlwaysStoppedAnimation(0.0),
+                    builder: (context, child) {
+                      double offsetX = 0.0;
+                      if (isShaking && _shakeAnimation != null) {
+                        try {
+                          offsetX = _shakeAnimation!.value;
+                        } catch (e) {
+                          offsetX = 0.0;
+                        }
                       }
-                    }
 
-                    return Transform.translate(
-                      offset: Offset(offsetX, 0),
-                      child: child,
-                    );
-                  },
-                  child: ContentBlockWidget(
-                    block: block,
-                    isSelected: isSelected,
-                    onTap: () => _selectBlock(block.id),
-                    onEdit: () => _showBlockSettings(block),
-                    onDuplicate: () => _duplicateBlock(block),
-                    onDelete: () => _deleteBlock(block.id),
-                    onContentChanged: (key, value) =>
-                        _updateBlockContent(block.id, key, value),
+                      return Transform.translate(
+                        offset: Offset(offsetX, 0),
+                        child: child,
+                      );
+                    },
+                    child: ContentBlockWidget(
+                      block: block,
+                      isSelected: isSelected,
+                      onTap: () => _selectBlock(block.id),
+                      onEdit: () => _showBlockSettings(block),
+                      onDuplicate: () => _duplicateBlock(block),
+                      onDelete: () => _deleteBlock(block.id),
+                      onContentChanged: (key, value) =>
+                          _updateBlockContent(block.id, key, value),
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1135,19 +1236,14 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
       backgroundColor: Colors.transparent,
       builder: (context) => AddBlockBottomSheet(
         onBlockTypeSelected: (type) {
-          Navigator.pop(context); // Schließe das BottomSheet
-          _navigateToBlockConfiguration(
-              type); // Navigiere zur Konfigurations-Seite
+          Navigator.pop(context);
+          _navigateToBlockConfiguration(type);
         },
       ),
     );
   }
 
-  // ============================================================
-  // NEU: Navigation zur Block-Konfigurationsseite
-  // ============================================================
   Future<void> _navigateToBlockConfiguration(ContentBlockType type) async {
-    // Navigiere zur Konfigurations-Seite und warte auf das Ergebnis
     final ContentBlock? configuredBlock = await Navigator.push<ContentBlock>(
       context,
       Platform.isIOS
@@ -1165,15 +1261,11 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
             ),
     );
 
-    // Wenn ein Block zurückgegeben wurde, füge ihn hinzu
     if (configuredBlock != null && mounted) {
       _addConfiguredBlock(configuredBlock);
     }
   }
 
-  // ============================================================
-  // NEU: Füge einen fertig konfigurierten Block hinzu
-  // ============================================================
   void _addConfiguredBlock(ContentBlock block) {
     setState(() {
       _blocks.add(block);
@@ -1206,7 +1298,6 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
       }
     });
 
-    // Zeige Success Toast
     _showSuccessToast('Block erfolgreich hinzugefügt');
   }
 
@@ -1574,11 +1665,13 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
 class _IOSBottomToast extends StatefulWidget {
   final String message;
   final bool isDark;
+  final bool isError;
   final VoidCallback onDismiss;
 
   const _IOSBottomToast({
     required this.message,
     required this.isDark,
+    this.isError = false,
     required this.onDismiss,
   });
 
@@ -1694,12 +1787,16 @@ class _IOSBottomToastState extends State<_IOSBottomToast>
                       Container(
                         width: 28,
                         height: 28,
-                        decoration: const BoxDecoration(
-                          color: AppColors.success,
+                        decoration: BoxDecoration(
+                          color: widget.isError
+                              ? AppColors.error
+                              : AppColors.success,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          CupertinoIcons.checkmark_alt,
+                        child: Icon(
+                          widget.isError
+                              ? CupertinoIcons.xmark
+                              : CupertinoIcons.checkmark_alt,
                           color: AppColors.textLight,
                           size: 16,
                         ),

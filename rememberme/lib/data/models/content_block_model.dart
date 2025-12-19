@@ -82,6 +82,7 @@ class ContentBlock {
           'layout': 'left', // left, right, top, bottom
           'imageSize': 0.4, // 40% der Breite
           'imageCaption': '',
+          'color': '#333333', // NEU: Textfarbe für imageText
         };
     }
   }

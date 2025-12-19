@@ -266,9 +266,11 @@ class FirebaseStorageService {
 
       // Track progress
       uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
-        onProgress?.call(progress);
-        print('📊 Upload progress: ${(progress * 100).toStringAsFixed(1)}%');
+        if (snapshot.totalBytes > 0) {
+          final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+          onProgress?.call(progress.clamp(0.0, 1.0));
+          print('📊 Upload progress: ${(progress * 100).toStringAsFixed(1)}%');
+        }
       });
 
       // Wait for upload to complete
@@ -367,6 +369,198 @@ class FirebaseStorageService {
     } catch (e) {
       print('❌ Error deleting video thumbnail: $e');
       // Don't rethrow - file might not exist
+    }
+  }
+
+  // ============================================================
+  // AUDIO METHODS
+  // ============================================================
+
+  /// Upload audio file for a content block
+  /// Path: memorials/{memorialId}/blocks/{blockId}/audio.m4a
+  /// Supported formats: m4a, mp3, wav, aac, ogg, flac
+  Future<String> uploadBlockAudio({
+    required String memorialId,
+    required String blockId,
+    required File audioFile,
+    Function(double)? onProgress,
+  }) async {
+    try {
+      print('📤 Uploading audio for block: $blockId');
+
+      // Check file size (max 10MB for 2 minute audio)
+      final fileSize = await audioFile.length();
+      final maxSize = 10 * 1024 * 1024; // 10MB in bytes
+
+      if (fileSize > maxSize) {
+        throw Exception('Audio ist zu groß. Maximale Größe: 10MB');
+      }
+
+      // Determine content type based on file extension
+      final String extension = audioFile.path.split('.').last.toLowerCase();
+      final String contentType = _getAudioContentType(extension);
+
+      // Build storage path (always save as original extension)
+      final String path =
+          'memorials/$memorialId/blocks/$blockId/audio.$extension';
+
+      // Create reference
+      final Reference ref = _storage.ref().child(path);
+
+      // Upload file with progress tracking
+      final UploadTask uploadTask = ref.putFile(
+        audioFile,
+        SettableMetadata(
+          contentType: contentType,
+          customMetadata: {
+            'memorialId': memorialId,
+            'blockId': blockId,
+            'originalExtension': extension,
+            'uploadedAt': DateTime.now().toIso8601String(),
+          },
+        ),
+      );
+
+      // Track progress
+      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+        if (snapshot.totalBytes > 0) {
+          final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+          onProgress?.call(progress.clamp(0.0, 1.0));
+          print(
+              '📊 Audio upload progress: ${(progress * 100).toStringAsFixed(1)}%');
+        }
+      });
+
+      // Wait for upload to complete
+      final TaskSnapshot snapshot = await uploadTask;
+
+      // Get download URL
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+
+      print('✅ Audio uploaded successfully: $downloadUrl');
+      return downloadUrl;
+    } catch (e) {
+      print('❌ Error uploading audio: $e');
+      rethrow;
+    }
+  }
+
+  /// Get content type for audio file extension
+  String _getAudioContentType(String extension) {
+    switch (extension) {
+      case 'm4a':
+        return 'audio/mp4';
+      case 'mp3':
+        return 'audio/mpeg';
+      case 'wav':
+        return 'audio/wav';
+      case 'aac':
+        return 'audio/aac';
+      case 'ogg':
+        return 'audio/ogg';
+      case 'flac':
+        return 'audio/flac';
+      default:
+        return 'audio/mp4'; // Default to m4a
+    }
+  }
+
+  /// Delete audio for a content block
+  Future<void> deleteBlockAudio({
+    required String memorialId,
+    required String blockId,
+  }) async {
+    try {
+      print('🗑️ Deleting audio for block: $blockId');
+
+      // Try to delete common audio formats
+      final extensions = ['m4a', 'mp3', 'wav', 'aac', 'ogg', 'flac'];
+
+      for (final ext in extensions) {
+        try {
+          final String path =
+              'memorials/$memorialId/blocks/$blockId/audio.$ext';
+          final Reference ref = _storage.ref().child(path);
+          await ref.delete();
+          print('✅ Audio file (.$ext) deleted successfully');
+          return; // Exit after successful deletion
+        } catch (e) {
+          // File with this extension doesn't exist, try next
+          continue;
+        }
+      }
+
+      print('⚠️ No audio file found to delete');
+    } catch (e) {
+      print('❌ Error deleting audio: $e');
+      // Don't rethrow - file might not exist
+    }
+  }
+
+  /// Upload recorded audio data directly (for in-app recordings)
+  /// Path: memorials/{memorialId}/blocks/{blockId}/audio.m4a
+  Future<String> uploadRecordedAudio({
+    required String memorialId,
+    required String blockId,
+    required Uint8List audioData,
+    String extension = 'm4a',
+    Function(double)? onProgress,
+  }) async {
+    try {
+      print('📤 Uploading recorded audio for block: $blockId');
+
+      // Check data size (max 10MB)
+      final maxSize = 10 * 1024 * 1024; // 10MB in bytes
+
+      if (audioData.length > maxSize) {
+        throw Exception('Audio ist zu groß. Maximale Größe: 10MB');
+      }
+
+      // Determine content type
+      final String contentType = _getAudioContentType(extension);
+
+      // Build storage path
+      final String path =
+          'memorials/$memorialId/blocks/$blockId/audio.$extension';
+
+      // Create reference
+      final Reference ref = _storage.ref().child(path);
+
+      // Upload data with progress tracking
+      final UploadTask uploadTask = ref.putData(
+        audioData,
+        SettableMetadata(
+          contentType: contentType,
+          customMetadata: {
+            'memorialId': memorialId,
+            'blockId': blockId,
+            'type': 'recorded_audio',
+            'uploadedAt': DateTime.now().toIso8601String(),
+          },
+        ),
+      );
+
+      // Track progress
+      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+        if (snapshot.totalBytes > 0) {
+          final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+          onProgress?.call(progress.clamp(0.0, 1.0));
+          print(
+              '📊 Audio upload progress: ${(progress * 100).toStringAsFixed(1)}%');
+        }
+      });
+
+      // Wait for upload to complete
+      final TaskSnapshot snapshot = await uploadTask;
+
+      // Get download URL
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+
+      print('✅ Recorded audio uploaded successfully: $downloadUrl');
+      return downloadUrl;
+    } catch (e) {
+      print('❌ Error uploading recorded audio: $e');
+      rethrow;
     }
   }
 }
