@@ -1,13 +1,17 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/repositories/memorial_repository.dart';
+import '../../data/services/firebase_storage_service.dart';
 import 'memorial_event.dart';
 import 'memorial_state.dart';
 
 class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
   final MemorialRepository memorialRepository;
+  final FirebaseStorageService storageService;
 
-  MemorialBloc({required this.memorialRepository})
-      : super(MemorialState.initial()) {
+  MemorialBloc({
+    required this.memorialRepository,
+    required this.storageService,
+  }) : super(MemorialState.initial()) {
     on<MemorialLoadRequested>(_onLoadMemorials);
     on<MemorialDetailLoadRequested>(_onLoadMemorialDetail);
     on<MemorialCreateRequested>(_onCreateMemorial);
@@ -68,6 +72,7 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(state.copyWith(status: MemorialStatus.creating));
 
     try {
+      // 1. Memorial erstellen
       final newMemorial = await memorialRepository.createMemorial(
         organizationId: event.organizationId,
         ownerId: event.ownerId,
@@ -76,15 +81,29 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
         birthDate: event.birthDate,
         deathDate: event.deathDate,
         isPublic: event.isPublic,
+        biography: event.biography,
       );
 
+      // 2. Profilbild hochladen
+      final profileImageUrl = await storageService.uploadMemorialProfileImage(
+        memorialId: newMemorial.id,
+        imageFile: event.profileImage,
+      );
+
+      // 3. Memorial mit Bild-URL aktualisieren
+      final updatedMemorial = newMemorial.copyWith(
+        profileImageUrl: profileImageUrl,
+      );
+      await memorialRepository.updateMemorial(updatedMemorial);
+
+      // 4. Liste neu laden
       final memorials = await memorialRepository
           .getMemorialsByOrganization(event.organizationId);
 
       emit(MemorialState.success(
         'Gedenkseite erfolgreich erstellt',
         memorials: memorials,
-      ).copyWith(selectedMemorial: newMemorial));
+      ).copyWith(selectedMemorial: updatedMemorial));
     } catch (e) {
       emit(MemorialState.error(
           'Fehler beim Erstellen der Gedenkseite: ${e.toString()}'));
@@ -98,9 +117,30 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(state.copyWith(status: MemorialStatus.updating));
 
     try {
-      final updatedMemorial =
-          await memorialRepository.updateMemorial(event.memorial);
+      var memorialToSave = event.memorial;
 
+      // Wenn ein neues Profilbild ausgewählt wurde, erst hochladen
+      if (event.newProfileImage != null) {
+        print('📸 Bloc - Lade neues Profilbild hoch...');
+
+        final newImageUrl = await storageService.uploadMemorialProfileImage(
+          memorialId: event.memorial.id,
+          imageFile: event.newProfileImage!,
+        );
+
+        // Memorial mit neuer Bild-URL aktualisieren
+        memorialToSave = memorialToSave.copyWith(
+          profileImageUrl: newImageUrl,
+        );
+
+        print('✅ Bloc - Neues Profilbild hochgeladen: $newImageUrl');
+      }
+
+      // Memorial in Firestore speichern
+      final updatedMemorial =
+          await memorialRepository.updateMemorial(memorialToSave);
+
+      // Lokale Liste aktualisieren
       final updatedMemorials = state.memorials.map((m) {
         return m.id == updatedMemorial.id ? updatedMemorial : m;
       }).toList();
@@ -109,7 +149,10 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
         'Gedenkseite erfolgreich aktualisiert',
         memorials: updatedMemorials,
       ).copyWith(selectedMemorial: updatedMemorial));
+
+      print('✅ Bloc - Memorial erfolgreich aktualisiert');
     } catch (e) {
+      print('❌ Bloc - Fehler beim Aktualisieren: $e');
       emit(MemorialState.error(
           'Fehler beim Aktualisieren der Gedenkseite: ${e.toString()}'));
     }
@@ -122,6 +165,11 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(state.copyWith(status: MemorialStatus.deleting));
 
     try {
+      // Optional: Profilbild löschen
+      await storageService.deleteMemorialProfileImage(
+        memorialId: event.memorialId,
+      );
+
       await memorialRepository.deleteMemorial(event.memorialId);
 
       final updatedMemorials =

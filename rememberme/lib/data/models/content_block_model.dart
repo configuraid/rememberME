@@ -12,6 +12,7 @@ enum ContentBlockType {
   video, // Video
   audio, // Audio/Sprachmemo
   imageText, // Bild mit Text
+  timeline, // Timeline/Lebenslauf
 }
 
 /// Simplified content block for memorial pages
@@ -53,6 +54,7 @@ class ContentBlock {
         return {
           'images': <String>[], // List of URLs
           'columns': 3,
+          'displayMode': 'grid', // 'grid' oder 'slider'
         };
       case ContentBlockType.quote:
         return {
@@ -79,12 +81,51 @@ class ContentBlock {
           'imageUrl': '',
           'title': '',
           'text': '',
-          'layout': 'left', // left, right, top, bottom
-          'imageSize': 0.4, // 40% der Breite
+          'layout': 'left',
+          'imageSize': 0.4,
           'imageCaption': '',
-          'color': '#333333', // NEU: Textfarbe für imageText
+          'color': '#333333',
+        };
+      case ContentBlockType.timeline:
+        return {
+          'entries': <Map<String, dynamic>>[],
         };
     }
+  }
+
+  /// Erstellt eine Timeline mit automatischen Einträgen aus Memorial-Daten
+  static ContentBlock createTimelineWithDates({
+    String? birthDate,
+    String? deathDate,
+  }) {
+    final entries = <Map<String, dynamic>>[];
+
+    if (birthDate != null && birthDate.isNotEmpty) {
+      entries.add({
+        'id': const Uuid().v4(),
+        'date': birthDate,
+        'label': 'Geboren',
+        'imageUrl': '',
+        'text': '',
+      });
+    }
+
+    if (deathDate != null && deathDate.isNotEmpty) {
+      entries.add({
+        'id': const Uuid().v4(),
+        'date': deathDate,
+        'label': '✝',
+        'imageUrl': '',
+        'text': '',
+      });
+    }
+
+    return ContentBlock(
+      type: ContentBlockType.timeline,
+      content: {
+        'entries': entries,
+      },
+    );
   }
 
   ContentBlock copyWith({
@@ -159,6 +200,8 @@ class BlockTypeInfo {
         return 'Sprachmemo';
       case ContentBlockType.imageText:
         return 'Bild mit Text';
+      case ContentBlockType.timeline:
+        return 'Lebenslauf';
     }
   }
 
@@ -184,6 +227,8 @@ class BlockTypeInfo {
           return CupertinoIcons.mic_fill;
         case ContentBlockType.imageText:
           return CupertinoIcons.text_badge_plus;
+        case ContentBlockType.timeline:
+          return CupertinoIcons.time;
       }
     } else {
       switch (type) {
@@ -203,6 +248,8 @@ class BlockTypeInfo {
           return Icons.mic_rounded;
         case ContentBlockType.imageText:
           return Icons.article_rounded;
+        case ContentBlockType.timeline:
+          return Icons.timeline_rounded;
       }
     }
   }
@@ -225,6 +272,8 @@ class BlockTypeInfo {
         return 'Sprachnachricht aufnehmen';
       case ContentBlockType.imageText:
         return 'Bild und Text kombiniert';
+      case ContentBlockType.timeline:
+        return 'Lebensereignisse darstellen';
     }
   }
 }

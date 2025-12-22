@@ -12,6 +12,11 @@ import 'package:rememberme/data/services/firebase_storage_service.dart';
 import 'package:rememberme/core/constants/app_colors.dart';
 import 'package:rememberme/core/constants/app_strings.dart';
 import 'package:rememberme/presentation/widgets/common/custom_color_picker_dialog.dart';
+import 'package:uuid/uuid.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
+import 'dart:typed_data';
 
 class BlockSettingsBottomSheet extends StatefulWidget {
   final ContentBlock block;
@@ -40,6 +45,10 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
   bool _isUploading = false;
   bool _hasChanges = false;
   double _videoUploadProgress = 0.0;
+  Uint8List? _videoThumbnail;
+  int _gallerySliderIndex = 0;
+  final PageController _galleryPageController =
+      PageController(viewportFraction: 0.85);
 
   // Audio state
   bool _isRecording = false;
@@ -57,6 +66,17 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
   // Audio Recorder
   final AudioRecorder _audioRecorder = AudioRecorder();
 
+  // Video Player
+  VideoPlayerController? _videoPlayerController;
+  ChewieController? _chewieController;
+  bool _isVideoInitialized = false;
+  bool _isVideoLoading = false;
+  String? _currentVideoUrl;
+  String? _localVideoPath;
+
+  // Timeline state
+  List<Map<String, dynamic>> _timelineEntries = [];
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +84,15 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     _localContent = Map.from(widget.block.content);
     _originalContent = Map.from(widget.block.content);
     _initAudioPlayer();
+
+    if (widget.block.type == ContentBlockType.timeline) {
+      final entries = _localContent['entries'];
+      if (entries != null && entries is List) {
+        _timelineEntries = List<Map<String, dynamic>>.from(
+          entries.map((e) => Map<String, dynamic>.from(e)),
+        );
+      }
+    }
   }
 
   void _initAudioPlayer() {
@@ -104,7 +133,109 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     _controllers.values.forEach((c) => c.dispose());
     _audioPlayer.dispose();
     _audioRecorder.dispose();
+    _galleryPageController.dispose();
+    _disposeVideoPlayer();
     super.dispose();
+  }
+
+  void _disposeVideoPlayer() {
+    _chewieController?.dispose();
+    _videoPlayerController?.dispose();
+    _chewieController = null;
+    _videoPlayerController = null;
+    _isVideoInitialized = false;
+  }
+
+  Future<void> _initializeVideoPlayer(String videoSource,
+      {bool isLocal = false}) async {
+    if (_isVideoLoading) return;
+
+    // Prüfe ob schon mit dieser URL initialisiert
+    if (_isVideoInitialized && _currentVideoUrl == videoSource) return;
+
+    setState(() {
+      _isVideoLoading = true;
+    });
+
+    try {
+      // Alten Player disposen
+      _disposeVideoPlayer();
+
+      // Neuen Controller erstellen
+      if (isLocal) {
+        _videoPlayerController = VideoPlayerController.file(File(videoSource));
+      } else {
+        _videoPlayerController =
+            VideoPlayerController.networkUrl(Uri.parse(videoSource));
+      }
+
+      await _videoPlayerController!.initialize();
+
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+
+      _chewieController = ChewieController(
+        videoPlayerController: _videoPlayerController!,
+        autoPlay: false,
+        looping: false,
+        showControls: true,
+        allowFullScreen: true,
+        allowMuting: true,
+        showOptions: false,
+        showControlsOnInitialize: true,
+        hideControlsTimer: const Duration(seconds: 3),
+        materialProgressColors: ChewieProgressColors(
+          playedColor: isDark ? AppColors.accent : AppColors.primary,
+          handleColor: isDark ? AppColors.accent : AppColors.primary,
+          backgroundColor: AppColors.grey.withOpacity(0.3),
+          bufferedColor: isDark
+              ? AppColors.accent.withOpacity(0.5)
+              : AppColors.primary.withOpacity(0.5),
+        ),
+        placeholder: Container(
+          color: AppColors.backgroundDark,
+          child: const Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+        errorBuilder: (context, errorMessage) {
+          return Container(
+            color: AppColors.backgroundDark,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline,
+                      color: AppColors.error, size: 42),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Video konnte nicht geladen werden',
+                    style: TextStyle(color: AppColors.textLight),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+
+      setState(() {
+        _isVideoInitialized = true;
+        _currentVideoUrl = videoSource;
+        _isVideoLoading = false;
+      });
+
+      debugPrint('🎬 Video Player initialized: $videoSource');
+    } catch (e) {
+      debugPrint('❌ Error initializing video player: $e');
+      setState(() {
+        _isVideoLoading = false;
+        _isVideoInitialized = false;
+      });
+      if (mounted) {
+        _showErrorDialog(
+            'Video-Fehler', 'Video konnte nicht geladen werden: $e');
+      }
+    }
   }
 
   @override
@@ -121,6 +252,16 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           controller.text = newValue.toString();
         }
       });
+
+      // Timeline entries aktualisieren
+      if (widget.block.type == ContentBlockType.timeline) {
+        final entries = _localContent['entries'];
+        if (entries != null && entries is List) {
+          _timelineEntries = List<Map<String, dynamic>>.from(
+            entries.map((e) => Map<String, dynamic>.from(e)),
+          );
+        }
+      }
     }
   }
 
@@ -740,11 +881,835 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         return _buildAudioSettings();
       case ContentBlockType.imageText:
         return _buildImageTextSettings();
+      case ContentBlockType.timeline:
+        return _buildTimelineSettings();
     }
   }
 
-  List<Widget> _buildHeaderSettings() {
+  // ============================================================
+// TIMELINE SETTINGS - Füge diese Methoden VOR _buildTextField() ein
+// ============================================================
+
+  List<Widget> _buildTimelineSettings() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return [
+      // Vorschau
+      _buildTimelinePreview(isDark),
+      const SizedBox(height: 24),
+
+      // Einträge Liste
+      if (_timelineEntries.isNotEmpty) ...[
+        _buildTimelineEntriesList(isDark),
+        const SizedBox(height: 16),
+      ],
+
+      // Eintrag hinzufügen Button
+      _buildAddTimelineEntryButton(isDark),
+
+      // Alle entfernen Button
+      if (_timelineEntries.length > 1) ...[
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: () {
+            setState(() {
+              _timelineEntries.clear();
+              _localContent['entries'] = [];
+              _hasChanges = true;
+            });
+          },
+          icon: const Icon(Icons.delete_sweep_rounded, color: AppColors.error),
+          label: const Text(
+            'Alle Ereignisse entfernen',
+            style: TextStyle(color: AppColors.error),
+          ),
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: AppColors.error.withOpacity(0.5)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ],
+    ];
+  }
+
+  Widget _buildTimelinePreview(bool isDark) {
+    if (_timelineEntries.isEmpty) {
+      return _buildEmptyTimelineState(isDark);
+    }
+
+    // Zeige maximal 3 Einträge in der Vorschau
+    final previewEntries = _timelineEntries.take(3).toList();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.backgroundDark : AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.visibility_rounded,
+                size: 14,
+                color: isDark ? AppColors.accent : AppColors.primary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Vorschau',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.accent : AppColors.primary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${_timelineEntries.length} Ereignis${_timelineEntries.length == 1 ? '' : 'se'}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.grey,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...previewEntries.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            final isLast = index == previewEntries.length - 1;
+            return _buildTimelinePreviewEntry(item, isLast, isDark);
+          }),
+          if (_timelineEntries.length > 3)
+            Padding(
+              padding: const EdgeInsets.only(left: 24, top: 8),
+              child: Text(
+                '+ ${_timelineEntries.length - 3} weitere...',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                  color: AppColors.grey,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelinePreviewEntry(
+      Map<String, dynamic> entry, bool isLast, bool isDark) {
+    final date = entry['date'] as String? ?? '';
+    final label = entry['label'] as String? ?? '';
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Timeline Dot + Line
+        Column(
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.accent : AppColors.primary,
+                shape: BoxShape.circle,
+              ),
+            ),
+            if (!isLast)
+              Container(
+                width: 2,
+                height: 32,
+                color: isDark
+                    ? AppColors.accent.withOpacity(0.3)
+                    : AppColors.primary.withOpacity(0.3),
+              ),
+          ],
+        ),
+        const SizedBox(width: 12),
+        // Content
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  date,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.accent : AppColors.primary,
+                  ),
+                ),
+                if (label.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyTimelineState(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.backgroundDarkElevated
+            : AppColors.greyLighter.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.greyLight,
+          style: BorderStyle.solid,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Platform.isIOS ? CupertinoIcons.time : Icons.timeline_rounded,
+            size: 48,
+            color: AppColors.grey,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Noch keine Ereignisse',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Füge wichtige Lebensereignisse hinzu',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.grey,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineEntriesList(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Ereignisse (${_timelineEntries.length})',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...List.generate(_timelineEntries.length, (index) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _buildTimelineEntryCard(index, isDark),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildTimelineEntryCard(int index, bool isDark) {
+    final entry = _timelineEntries[index];
+    final date = entry['date'] as String? ?? '';
+    final label = entry['label'] as String? ?? '';
+    final imageUrl = entry['imageUrl'] as String? ?? '';
+    final text = entry['text'] as String? ?? '';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Drag Handle (visuell)
+          Icon(
+            Icons.drag_indicator_rounded,
+            color: AppColors.grey.withOpacity(0.5),
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+
+          // Thumbnail
+          if (imageUrl.isNotEmpty)
+            Container(
+              width: 40,
+              height: 40,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                image: DecorationImage(
+                  image: NetworkImage(imageUrl),
+                  fit: BoxFit.cover,
+                  onError: (_, __) {},
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: AppColors.greyLighter,
+                    child: Icon(Icons.image, size: 20, color: AppColors.grey),
+                  ),
+                ),
+              ),
+            ),
+
+          // Content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  date,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.accent : AppColors.primary,
+                  ),
+                ),
+                if (label.isNotEmpty)
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                if (text.isNotEmpty)
+                  Text(
+                    text,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.grey,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+
+          // Edit Button
+          IconButton(
+            onPressed: () => _editTimelineEntry(index),
+            icon: Icon(
+              Platform.isIOS ? CupertinoIcons.pencil : Icons.edit_rounded,
+              size: 20,
+            ),
+            color: isDark ? AppColors.accent : AppColors.primary,
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            padding: EdgeInsets.zero,
+          ),
+
+          // Delete Button
+          IconButton(
+            onPressed: () => _deleteTimelineEntry(index),
+            icon: Icon(
+              Platform.isIOS ? CupertinoIcons.trash : Icons.delete_outline,
+              size: 20,
+            ),
+            color: AppColors.error,
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            padding: EdgeInsets.zero,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddTimelineEntryButton(bool isDark) {
+    return GestureDetector(
+      onTap: _addTimelineEntry,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [
+                    AppColors.accent.withOpacity(0.15),
+                    AppColors.accent.withOpacity(0.05),
+                  ]
+                : [
+                    AppColors.primary.withOpacity(0.1),
+                    AppColors.primary.withOpacity(0.03),
+                  ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark
+                ? AppColors.accent.withOpacity(0.3)
+                : AppColors.primary.withOpacity(0.2),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.accent : AppColors.primary,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.add_rounded,
+                size: 20,
+                color: isDark ? AppColors.primary : AppColors.background,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Ereignis hinzufügen',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.accent : AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _addTimelineEntry() {
+    _showTimelineEntryDialog(null, -1);
+  }
+
+  void _editTimelineEntry(int index) {
+    _showTimelineEntryDialog(_timelineEntries[index], index);
+  }
+
+  void _deleteTimelineEntry(int index) {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _timelineEntries.removeAt(index);
+      _localContent['entries'] = _timelineEntries;
+      _hasChanges = true;
+    });
+  }
+
+  void _showTimelineEntryDialog(Map<String, dynamic>? entry, int index) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isEditing = entry != null;
+
+    String date = entry?['date'] ?? '';
+    String label = entry?['label'] ?? '';
+    String imageUrl = entry?['imageUrl'] ?? '';
+    String text = entry?['text'] ?? '';
+
+    final dateController = TextEditingController(text: date);
+    final labelController = TextEditingController(text: label);
+    final textController = TextEditingController(text: text);
+
+    bool isUploadingImage = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.85,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.backgroundDarkElevated
+                    : AppColors.surface,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                children: [
+                  // Handle
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color:
+                          isDark ? AppColors.borderDark : AppColors.greyLight,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            'Abbrechen',
+                            style: TextStyle(color: AppColors.grey),
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          isEditing ? 'Bearbeiten' : 'Ereignis',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? AppColors.textLight
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () {
+                            if (dateController.text.trim().isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Bitte Datum eingeben'),
+                                  backgroundColor: AppColors.error,
+                                ),
+                              );
+                              return;
+                            }
+
+                            final newEntry = {
+                              'id': entry?['id'] ?? const Uuid().v4(),
+                              'date': dateController.text.trim(),
+                              'label': labelController.text.trim(),
+                              'imageUrl': imageUrl,
+                              'text': textController.text.trim(),
+                            };
+
+                            setState(() {
+                              if (isEditing) {
+                                _timelineEntries[index] = newEntry;
+                              } else {
+                                _timelineEntries.add(newEntry);
+                              }
+                              _localContent['entries'] = _timelineEntries;
+                              _hasChanges = true;
+                            });
+
+                            Navigator.pop(context);
+                          },
+                          child: Text(
+                            'Speichern',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isDark ? AppColors.accent : AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const Divider(),
+
+                  // Content
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        // Datum
+                        Text(
+                          'Datum *',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? AppColors.textLight
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: dateController,
+                          decoration: InputDecoration(
+                            hintText: 'z.B. 1985, März 1990, 15.06.2000',
+                            filled: true,
+                            fillColor: isDark
+                                ? AppColors.backgroundDark
+                                : AppColors.background,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Bezeichnung
+                        Text(
+                          'Bezeichnung',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? AppColors.textLight
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: labelController,
+                          decoration: InputDecoration(
+                            hintText: 'z.B. Geburt, Hochzeit, Umzug',
+                            filled: true,
+                            fillColor: isDark
+                                ? AppColors.backgroundDark
+                                : AppColors.background,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Bild
+                        Text(
+                          'Bild',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? AppColors.textLight
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: isUploadingImage
+                              ? null
+                              : () async {
+                                  final XFile? image =
+                                      await _imagePicker.pickImage(
+                                    source: ImageSource.gallery,
+                                    maxWidth: 1920,
+                                    maxHeight: 1920,
+                                    imageQuality: 85,
+                                  );
+                                  if (image == null) return;
+
+                                  setDialogState(() => isUploadingImage = true);
+
+                                  try {
+                                    final url =
+                                        await _storageService.uploadBlockImage(
+                                      memorialId: widget.memorialId,
+                                      blockId:
+                                          '${widget.block.id}_timeline_${DateTime.now().millisecondsSinceEpoch}',
+                                      imageFile: File(image.path),
+                                    );
+                                    setDialogState(() {
+                                      imageUrl = url;
+                                      isUploadingImage = false;
+                                    });
+                                  } catch (e) {
+                                    setDialogState(
+                                        () => isUploadingImage = false);
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content:
+                                              Text('Upload fehlgeschlagen: $e'),
+                                          backgroundColor: AppColors.error,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                          child: Container(
+                            height: 120,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.backgroundDark
+                                  : AppColors.greyLighter,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.borderDark
+                                    : AppColors.greyLight,
+                              ),
+                            ),
+                            child: isUploadingImage
+                                ? const Center(
+                                    child: CircularProgressIndicator())
+                                : imageUrl.isNotEmpty
+                                    ? Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            child: Image.network(
+                                              imageUrl,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) =>
+                                                  const Icon(
+                                                      Icons.broken_image),
+                                            ),
+                                          ),
+                                          Positioned(
+                                            top: 8,
+                                            right: 8,
+                                            child: GestureDetector(
+                                              onTap: () => setDialogState(
+                                                  () => imageUrl = ''),
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.all(4),
+                                                decoration: const BoxDecoration(
+                                                  color: AppColors.error,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(
+                                                  Icons.close,
+                                                  size: 16,
+                                                  color: AppColors.textLight,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.add_photo_alternate_rounded,
+                                            size: 32,
+                                            color: AppColors.grey,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Bild hinzufügen',
+                                            style: TextStyle(
+                                              color: AppColors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Beschreibung
+                        Text(
+                          'Beschreibung',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? AppColors.textLight
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: textController,
+                          maxLines: 4,
+                          decoration: InputDecoration(
+                            hintText: 'Optionale Beschreibung...',
+                            filled: true,
+                            fillColor: isDark
+                                ? AppColors.backgroundDark
+                                : AppColors.background,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildHeaderSettings() {
+    final text = _getContent('text', 'Überschrift');
+    final level = _getContent('level', 1);
+    final align = _getContent('align', 'left');
+    final color = _getContent('color', '#000000');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Schriftgrößen basierend auf Level
+    final fontSizes = {1: 28.0, 2: 22.0, 3: 18.0};
+    final fontSize = fontSizes[level] ?? 28.0;
+
+    return [
+      // Live-Vorschau
+      _buildLivePreviewContainer(
+        isDark: isDark,
+        child: Text(
+          text.isEmpty ? 'Überschrift Vorschau' : text,
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            color: text.isEmpty ? AppColors.grey : _hexToColor(color),
+            height: 1.3,
+          ),
+          textAlign: align == 'center'
+              ? TextAlign.center
+              : align == 'right'
+                  ? TextAlign.right
+                  : TextAlign.left,
+        ),
+      ),
+      const SizedBox(height: 20),
       _buildTextField(
         label: 'Überschrift',
         key: 'text',
@@ -766,7 +1731,35 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
   }
 
   List<Widget> _buildTextSettings() {
+    final text = _getContent('text', '');
+    final fontSize = _getContent('fontSize', 16.0);
+    final align = _getContent('align', 'left');
+    final color = _getContent('color', '#333333');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return [
+      // Live-Vorschau
+      _buildLivePreviewContainer(
+        isDark: isDark,
+        child: Text(
+          text.isEmpty
+              ? 'Text Vorschau - Bewege den Regler um die Schriftgröße zu ändern'
+              : text,
+          style: TextStyle(
+            fontSize: (fontSize is double ? fontSize : 16.0),
+            color: text.isEmpty ? AppColors.grey : _hexToColor(color),
+            height: 1.5,
+          ),
+          textAlign: align == 'center'
+              ? TextAlign.center
+              : align == 'right'
+                  ? TextAlign.right
+                  : TextAlign.left,
+          maxLines: 5,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+      const SizedBox(height: 20),
       _buildTextField(
         label: 'Text',
         key: 'text',
@@ -786,6 +1779,58 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       const SizedBox(height: 20),
       _buildColorPicker('color', 'Textfarbe'),
     ];
+  }
+
+  /// Live-Vorschau Container für Text und Header
+  Widget _buildLivePreviewContainer({
+    required bool isDark,
+    required Widget child,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.backgroundDark : AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.visibility_rounded,
+                size: 14,
+                color: isDark ? AppColors.accent : AppColors.primary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Live-Vorschau',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.accent : AppColors.primary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
   }
 
   List<Widget> _buildImageSettings() {
@@ -864,88 +1909,422 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
   }
 
   List<Widget> _buildGallerySettings() {
-    final List<String> images = List<String>.from(
-      _getContent<List>('images', []),
-    );
+    final List<String> images =
+        List<String>.from(_getContent<List>('images', []));
+    final displayMode = _getContent('displayMode', 'grid');
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return [
       if (images.isNotEmpty) ...[
-        Text('Galerie (${images.length}/6)'),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+        Text(
+          '${AppStrings.galleryLabel} (${images.length}/6)',
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
           ),
-          itemCount: images.length,
-          itemBuilder: (context, index) {
-            return Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    images[index],
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                  ),
-                ),
-                Positioned(
-                  top: 4,
-                  right: 4,
-                  child: GestureDetector(
-                    onTap: () => _removeGalleryImage(index),
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: const BoxDecoration(
-                        color: AppColors.error,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close_rounded,
-                        size: 16,
-                        color: AppColors.textLight,
+        ),
+        const SizedBox(height: 12),
+
+        // ========================================
+        // LIVE-VORSCHAU: Grid ODER Slider
+        // ========================================
+        if (displayMode == 'grid')
+          _buildGalleryGridPreview(images, isDark)
+        else
+          _buildGallerySliderPreview(images, isDark),
+
+        const SizedBox(height: 20),
+      ],
+
+      _buildUploadButton(
+        onPressed: _isUploading
+            ? null
+            : (images.length < 6 ? _handleGalleryImagesUpload : null),
+        isUploading: _isUploading,
+        label: _isUploading
+            ? AppStrings.uploading
+            : images.length < 6
+                ? '${AppStrings.addImages} (${6 - images.length}${AppStrings.remaining})'
+                : AppStrings.maxReachedGallery,
+      ),
+      const SizedBox(height: 24),
+
+      // Display Mode Toggle (Grid / Slider)
+      _buildDisplayModePicker(displayMode, isDark),
+
+      const SizedBox(height: 20),
+
+      // Spalten-Auswahl NUR bei Grid-Modus
+      if (displayMode == 'grid') ...[
+        _buildDropdown(
+          label: AppStrings.columns,
+          key: 'columns',
+          value: _getContent('columns', 3),
+          items: {
+            2: AppStrings.columns2,
+            3: AppStrings.columns3,
+            4: AppStrings.columns4
+          },
+        ),
+      ],
+    ];
+  }
+
+  Widget _buildGalleryGridPreview(List<String> images, bool isDark) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: images.length,
+      itemBuilder: (context, index) {
+        return Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                images[index],
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: isDark
+                        ? AppColors.toastBackgroundDark
+                        : AppColors.greyLighter,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          isDark ? AppColors.accent : AppColors.primary,
+                        ),
                       ),
                     ),
+                  );
+                },
+                errorBuilder: (_, __, ___) => Container(
+                  color: isDark
+                      ? AppColors.toastBackgroundDark
+                      : AppColors.greyLighter,
+                  child: Icon(
+                    Icons.broken_image_rounded,
+                    color: AppColors.grey,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 4,
+              right: 4,
+              child: GestureDetector(
+                onTap: () => _removeGalleryImage(index),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: AppColors.error,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    size: 16,
+                    color: AppColors.textLight,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+// ============================================================
+// SCHRITT 5: NEUE Methode _buildGallerySliderPreview() hinzufügen
+// ============================================================
+// Nach _buildGalleryGridPreview() einfügen:
+
+  /// Slider/Carousel-Vorschau für Gallery
+  Widget _buildGallerySliderPreview(List<String> images, bool isDark) {
+    return Column(
+      children: [
+        // Slider Container
+        SizedBox(
+          height: 200,
+          child: PageView.builder(
+            controller: _galleryPageController,
+            onPageChanged: (index) {
+              setState(() {
+                _gallerySliderIndex = index;
+              });
+            },
+            itemCount: images.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Stack(
+                  children: [
+                    // Bild
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.network(
+                        images[index],
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.toastBackgroundDark
+                                  : AppColors.greyLighter,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  isDark ? AppColors.accent : AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) => Container(
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.toastBackgroundDark
+                                : AppColors.greyLighter,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(
+                            Icons.broken_image_rounded,
+                            size: 48,
+                            color: AppColors.grey,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Delete Button
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: GestureDetector(
+                        onTap: () {
+                          final currentLength = images.length;
+                          _removeGalleryImage(index);
+                          // Nach dem Löschen: Index anpassen falls nötig
+                          if (_gallerySliderIndex >= currentLength - 1 &&
+                              _gallerySliderIndex > 0) {
+                            setState(() {
+                              _gallerySliderIndex--;
+                            });
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.error,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            size: 18,
+                            color: AppColors.textLight,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Bild-Nummer Badge
+                    Positioned(
+                      bottom: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${index + 1}/${images.length}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textLight,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Dots Indicator
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            images.length,
+            (index) => GestureDetector(
+              onTap: () {
+                _galleryPageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: _gallerySliderIndex == index ? 24 : 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: _gallerySliderIndex == index
+                      ? (isDark ? AppColors.accent : AppColors.primary)
+                      : (isDark
+                          ? AppColors.accent.withOpacity(0.3)
+                          : AppColors.primary.withOpacity(0.3)),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Display Mode Picker für Gallery (Grid vs Slider)
+  Widget _buildDisplayModePicker(String currentMode, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Anzeigemodus',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _buildDisplayModeOption(
+              value: 'grid',
+              label: 'Raster',
+              icon: Platform.isIOS
+                  ? CupertinoIcons.square_grid_2x2
+                  : Icons.grid_view_rounded,
+              currentMode: currentMode,
+              isDark: isDark,
+            ),
+            const SizedBox(width: 12),
+            _buildDisplayModeOption(
+              value: 'slider',
+              label: 'Slider',
+              icon: Platform.isIOS
+                  ? CupertinoIcons.rectangle_on_rectangle_angled
+                  : Icons.view_carousel_rounded,
+              currentMode: currentMode,
+              isDark: isDark,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDisplayModeOption({
+    required String value,
+    required String label,
+    required IconData icon,
+    required String currentMode,
+    required bool isDark,
+  }) {
+    final isSelected = currentMode == value;
+
+    return Expanded(
+      child: Container(
+        height: 72,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark
+                  ? AppColors.accent.withOpacity(0.2)
+                  : AppColors.primary.withOpacity(0.1))
+              : (isDark ? AppColors.backgroundDarkElevated : AppColors.surface),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? (isDark ? AppColors.accent : AppColors.primary)
+                : (isDark ? AppColors.borderDark : AppColors.greyLighter),
+            width: isSelected ? 2 : 1.5,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: (isDark ? AppColors.accent : AppColors.primary)
+                        .withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              _updateLocalValue('displayMode', value);
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected
+                      ? (isDark ? AppColors.accent : AppColors.primary)
+                      : AppColors.grey,
+                  size: 26,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected
+                        ? (isDark ? AppColors.accent : AppColors.primary)
+                        : AppColors.grey,
                   ),
                 ),
               ],
-            );
-          },
-        ),
-        const SizedBox(height: 20),
-      ],
-      FilledButton.icon(
-        onPressed: _isUploading || images.length >= 6
-            ? null
-            : _handleGalleryImagesUpload,
-        icon: _isUploading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.add_photo_alternate_rounded),
-        label: Text(
-          _isUploading
-              ? 'Wird hochgeladen...'
-              : images.length >= 6
-                  ? 'Maximum erreicht'
-                  : 'Bilder hinzufügen (${6 - images.length} übrig)',
+            ),
+          ),
         ),
       ),
-      const SizedBox(height: 20),
-      _buildDropdown(
-        label: 'Spalten',
-        key: 'columns',
-        value: _getContent('columns', 3),
-        items: {2: '2 Spalten', 3: '3 Spalten', 4: '4 Spalten'},
-      ),
-    ];
+    );
   }
 
   Future<void> _handleGalleryImagesUpload() async {
@@ -1027,47 +2406,41 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     ];
   }
 
+  // ============================================================
+  // VIDEO SETTINGS - MIT CHEWIE PLAYER
+  // ============================================================
   List<Widget> _buildVideoSettings() {
     final currentUrl = _getContent('url', '');
     final autoplay = _getContent('autoplay', false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Video Player NUR initialisieren wenn URL vorhanden UND nicht am uploaden
+    if (currentUrl.isNotEmpty &&
+        !_isVideoInitialized &&
+        !_isVideoLoading &&
+        !_isUploading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _initializeVideoPlayer(currentUrl);
+      });
+    }
+
     return [
-      if (currentUrl.isNotEmpty) ...[
-        Container(
-          height: 200,
-          decoration: BoxDecoration(
-            color: AppColors.backgroundDark,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.play_circle_filled,
-              size: 64,
-              color: AppColors.textLight,
-            ),
-          ),
-        ),
+      // Video Preview mit Chewie Player
+      if (currentUrl.isNotEmpty || _videoThumbnail != null || _isUploading) ...[
+        _buildVideoPreviewWithPlayer(isDark),
         const SizedBox(height: 20),
       ],
-      FilledButton.icon(
+      _buildUploadButton(
         onPressed: _isUploading ? null : _handleVideoUpload,
-        icon: _isUploading
-            ? SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  value: _videoUploadProgress,
-                ),
-              )
-            : const Icon(Icons.videocam_rounded),
-        label: Text(_isUploading
-            ? 'Upload... ${(_videoUploadProgress * 100).toInt()}%'
+        isUploading: _isUploading,
+        label: _isUploading
+            ? 'Uploading... ${(_videoUploadProgress * 100).toInt()}%'
             : currentUrl.isEmpty
-                ? 'Video hochladen (max. 15 Sek.)'
-                : 'Video ersetzen'),
+                ? 'Video hochladen'
+                : 'Video ersetzen',
       ),
+      const SizedBox(height: 8),
+      _buildInfoText('Max. 15 Sekunden • Max. 50MB'),
       const SizedBox(height: 20),
       _buildAutoplayToggle(isDark, autoplay),
       const SizedBox(height: 20),
@@ -1077,7 +2450,273 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         hint: 'Beschreibung eingeben...',
         maxLines: 2,
       ),
+      // Video entfernen Button
+      if (currentUrl.isNotEmpty) ...[
+        const SizedBox(height: 24),
+        OutlinedButton.icon(
+          onPressed: () {
+            _disposeVideoPlayer();
+            _updateLocalValue('url', '');
+            _updateLocalValue('thumbnailUrl', '');
+            setState(() {
+              _videoThumbnail = null;
+              _localVideoPath = null;
+            });
+          },
+          icon: const Icon(Icons.delete_outline, color: AppColors.error),
+          label: const Text(
+            'Video entfernen',
+            style: TextStyle(color: AppColors.error),
+          ),
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: AppColors.error.withOpacity(0.5)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ],
     ];
+  }
+
+  Widget _buildVideoPreviewWithPlayer(bool isDark) {
+    final thumbnailUrl = _getContent('thumbnailUrl', '');
+    final currentUrl = _getContent('url', '');
+
+    // Video ist nur abspielbar wenn Upload fertig (URL vorhanden) und nicht gerade uploading
+    final bool canPlay = currentUrl.isNotEmpty && !_isUploading;
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(
+          children: [
+            // Video Player oder Thumbnail
+            if (_isVideoInitialized && _chewieController != null && canPlay)
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final aspectRatio =
+                      _videoPlayerController!.value.aspectRatio > 0
+                          ? _videoPlayerController!.value.aspectRatio
+                          : 16 / 9;
+                  // Berechne Höhe basierend auf verfügbarer Breite
+                  final videoHeight =
+                      (constraints.maxWidth / aspectRatio).clamp(120.0, 250.0);
+
+                  return SizedBox(
+                    width: constraints.maxWidth,
+                    height: videoHeight,
+                    child: Chewie(controller: _chewieController!),
+                  );
+                },
+              )
+            else if (_isVideoLoading || _isUploading)
+              Container(
+                height: 160,
+                color: AppColors.backgroundDark,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_isUploading) ...[
+                        SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: CircularProgressIndicator(
+                            value: _videoUploadProgress > 0
+                                ? _videoUploadProgress
+                                : null,
+                            strokeWidth: 3,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              isDark ? AppColors.accent : AppColors.primary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Upload: ${(_videoUploadProgress * 100).toInt()}%',
+                          style: TextStyle(
+                            color: AppColors.textLight,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ] else ...[
+                        CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            isDark ? AppColors.accent : AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Video wird geladen...',
+                          style: TextStyle(
+                            color: AppColors.textLight,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              )
+            else
+              // Fallback: Thumbnail oder Placeholder - Tap to play
+              GestureDetector(
+                onTap: canPlay
+                    ? () {
+                        _initializeVideoPlayer(currentUrl);
+                      }
+                    : null,
+                child: Container(
+                  height: 160,
+                  decoration: BoxDecoration(
+                    color: AppColors.backgroundDark,
+                  ),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (_videoThumbnail != null)
+                        Image.memory(_videoThumbnail!, fit: BoxFit.cover)
+                      else if (thumbnailUrl.isNotEmpty)
+                        Image.network(thumbnailUrl, fit: BoxFit.cover)
+                      else
+                        Center(
+                          child: Icon(
+                            Icons.videocam_rounded,
+                            size: 48,
+                            color: AppColors.grey,
+                          ),
+                        ),
+                      // Play Overlay - nur wenn abspielbar
+                      if (canPlay)
+                        Container(
+                          color: AppColors.backgroundDark.withOpacity(0.3),
+                          child: Center(
+                            child: Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: AppColors.surface.withOpacity(0.9),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.play_arrow_rounded,
+                                size: 32,
+                                color: isDark
+                                    ? AppColors.accent
+                                    : AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Status Badge
+            if (currentUrl.isNotEmpty && !_isUploading && !_isVideoInitialized)
+              Positioned(
+                bottom: 8,
+                left: 8,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.success,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check_circle,
+                          size: 14, color: AppColors.textLight),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Tippen zum Abspielen',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUploadButton({
+    required VoidCallback? onPressed,
+    required bool isUploading,
+    required String label,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return SizedBox(
+      height: 56,
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: onPressed,
+        icon: isUploading
+            ? SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isDark ? AppColors.primary : AppColors.background,
+                  ),
+                ),
+              )
+            : Icon(
+                Platform.isIOS
+                    ? CupertinoIcons.cloud_upload
+                    : Icons.upload_rounded,
+                size: 22,
+              ),
+        label: Text(
+          label,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+        ),
+        style: FilledButton.styleFrom(
+          backgroundColor: isDark ? AppColors.accent : AppColors.primary,
+          foregroundColor: isDark ? AppColors.primary : AppColors.background,
+          disabledBackgroundColor:
+              isDark ? AppColors.toastBackgroundDark : AppColors.greyLighter,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoText(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, size: 16, color: AppColors.grey),
+          const SizedBox(width: 6),
+          Text(text, style: TextStyle(fontSize: 12, color: AppColors.grey)),
+        ],
+      ),
+    );
   }
 
   Future<void> _handleVideoUpload() async {
@@ -1099,9 +2738,16 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
         return;
       }
 
+      // Video Player zurücksetzen
+      _disposeVideoPlayer();
+
+      // Thumbnail generieren für Vorschau während Upload
+      await _generateVideoThumbnail(video.path);
+
       setState(() {
         _isUploading = true;
         _videoUploadProgress = 0.0;
+        _localVideoPath = null; // Kein lokales Playback während Upload
       });
 
       final String downloadUrl = await _storageService.uploadBlockVideo(
@@ -1119,6 +2765,27 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
 
       _updateLocalValue('url', downloadUrl);
 
+      if (_videoThumbnail != null) {
+        try {
+          final thumbnailUrl = await _storageService.uploadVideoThumbnail(
+            memorialId: widget.memorialId,
+            blockId: widget.block.id,
+            thumbnailData: _videoThumbnail!,
+          );
+          _updateLocalValue('thumbnailUrl', thumbnailUrl);
+        } catch (e) {
+          debugPrint('Thumbnail upload failed: $e');
+        }
+      }
+
+      setState(() {
+        _isUploading = false;
+        _videoUploadProgress = 0.0;
+      });
+
+      // ERST JETZT nach erfolgreichem Upload: Player initialisieren
+      await _initializeVideoPlayer(downloadUrl);
+
       if (mounted) {
         _showSuccessSnackBar('Video erfolgreich hochgeladen!');
       }
@@ -1126,13 +2793,27 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
       if (mounted) {
         _showErrorDialog('Fehler', e.toString());
       }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isUploading = false;
-          _videoUploadProgress = 0.0;
-        });
+      setState(() {
+        _isUploading = false;
+        _videoUploadProgress = 0.0;
+      });
+    }
+  }
+
+  Future<void> _generateVideoThumbnail(String videoPath) async {
+    try {
+      final thumbnail = await VideoThumbnail.thumbnailData(
+        video: videoPath,
+        imageFormat: ImageFormat.JPEG,
+        maxWidth: 512,
+        quality: 75,
+      );
+
+      if (thumbnail != null && mounted) {
+        setState(() => _videoThumbnail = thumbnail);
       }
+    } catch (e) {
+      debugPrint('Failed to generate thumbnail: $e');
     }
   }
 
@@ -2107,8 +3788,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           'Layout',
           style: TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.grey,
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
@@ -2222,8 +3903,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
               'Bildbreite',
               style: TextStyle(
                 fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.grey,
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
               ),
             ),
             Container(
@@ -2321,8 +4002,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           label,
           style: TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.grey,
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -2331,6 +4012,7 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           maxLines: maxLines,
           style: TextStyle(
             color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            fontSize: 17,
           ),
           decoration: InputDecoration(
             hintText: hint ?? label,
@@ -2357,6 +4039,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                 width: 2,
               ),
             ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
           onChanged: (value) => _updateLocalValue(key, value),
         ),
@@ -2364,6 +4048,9 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     );
   }
 
+  // ============================================================
+  // KORRIGIERTES DROPDOWN - JETZT IDENTISCH MIT CONFIGURATION SCREEN
+  // ============================================================
   Widget _buildDropdown({
     required String label,
     required String key,
@@ -2379,8 +4066,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           label,
           style: TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.grey,
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -2388,6 +4075,10 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           value: value,
           dropdownColor:
               isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+          style: TextStyle(
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            fontSize: 17,
+          ),
           decoration: InputDecoration(
             filled: true,
             fillColor:
@@ -2398,6 +4089,14 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                 color: isDark ? AppColors.borderDark : AppColors.greyLighter,
               ),
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+              ),
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
           items: items.entries.map((entry) {
             return DropdownMenuItem(
@@ -2423,6 +4122,9 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     required double value,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDecimal = (max - min) < 1;
+    final displayValue =
+        isDecimal ? '${(value * 100).round()}%' : value.round().toString();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2434,8 +4136,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
               label,
               style: TextStyle(
                 fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.grey,
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
               ),
             ),
             Container(
@@ -2447,8 +4149,9 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                value.round().toString(),
+                displayValue,
                 style: TextStyle(
+                  fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: isDark ? AppColors.accent : AppColors.primary,
                 ),
@@ -2456,13 +4159,23 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
             ),
           ],
         ),
-        Slider(
-          value: value,
-          min: min,
-          max: max,
-          divisions: (max - min).round(),
-          activeColor: isDark ? AppColors.accent : AppColors.primary,
-          onChanged: (newValue) => _updateLocalValue(key, newValue),
+        const SizedBox(height: 4),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: isDark ? AppColors.accent : AppColors.primary,
+            inactiveTrackColor: isDark
+                ? AppColors.accent.withOpacity(0.3)
+                : AppColors.primary.withOpacity(0.3),
+            thumbColor: isDark ? AppColors.accent : AppColors.primary,
+            trackHeight: 4,
+          ),
+          child: Slider(
+            value: value.clamp(min, max),
+            min: min,
+            max: max,
+            divisions: isDecimal ? 10 : (max - min).round(),
+            onChanged: (newValue) => _updateLocalValue(key, newValue),
+          ),
         ),
       ],
     );
@@ -2479,8 +4192,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           'Ausrichtung',
           style: TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.grey,
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -2510,32 +4223,36 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
     final isSelected = currentAlign == value;
 
     return Expanded(
-      child: InkWell(
-        onTap: () => _updateLocalValue(key, value),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          height: 52,
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (isDark
-                    ? AppColors.accent.withOpacity(0.2)
-                    : AppColors.primary.withOpacity(0.1))
-                : (isDark
-                    ? AppColors.backgroundDarkElevated
-                    : AppColors.surface),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected
-                  ? (isDark ? AppColors.accent : AppColors.primary)
-                  : (isDark ? AppColors.borderDark : AppColors.greyLighter),
-              width: isSelected ? 2 : 1,
-            ),
-          ),
-          child: Icon(
-            icon,
+      child: Container(
+        height: 52,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark
+                  ? AppColors.accent.withOpacity(0.2)
+                  : AppColors.primary.withOpacity(0.1))
+              : (isDark ? AppColors.backgroundDarkElevated : AppColors.surface),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
             color: isSelected
                 ? (isDark ? AppColors.accent : AppColors.primary)
-                : AppColors.grey,
+                : (isDark ? AppColors.borderDark : AppColors.greyLighter),
+            width: isSelected ? 2 : 1.5,
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _updateLocalValue(key, value),
+            borderRadius: BorderRadius.circular(12),
+            child: Center(
+              child: Icon(
+                icon,
+                color: isSelected
+                    ? (isDark ? AppColors.accent : AppColors.primary)
+                    : AppColors.grey,
+                size: 24,
+              ),
+            ),
           ),
         ),
       ),
@@ -2556,8 +4273,8 @@ class _BlockSettingsBottomSheetState extends State<BlockSettingsBottomSheet> {
           label,
           style: TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.grey,
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 12),

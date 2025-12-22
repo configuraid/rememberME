@@ -13,6 +13,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_routes.dart';
 import 'memorial_create_screen.dart';
+import 'memorial_edit_screen.dart';
 
 class MemorialDetailScreen extends StatelessWidget {
   final MemorialPageModel? memorial;
@@ -242,6 +243,16 @@ class MemorialDetailScreen extends StatelessWidget {
             : AppColors.surface.withOpacity(0.94),
         foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
         surfaceTintColor: Colors.transparent,
+        // NEU: Bearbeiten-Button wie bei ProfileScreen
+        actions: [
+          IconButton(
+            onPressed: () => _navigateToEditScreen(context, memorial),
+            icon: Icon(
+              Icons.edit_rounded,
+              color: isDark ? AppColors.accent : AppColors.primary,
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: RefreshIndicator(
@@ -304,6 +315,16 @@ class MemorialDetailScreen extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: isDark ? AppColors.textLight : AppColors.textPrimary,
             fontFamily: '.SF Pro Text',
+          ),
+        ),
+        // NEU: Bearbeiten-Button wie bei ProfileScreen
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => _navigateToEditScreen(context, memorial),
+          child: Icon(
+            CupertinoIcons.pencil,
+            color: isDark ? AppColors.accent : AppColors.primary,
+            size: 24,
           ),
         ),
         backgroundColor: isDark
@@ -456,68 +477,65 @@ class MemorialDetailScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // Profilbild mit Visibility-Badge
           Stack(
             children: [
               Container(
-                width: 120,
-                height: 120,
+                width: 160,
+                height: 160,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: AppColors.accent.withOpacity(0.1),
-                  border: Border.all(
-                    color: AppColors.accent.withOpacity(0.4),
-                    width: 3,
-                  ),
-                  boxShadow: isDark
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: AppColors.accent.withOpacity(0.3),
-                            blurRadius: 24,
-                            spreadRadius: 2,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
                 ),
-                child: Icon(
-                  isIOS ? CupertinoIcons.heart_fill : Icons.favorite_rounded,
-                  size: 56,
-                  color: AppColors.accent,
-                ),
-              ),
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: memorial.isPublic
-                        ? AppColors.accent
-                        : (isDark
-                            ? AppColors.borderDarkSubtle
-                            : AppColors.primary),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.accent.withOpacity(0.4)
-                          : AppColors.surface,
-                      width: 2,
-                    ),
-                  ),
-                  child: Icon(
-                    memorial.isPublic
-                        ? (isIOS ? CupertinoIcons.globe : Icons.public_rounded)
-                        : (isIOS
-                            ? CupertinoIcons.lock_fill
-                            : Icons.lock_rounded),
-                    size: 14,
-                    color: AppColors.textLight,
-                  ),
+                child: ClipOval(
+                  child: memorial.profileImageUrl != null &&
+                          memorial.profileImageUrl!.isNotEmpty
+                      ? Image.network(
+                          memorial.profileImageUrl!,
+                          fit: BoxFit.cover,
+                          width: 160,
+                          height: 160,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: isIOS
+                                  ? CupertinoActivityIndicator(
+                                      color: isDark ? AppColors.grey : null,
+                                    )
+                                  : CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        isDark
+                                            ? AppColors.accent
+                                            : AppColors.primary,
+                                      ),
+                                    ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              isIOS
+                                  ? CupertinoIcons.person_fill
+                                  : Icons.person_rounded,
+                              size: 56,
+                              color: AppColors.accent,
+                            );
+                          },
+                        )
+                      : Icon(
+                          isIOS
+                              ? CupertinoIcons.person_fill
+                              : Icons.person_rounded,
+                          size: 56,
+                          color: AppColors.accent,
+                        ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 24),
+
+          // Name
           Text(
             memorial.name,
             style: TextStyle(
@@ -530,6 +548,8 @@ class MemorialDetailScreen extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
+
+          // Lebenszeitraum Badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
@@ -574,6 +594,53 @@ class MemorialDetailScreen extends StatelessWidget {
               ],
             ),
           ),
+
+          // Biografie (falls vorhanden)
+          if (memorial.biography != null && memorial.biography!.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.backgroundDarkElevated.withOpacity(0.5)
+                    : AppColors.surface.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.borderDarkSubtle.withOpacity(0.5)
+                      : AppColors.greyLighter,
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    isIOS
+                        ? CupertinoIcons.quote_bubble
+                        : Icons.format_quote_rounded,
+                    size: 24,
+                    color: isDark
+                        ? AppColors.accent.withOpacity(0.6)
+                        : AppColors.primary.withOpacity(0.4),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    memorial.biography!,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color:
+                          isDark ? AppColors.textDarkSecondary : AppColors.grey,
+                      height: 1.5,
+                      fontStyle: FontStyle.italic,
+                      fontFamily: isIOS ? '.SF Pro Text' : null,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -624,10 +691,6 @@ class MemorialDetailScreen extends StatelessWidget {
           ),
         ),
 
-        // Visibility Toggle
-        _buildVisibilityToggleTile(context, memorial, isDark),
-        const SizedBox(height: 12),
-
         // Delete Action
         _buildActionTile(
           context,
@@ -639,124 +702,6 @@ class MemorialDetailScreen extends StatelessWidget {
           isDestructive: true,
         ),
       ],
-    );
-  }
-
-  Widget _buildVisibilityToggleTile(
-      BuildContext context, MemorialPageModel memorial, bool isDark) {
-    final isIOS = Platform.isIOS;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? AppColors.shadowDark : AppColors.shadow,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: memorial.isPublic
-                  ? AppColors.accent.withOpacity(0.4)
-                  : (isDark
-                      ? AppColors.toastBackgroundDark
-                      : AppColors.primary.withOpacity(0.08)),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: memorial.isPublic
-                    ? AppColors.accent
-                    : (isDark
-                        ? AppColors.borderDarkSubtle
-                        : AppColors.primary.withOpacity(0.2)),
-                width: 1.5,
-              ),
-            ),
-            child: Icon(
-              memorial.isPublic
-                  ? (isIOS ? CupertinoIcons.globe : Icons.public_rounded)
-                  : (isIOS ? CupertinoIcons.lock_fill : Icons.lock_rounded),
-              color: memorial.isPublic
-                  ? AppColors.accent
-                  : (isDark ? AppColors.grey : AppColors.primary),
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Sichtbarkeit',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                    fontFamily: isIOS ? '.SF Pro Text' : null,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  memorial.isPublic
-                      ? 'Öffentlich – Jeder kann die Seite sehen'
-                      : 'Privat – Nur eingeladene Personen',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: AppColors.grey,
-                    height: 1.4,
-                    fontFamily: isIOS ? '.SF Pro Text' : null,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          isIOS
-              ? CupertinoSwitch(
-                  value: memorial.isPublic,
-                  onChanged: (value) {
-                    context.read<MemorialBloc>().add(
-                          MemorialVisibilityToggleRequested(
-                            memorialId: memorial.id,
-                            isPublic: value,
-                          ),
-                        );
-                  },
-                  activeTrackColor: AppColors.accent,
-                )
-              : Switch(
-                  value: memorial.isPublic,
-                  onChanged: (value) {
-                    context.read<MemorialBloc>().add(
-                          MemorialVisibilityToggleRequested(
-                            memorialId: memorial.id,
-                            isPublic: value,
-                          ),
-                        );
-                  },
-                  activeColor: AppColors.accent,
-                  activeTrackColor: AppColors.accent.withOpacity(0.3),
-                  inactiveThumbColor:
-                      isDark ? AppColors.greyDark : AppColors.grey,
-                  inactiveTrackColor: isDark
-                      ? AppColors.toastBackgroundDark
-                      : AppColors.greyLight,
-                ),
-        ],
-      ),
     );
   }
 
@@ -947,6 +892,25 @@ class MemorialDetailScreen extends StatelessWidget {
       AppRoutes.pageBuilder,
       arguments: memorial,
     );
+  }
+
+  // NEU: Navigation zum Edit Screen
+  void _navigateToEditScreen(BuildContext context, MemorialPageModel memorial) {
+    if (Platform.isIOS) {
+      Navigator.push(
+        context,
+        CupertinoPageRoute(
+          builder: (context) => MemorialEditScreen(memorial: memorial),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MemorialEditScreen(memorial: memorial),
+        ),
+      );
+    }
   }
 
   void _showPreview(BuildContext context, MemorialPageModel memorial) {

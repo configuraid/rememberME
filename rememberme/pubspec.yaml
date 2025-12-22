@@ -1,7 +1,7 @@
 name: rememberme
 description: "A new Flutter project."
 publish_to: 'none'
-version: 1.0.6
+version: 1.0.8
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -42,6 +42,10 @@ dependencies:
   just_audio: ^0.9.36
   record: ^6.1.2
   path_provider: ^2.1.1
+
+    # Video Player
+  video_player: ^2.10.1
+  chewie: ^1.13.0
 
   encrypt: ^5.0.3
 

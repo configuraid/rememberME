@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:rememberme/business_logic/auth/auth_bloc.dart';
 import 'package:rememberme/business_logic/memorial/memorial_bloc.dart';
 import 'package:rememberme/business_logic/memorial/memorial_event.dart';
@@ -22,6 +23,10 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _biographyController = TextEditingController(); // NEU
+
+  final ImagePicker _imagePicker = ImagePicker(); // NEU
+  File? _profileImage; // NEU
 
   DateTime? _birthDate;
   DateTime? _deathDate;
@@ -30,6 +35,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
   CreateTab _currentTab = CreateTab.details;
 
   late TabController _tabController;
+
+  static const int _maxBiographyLength = 200; // NEU
 
   final List<Map<String, dynamic>> _templates = [
     {
@@ -68,13 +75,227 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     _nameController.addListener(() {
       setState(() {});
     });
+
+    _biographyController.addListener(() {
+      setState(() {});
+    });
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _biographyController.dispose();
     _tabController.dispose();
     super.dispose();
+  }
+
+  // ============================================================
+  // NEU: Image Picker Methoden
+  // ============================================================
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _profileImage = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      _showError('Fehler beim Auswählen des Bildes: $e');
+    }
+  }
+
+  void _showImageSourceSheet() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (Platform.isIOS) {
+      showCupertinoModalPopup(
+        context: context,
+        builder: (context) => CupertinoActionSheet(
+          title: Text(
+            'Foto auswählen',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.grey,
+              fontFamily: '.SF Pro Text',
+            ),
+          ),
+          actions: [
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    CupertinoIcons.camera,
+                    color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Kamera',
+                    style: TextStyle(
+                      color:
+                          isDark ? AppColors.primaryLight : AppColors.primary,
+                      fontFamily: '.SF Pro Text',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    CupertinoIcons.photo,
+                    color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Galerie',
+                    style: TextStyle(
+                      color:
+                          isDark ? AppColors.primaryLight : AppColors.primary,
+                      fontFamily: '.SF Pro Text',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              AppStrings.cancel,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.primaryLight : AppColors.primary,
+                fontFamily: '.SF Pro Text',
+              ),
+            ),
+          ),
+        ),
+      );
+    } else {
+      showModalBottomSheet(
+        context: context,
+        backgroundColor:
+            isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: AppColors.greyLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Text(
+                  'Foto auswählen',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppColors.accent.withOpacity(0.2)
+                          : AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.camera_alt_rounded,
+                      color: isDark ? AppColors.accent : AppColors.primary,
+                    ),
+                  ),
+                  title: Text(
+                    'Kamera',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Neues Foto aufnehmen',
+                    style: TextStyle(color: AppColors.grey),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppColors.accent.withOpacity(0.2)
+                          : AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.photo_library_rounded,
+                      color: isDark ? AppColors.accent : AppColors.primary,
+                    ),
+                  ),
+                  title: Text(
+                    'Galerie',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Aus Fotos auswählen',
+                    style: TextStyle(color: AppColors.grey),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.gallery);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _removeImage() {
+    setState(() {
+      _profileImage = null;
+    });
   }
 
   void _selectBirthDate() async {
@@ -224,12 +445,19 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         return;
       }
 
+      if (_profileImage == null) {
+        _showError('Bitte wählen Sie ein Foto aus');
+        return;
+      }
+
       context.read<MemorialBloc>().add(
             MemorialCreateRequested(
               organizationId: user.primaryOrganizationId!,
               ownerId: user.id,
               name: _nameController.text.trim(),
               templateId: _selectedTemplate,
+              profileImage: _profileImage!,
+              biography: _biographyController.text.trim(),
               birthDate: _birthDate,
               deathDate: _deathDate,
               isPublic: _isPublic,
@@ -242,8 +470,14 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     final hasName = _nameController.text.trim().isNotEmpty;
     final hasBirthDate = _birthDate != null;
     final hasDeathDate = _deathDate != null;
+    final hasProfileImage = _profileImage != null;
+    final hasBiography = _biographyController.text.trim().isNotEmpty;
 
-    return hasName && hasBirthDate && hasDeathDate;
+    return hasName &&
+        hasBirthDate &&
+        hasDeathDate &&
+        hasProfileImage &&
+        hasBiography;
   }
 
   void _showError(String message) {
@@ -596,6 +830,11 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           children: [
             _buildIOSHeader(isDark),
             const SizedBox(height: 32),
+
+            // NEU: Profilbild Upload
+            _buildIOSProfileImagePicker(isDark),
+            const SizedBox(height: 20),
+
             CupertinoTextField(
               controller: _nameController,
               placeholder: AppStrings.personName,
@@ -625,6 +864,11 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               ),
             ),
             const SizedBox(height: 20),
+
+            // NEU: Biografie Textfeld
+            _buildIOSBiographyField(isDark),
+            const SizedBox(height: 20),
+
             _buildIOSDateField(
               label: AppStrings.birthDate,
               date: _birthDate,
@@ -684,6 +928,232 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     );
   }
 
+  Widget _buildIOSProfileImagePicker(bool isDark) {
+    return Column(
+      crossAxisAlignment:
+          CrossAxisAlignment.stretch, // GEÄNDERT von .start zu .stretch
+      children: [
+        Row(
+          children: [
+            Text(
+              'Foto',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.grey,
+                fontFamily: '.SF Pro Text',
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '*',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.error,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: _showImageSourceSheet,
+          child: Container(
+            width: double.infinity, // HINZUGEFÜGT
+            height: 160,
+            decoration: BoxDecoration(
+              color:
+                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+              border: Border.all(
+                color: _profileImage != null
+                    ? (isDark ? AppColors.accent : AppColors.primary)
+                    : (isDark ? AppColors.borderDark : AppColors.greyLighter),
+                width: _profileImage != null ? 2 : 1,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: _profileImage != null
+                ? Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Image.file(
+                          _profileImage!,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: GestureDetector(
+                          onTap: _removeImage,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppColors.error,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              CupertinoIcons.xmark,
+                              size: 16,
+                              color: AppColors.textLight,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                CupertinoIcons.camera,
+                                size: 14,
+                                color: AppColors.textLight,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Ändern',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textLight,
+                                  fontFamily: '.SF Pro Text',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppColors.accent.withOpacity(0.2)
+                              : AppColors.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          CupertinoIcons.camera,
+                          size: 32,
+                          color: isDark ? AppColors.accent : AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Foto hinzufügen',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppColors.accent : AppColors.primary,
+                          fontFamily: '.SF Pro Text',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tippen zum Auswählen',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.grey,
+                          fontFamily: '.SF Pro Text',
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // NEU: iOS Biografie Textfeld
+  Widget _buildIOSBiographyField(bool isDark) {
+    final currentLength = _biographyController.text.length;
+    final isOverLimit = currentLength > _maxBiographyLength;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'Gedenkspruch',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.grey,
+                    fontFamily: '.SF Pro Text',
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '*',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.error,
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              '$currentLength/$_maxBiographyLength',
+              style: TextStyle(
+                fontSize: 12,
+                color: isOverLimit ? AppColors.error : AppColors.grey,
+                fontWeight: isOverLimit ? FontWeight.w600 : FontWeight.normal,
+                fontFamily: '.SF Pro Text',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        CupertinoTextField(
+          controller: _biographyController,
+          placeholder: 'Erzählen Sie etwas über diese Person...',
+          placeholderStyle: TextStyle(color: AppColors.grey),
+          maxLines: 4,
+          maxLength: _maxBiographyLength,
+          style: TextStyle(
+            fontSize: 16,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            fontFamily: '.SF Pro Text',
+          ),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color:
+                isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+            border: Border.all(
+              color: isOverLimit
+                  ? AppColors.error
+                  : (isDark ? AppColors.borderDark : AppColors.greyLighter),
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildIOSHeader(bool isDark) {
     return Column(
       children: [
@@ -717,16 +1187,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
             fontWeight: FontWeight.bold,
             color: isDark ? AppColors.textLight : AppColors.textPrimary,
             fontFamily: '.SF Pro Display',
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          AppStrings.preserveMemoriesForever,
-          style: TextStyle(
-            fontSize: 15,
-            color: AppColors.grey,
-            fontFamily: '.SF Pro Text',
           ),
           textAlign: TextAlign.center,
         ),
@@ -1179,6 +1639,11 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           children: [
             _buildHeader(isDark),
             const SizedBox(height: 32),
+
+            // NEU: Profilbild Upload
+            _buildAndroidProfileImagePicker(isDark),
+            const SizedBox(height: 20),
+
             Container(
               decoration: BoxDecoration(
                 color: isDark
@@ -1218,6 +1683,11 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               ),
             ),
             const SizedBox(height: 20),
+
+            // NEU: Biografie Textfeld
+            _buildAndroidBiographyField(isDark),
+            const SizedBox(height: 20),
+
             _buildDateField(
               label: AppStrings.birthDateRequired,
               date: _birthDate,
@@ -1273,6 +1743,234 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAndroidProfileImagePicker(bool isDark) {
+    return Column(
+      crossAxisAlignment:
+          CrossAxisAlignment.stretch, // GEÄNDERT von .start zu .stretch
+      children: [
+        Row(
+          children: [
+            Text(
+              'Foto',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.grey,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '*',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.error,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: _showImageSourceSheet,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            width: double.infinity, // HINZUGEFÜGT
+            height: 160,
+            decoration: BoxDecoration(
+              color:
+                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+              border: Border.all(
+                color: _profileImage != null
+                    ? (isDark ? AppColors.accent : AppColors.primary)
+                    : (isDark ? AppColors.borderDark : AppColors.greyLighter),
+                width: _profileImage != null ? 2 : 1,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: _profileImage != null
+                ? Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Image.file(
+                          _profileImage!,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: InkWell(
+                          onTap: _removeImage,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppColors.error,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 16,
+                              color: AppColors.textLight,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.camera_alt_rounded,
+                                size: 14,
+                                color: AppColors.textLight,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Ändern',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textLight,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppColors.accent.withOpacity(0.2)
+                              : AppColors.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.camera_alt_rounded,
+                          size: 32,
+                          color: isDark ? AppColors.accent : AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Foto hinzufügen',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppColors.accent : AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tippen zum Auswählen',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // NEU: Android Biografie Textfeld
+  Widget _buildAndroidBiographyField(bool isDark) {
+    final currentLength = _biographyController.text.length;
+    final isOverLimit = currentLength > _maxBiographyLength;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'Gedenkspruch',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.grey,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '*',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.error,
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              '$currentLength/$_maxBiographyLength',
+              style: TextStyle(
+                fontSize: 12,
+                color: isOverLimit ? AppColors.error : AppColors.grey,
+                fontWeight: isOverLimit ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color:
+                isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isOverLimit
+                  ? AppColors.error
+                  : (isDark ? AppColors.borderDark : AppColors.greyLighter),
+            ),
+          ),
+          child: TextFormField(
+            controller: _biographyController,
+            maxLines: 4,
+            maxLength: _maxBiographyLength,
+            style: TextStyle(
+              fontSize: 16,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Erzählen Sie etwas über diese Person...',
+              hintStyle: TextStyle(color: AppColors.grey),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: const EdgeInsets.all(12),
+              counterText: '', // Versteckt den eingebauten Counter
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1408,15 +2106,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
             fontSize: 22,
             fontWeight: FontWeight.bold,
             color: isDark ? AppColors.textLight : AppColors.textPrimary,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          AppStrings.preserveMemoriesForever,
-          style: TextStyle(
-            fontSize: 15,
-            color: AppColors.grey,
           ),
           textAlign: TextAlign.center,
         ),

@@ -497,6 +497,86 @@ class FirebaseStorageService {
     }
   }
 
+  Future<String> uploadMemorialProfileImage({
+    required String memorialId,
+    required File imageFile,
+  }) async {
+    try {
+      print('📤 Uploading profile image for memorial: $memorialId');
+
+      // Build storage path
+      final String path = 'memorials/$memorialId/profile.jpg';
+
+      // Create reference
+      final Reference ref = _storage.ref().child(path);
+
+      // Upload file
+      final UploadTask uploadTask = ref.putFile(
+        imageFile,
+        SettableMetadata(
+          contentType: 'image/jpeg',
+          customMetadata: {
+            'memorialId': memorialId,
+            'type': 'profile_image',
+            'uploadedAt': DateTime.now().toIso8601String(),
+          },
+        ),
+      );
+
+      // Wait for upload to complete
+      final TaskSnapshot snapshot = await uploadTask;
+
+      // Get download URL
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+
+      print('✅ Memorial profile image uploaded successfully: $downloadUrl');
+      return downloadUrl;
+    } catch (e) {
+      print('❌ Error uploading memorial profile image: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete profile image for a memorial
+  Future<void> deleteMemorialProfileImage({
+    required String memorialId,
+  }) async {
+    try {
+      print('🗑️ Deleting profile image for memorial: $memorialId');
+
+      final String path = 'memorials/$memorialId/profile.jpg';
+      final Reference ref = _storage.ref().child(path);
+
+      await ref.delete();
+      print('✅ Memorial profile image deleted successfully');
+    } catch (e) {
+      print('❌ Error deleting memorial profile image: $e');
+      // Don't rethrow - file might not exist
+    }
+  }
+
+  /// Update profile image for a memorial (delete old, upload new)
+  Future<String> updateMemorialProfileImage({
+    required String memorialId,
+    required File newImageFile,
+  }) async {
+    try {
+      print('🔄 Updating profile image for memorial: $memorialId');
+
+      // Delete existing image first
+      await deleteMemorialProfileImage(memorialId: memorialId);
+
+      // Upload new image
+      return await uploadMemorialProfileImage(
+        memorialId: memorialId,
+        imageFile: newImageFile,
+      );
+    } catch (e) {
+      print('❌ Error updating memorial profile image: $e');
+      rethrow;
+    }
+  }
+
   /// Upload recorded audio data directly (for in-app recordings)
   /// Path: memorials/{memorialId}/blocks/{blockId}/audio.m4a
   Future<String> uploadRecordedAudio({

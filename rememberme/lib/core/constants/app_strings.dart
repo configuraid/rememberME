@@ -48,8 +48,6 @@ class AppStrings {
   static const String designCanBeChangedLater =
       'Du kannst das Design später jederzeit ändern';
   static const String createMemorialTitle = 'Erstelle eine Gedenkseite';
-  static const String preserveMemoriesForever =
-      'Bewahre die Erinnerungen für immer';
   static const String userNotFound = 'Benutzer nicht gefunden';
   static const String organizationNotFound = 'Keine Organisation gefunden';
   static const String errorOccurred = 'Ein Fehler ist aufgetreten';

@@ -77,11 +77,13 @@ class MemorialRepository {
     DateTime? birthDate,
     DateTime? deathDate,
     bool isPublic = false,
+    String? biography, // NEU
   }) async {
     print('➕ Repository - Erstelle neue Gedenkseite: $name');
     print('📍 Organisation: $organizationId');
     print('👤 Owner: $ownerId');
     print('🔒 isPublic: $isPublic');
+    print('📝 biography: ${biography ?? "nicht angegeben"}');
 
     final now = DateTime.now();
     final newId = _uuid.v4();
@@ -92,6 +94,7 @@ class MemorialRepository {
       ownerId: ownerId,
       name: name,
       subtitle: 'In liebevoller Erinnerung',
+      biography: biography, // NEU
       birthDate: birthDate,
       deathDate: deathDate,
       templateId: templateId,
@@ -112,6 +115,7 @@ class MemorialRepository {
       print('   name: ${jsonData['name']}');
       print('   organizationId: ${jsonData['organizationId']}');
       print('   isPublic: ${jsonData['isPublic']}');
+      print('   biography: ${jsonData['biography']}');
       print('   contentBlocks: ${jsonData['contentBlocks']}');
 
       await _firestore.collection('memorials').doc(newId).set(jsonData);

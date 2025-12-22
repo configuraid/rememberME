@@ -9,6 +9,7 @@ import 'data/repositories/memorial_repository.dart';
 import 'data/repositories/license_repository.dart';
 import 'data/repositories/profile_repository.dart';
 import 'data/repositories/page_builder_repository.dart';
+import 'data/services/firebase_storage_service.dart';
 import 'business_logic/auth/auth_bloc.dart';
 import 'business_logic/memorial/memorial_bloc.dart';
 import 'business_logic/profile/profile_bloc.dart';
@@ -36,6 +37,7 @@ void main() async {
   final licenseRepository = LicenseRepository();
   final profileRepository = ProfileRepository();
   final pageBuilderRepository = PageBuilderRepository();
+  final storageService = FirebaseStorageService();
 
   runApp(
     MultiRepositoryProvider(
@@ -45,6 +47,7 @@ void main() async {
         RepositoryProvider.value(value: licenseRepository),
         RepositoryProvider.value(value: profileRepository),
         RepositoryProvider.value(value: pageBuilderRepository),
+        RepositoryProvider.value(value: storageService),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -56,6 +59,7 @@ void main() async {
           BlocProvider(
             create: (context) => MemorialBloc(
               memorialRepository: context.read<MemorialRepository>(),
+              storageService: storageService,
             ),
           ),
           BlocProvider(

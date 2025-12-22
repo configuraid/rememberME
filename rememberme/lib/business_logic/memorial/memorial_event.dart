@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:equatable/equatable.dart';
 import '../../data/models/auth/user_model.dart';
 import '../../data/models/content_block_model.dart';
@@ -33,6 +34,8 @@ class MemorialCreateRequested extends MemorialEvent {
   final String ownerId;
   final String name;
   final String templateId;
+  final File profileImage;
+  final String biography;
   final DateTime? birthDate;
   final DateTime? deathDate;
   final bool isPublic;
@@ -42,6 +45,8 @@ class MemorialCreateRequested extends MemorialEvent {
     required this.ownerId,
     required this.name,
     required this.templateId,
+    required this.profileImage,
+    required this.biography,
     this.birthDate,
     this.deathDate,
     this.isPublic = false,
@@ -53,6 +58,8 @@ class MemorialCreateRequested extends MemorialEvent {
         ownerId,
         name,
         templateId,
+        profileImage,
+        biography,
         birthDate,
         deathDate,
         isPublic
@@ -61,11 +68,15 @@ class MemorialCreateRequested extends MemorialEvent {
 
 class MemorialUpdateRequested extends MemorialEvent {
   final MemorialPageModel memorial;
+  final File? newProfileImage;
 
-  const MemorialUpdateRequested({required this.memorial});
+  const MemorialUpdateRequested({
+    required this.memorial,
+    this.newProfileImage,
+  });
 
   @override
-  List<Object?> get props => [memorial];
+  List<Object?> get props => [memorial, newProfileImage];
 }
 
 class MemorialDeleteRequested extends MemorialEvent {

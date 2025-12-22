@@ -13,6 +13,8 @@ class MemorialPageModel extends Equatable {
   final String ownerId;
   final String name;
   final String? subtitle;
+  final String? profileImageUrl;
+  final String? biography;
   final DateTime? birthDate;
   final DateTime? deathDate;
   final String templateId;
@@ -28,6 +30,8 @@ class MemorialPageModel extends Equatable {
     required this.ownerId,
     required this.name,
     this.subtitle,
+    this.profileImageUrl,
+    this.biography,
     this.birthDate,
     this.deathDate,
     required this.templateId,
@@ -60,6 +64,14 @@ class MemorialPageModel extends Equatable {
 
   bool get hasContent {
     return contentBlocks.isNotEmpty;
+  }
+
+  bool get hasProfileImage {
+    return profileImageUrl != null && profileImageUrl!.isNotEmpty;
+  }
+
+  bool get hasBiography {
+    return biography != null && biography!.isNotEmpty;
   }
 
   String get visibilityText {
@@ -115,6 +127,8 @@ class MemorialPageModel extends Equatable {
     String? ownerId,
     String? name,
     String? subtitle,
+    String? profileImageUrl,
+    String? biography,
     DateTime? birthDate,
     DateTime? deathDate,
     String? templateId,
@@ -130,6 +144,8 @@ class MemorialPageModel extends Equatable {
       ownerId: ownerId ?? this.ownerId,
       name: name ?? this.name,
       subtitle: subtitle ?? this.subtitle,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      biography: biography ?? this.biography,
       birthDate: birthDate ?? this.birthDate,
       deathDate: deathDate ?? this.deathDate,
       templateId: templateId ?? this.templateId,
@@ -148,6 +164,8 @@ class MemorialPageModel extends Equatable {
       ownerId: json['ownerId'] as String,
       name: json['name'] as String,
       subtitle: json['subtitle'] as String?,
+      profileImageUrl: json['profileImageUrl'] as String?,
+      biography: json['biography'] as String?,
       birthDate: json['birthDate'] != null
           ? DateTime.parse(json['birthDate'] as String)
           : null,
@@ -175,6 +193,8 @@ class MemorialPageModel extends Equatable {
       'ownerId': ownerId,
       'name': name,
       'subtitle': subtitle,
+      'profileImageUrl': profileImageUrl,
+      'biography': biography,
       'birthDate': birthDate?.toIso8601String(),
       'deathDate': deathDate?.toIso8601String(),
       'templateId': templateId,
@@ -208,6 +228,8 @@ class MemorialPageModel extends Equatable {
         ownerId,
         name,
         subtitle,
+        profileImageUrl,
+        biography,
         birthDate,
         deathDate,
         templateId,
