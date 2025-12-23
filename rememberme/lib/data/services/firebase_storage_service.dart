@@ -15,13 +15,9 @@ class FirebaseStorageService {
     try {
       print('📤 Uploading image for block: $blockId');
 
-      // Build storage path
       final String path = 'memorials/$memorialId/blocks/$blockId/image.jpg';
-
-      // Create reference
       final Reference ref = _storage.ref().child(path);
 
-      // Upload file
       final UploadTask uploadTask = ref.putFile(
         imageFile,
         SettableMetadata(
@@ -34,10 +30,7 @@ class FirebaseStorageService {
         ),
       );
 
-      // Wait for upload to complete
       final TaskSnapshot snapshot = await uploadTask;
-
-      // Get download URL
       final String downloadUrl = await snapshot.ref.getDownloadURL();
 
       print('✅ Image uploaded successfully: $downloadUrl');
@@ -67,6 +60,10 @@ class FirebaseStorageService {
     }
   }
 
+  // ============================================================
+  // GALLERY IMAGES
+  // ============================================================
+
   /// Upload multiple images for gallery block
   /// Path: memorials/{memorialId}/blocks/{blockId}/gallery/{index}.jpg
   /// Max 6 images
@@ -83,7 +80,6 @@ class FirebaseStorageService {
       final limitedFiles = imageFiles.take(6).toList();
       final List<String> downloadUrls = [];
 
-      // Upload each image
       for (int i = 0; i < limitedFiles.length; i++) {
         final file = limitedFiles[i];
         final String path =
@@ -139,7 +135,6 @@ class FirebaseStorageService {
       print('✅ Gallery image deleted successfully');
     } catch (e) {
       print('❌ Error deleting gallery image: $e');
-      // Don't rethrow - file might not exist
     }
   }
 
@@ -151,7 +146,6 @@ class FirebaseStorageService {
     try {
       print('🗑️ Deleting all gallery images for block: $blockId');
 
-      // Delete up to 6 images (max gallery size)
       for (int i = 0; i < 6; i++) {
         await deleteGalleryImage(
           memorialId: memorialId,
@@ -163,9 +157,12 @@ class FirebaseStorageService {
       print('✅ All gallery images deleted');
     } catch (e) {
       print('❌ Error deleting all gallery images: $e');
-      // Don't rethrow - some files might not exist
     }
   }
+
+  // ============================================================
+  // USER PROFILE IMAGES
+  // ============================================================
 
   /// Upload profile image for user
   /// Path: users/{userId}/profile.jpg
@@ -176,13 +173,9 @@ class FirebaseStorageService {
     try {
       print('📤 Uploading profile image for user: $userId');
 
-      // Build storage path
       final String path = 'users/$userId/profile.jpg';
-
-      // Create reference
       final Reference ref = _storage.ref().child(path);
 
-      // Upload file
       final UploadTask uploadTask = ref.putFile(
         imageFile,
         SettableMetadata(
@@ -194,10 +187,7 @@ class FirebaseStorageService {
         ),
       );
 
-      // Wait for upload to complete
       final TaskSnapshot snapshot = await uploadTask;
-
-      // Get download URL
       final String downloadUrl = await snapshot.ref.getDownloadURL();
 
       print('✅ Profile image uploaded successfully: $downloadUrl');
@@ -222,9 +212,88 @@ class FirebaseStorageService {
       print('✅ Profile image deleted successfully');
     } catch (e) {
       print('❌ Error deleting profile image: $e');
-      // Don't rethrow - file might not exist
     }
   }
+
+  // ============================================================
+  // MEMORIAL PROFILE IMAGES
+  // ============================================================
+
+  /// Upload profile image for memorial
+  /// Path: memorials/{memorialId}/profile.jpg
+  Future<String> uploadMemorialProfileImage({
+    required String memorialId,
+    required File imageFile,
+  }) async {
+    try {
+      print('📤 Uploading profile image for memorial: $memorialId');
+
+      final String path = 'memorials/$memorialId/profile.jpg';
+      final Reference ref = _storage.ref().child(path);
+
+      final UploadTask uploadTask = ref.putFile(
+        imageFile,
+        SettableMetadata(
+          contentType: 'image/jpeg',
+          customMetadata: {
+            'memorialId': memorialId,
+            'type': 'profile_image',
+            'uploadedAt': DateTime.now().toIso8601String(),
+          },
+        ),
+      );
+
+      final TaskSnapshot snapshot = await uploadTask;
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+
+      print('✅ Memorial profile image uploaded successfully: $downloadUrl');
+      return downloadUrl;
+    } catch (e) {
+      print('❌ Error uploading memorial profile image: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete profile image for a memorial
+  Future<void> deleteMemorialProfileImage({
+    required String memorialId,
+  }) async {
+    try {
+      print('🗑️ Deleting profile image for memorial: $memorialId');
+
+      final String path = 'memorials/$memorialId/profile.jpg';
+      final Reference ref = _storage.ref().child(path);
+
+      await ref.delete();
+      print('✅ Memorial profile image deleted successfully');
+    } catch (e) {
+      print('❌ Error deleting memorial profile image: $e');
+    }
+  }
+
+  /// Update profile image for a memorial (delete old, upload new)
+  Future<String> updateMemorialProfileImage({
+    required String memorialId,
+    required File newImageFile,
+  }) async {
+    try {
+      print('🔄 Updating profile image for memorial: $memorialId');
+
+      await deleteMemorialProfileImage(memorialId: memorialId);
+
+      return await uploadMemorialProfileImage(
+        memorialId: memorialId,
+        imageFile: newImageFile,
+      );
+    } catch (e) {
+      print('❌ Error updating memorial profile image: $e');
+      rethrow;
+    }
+  }
+
+  // ============================================================
+  // VIDEO
+  // ============================================================
 
   /// Upload video for a content block
   /// Path: memorials/{memorialId}/blocks/{blockId}/video.mp4
@@ -245,13 +314,9 @@ class FirebaseStorageService {
         throw Exception('Video ist zu groß. Maximale Größe: 50MB');
       }
 
-      // Build storage path
       final String path = 'memorials/$memorialId/blocks/$blockId/video.mp4';
-
-      // Create reference
       final Reference ref = _storage.ref().child(path);
 
-      // Upload file with progress tracking
       final UploadTask uploadTask = ref.putFile(
         videoFile,
         SettableMetadata(
@@ -273,10 +338,7 @@ class FirebaseStorageService {
         }
       });
 
-      // Wait for upload to complete
       final TaskSnapshot snapshot = await uploadTask;
-
-      // Get download URL
       final String downloadUrl = await snapshot.ref.getDownloadURL();
 
       print('✅ Video uploaded successfully: $downloadUrl');
@@ -297,13 +359,9 @@ class FirebaseStorageService {
     try {
       print('📤 Uploading video thumbnail for block: $blockId');
 
-      // Build storage path
       final String path = 'memorials/$memorialId/blocks/$blockId/thumbnail.jpg';
-
-      // Create reference
       final Reference ref = _storage.ref().child(path);
 
-      // Upload thumbnail data
       final UploadTask uploadTask = ref.putData(
         thumbnailData,
         SettableMetadata(
@@ -317,10 +375,7 @@ class FirebaseStorageService {
         ),
       );
 
-      // Wait for upload to complete
       final TaskSnapshot snapshot = await uploadTask;
-
-      // Get download URL
       final String downloadUrl = await snapshot.ref.getDownloadURL();
 
       print('✅ Video thumbnail uploaded successfully: $downloadUrl');
@@ -349,7 +404,6 @@ class FirebaseStorageService {
       await deleteVideoThumbnail(memorialId: memorialId, blockId: blockId);
     } catch (e) {
       print('❌ Error deleting video: $e');
-      // Don't rethrow - file might not exist
     }
   }
 
@@ -368,16 +422,15 @@ class FirebaseStorageService {
       print('✅ Video thumbnail deleted successfully');
     } catch (e) {
       print('❌ Error deleting video thumbnail: $e');
-      // Don't rethrow - file might not exist
     }
   }
 
   // ============================================================
-  // AUDIO METHODS
+  // AUDIO
   // ============================================================
 
   /// Upload audio file for a content block
-  /// Path: memorials/{memorialId}/blocks/{blockId}/audio.m4a
+  /// Path: memorials/{memorialId}/blocks/{blockId}/audio.{ext}
   /// Supported formats: m4a, mp3, wav, aac, ogg, flac
   Future<String> uploadBlockAudio({
     required String memorialId,
@@ -396,18 +449,13 @@ class FirebaseStorageService {
         throw Exception('Audio ist zu groß. Maximale Größe: 10MB');
       }
 
-      // Determine content type based on file extension
       final String extension = audioFile.path.split('.').last.toLowerCase();
       final String contentType = _getAudioContentType(extension);
 
-      // Build storage path (always save as original extension)
       final String path =
           'memorials/$memorialId/blocks/$blockId/audio.$extension';
-
-      // Create reference
       final Reference ref = _storage.ref().child(path);
 
-      // Upload file with progress tracking
       final UploadTask uploadTask = ref.putFile(
         audioFile,
         SettableMetadata(
@@ -431,16 +479,71 @@ class FirebaseStorageService {
         }
       });
 
-      // Wait for upload to complete
       final TaskSnapshot snapshot = await uploadTask;
-
-      // Get download URL
       final String downloadUrl = await snapshot.ref.getDownloadURL();
 
       print('✅ Audio uploaded successfully: $downloadUrl');
       return downloadUrl;
     } catch (e) {
       print('❌ Error uploading audio: $e');
+      rethrow;
+    }
+  }
+
+  /// Upload recorded audio data directly (for in-app recordings)
+  /// Path: memorials/{memorialId}/blocks/{blockId}/audio.m4a
+  Future<String> uploadRecordedAudio({
+    required String memorialId,
+    required String blockId,
+    required Uint8List audioData,
+    String extension = 'm4a',
+    Function(double)? onProgress,
+  }) async {
+    try {
+      print('📤 Uploading recorded audio for block: $blockId');
+
+      // Check data size (max 10MB)
+      final maxSize = 10 * 1024 * 1024; // 10MB in bytes
+
+      if (audioData.length > maxSize) {
+        throw Exception('Audio ist zu groß. Maximale Größe: 10MB');
+      }
+
+      final String contentType = _getAudioContentType(extension);
+      final String path =
+          'memorials/$memorialId/blocks/$blockId/audio.$extension';
+      final Reference ref = _storage.ref().child(path);
+
+      final UploadTask uploadTask = ref.putData(
+        audioData,
+        SettableMetadata(
+          contentType: contentType,
+          customMetadata: {
+            'memorialId': memorialId,
+            'blockId': blockId,
+            'type': 'recorded_audio',
+            'uploadedAt': DateTime.now().toIso8601String(),
+          },
+        ),
+      );
+
+      // Track progress
+      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+        if (snapshot.totalBytes > 0) {
+          final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+          onProgress?.call(progress.clamp(0.0, 1.0));
+          print(
+              '📊 Audio upload progress: ${(progress * 100).toStringAsFixed(1)}%');
+        }
+      });
+
+      final TaskSnapshot snapshot = await uploadTask;
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+
+      print('✅ Recorded audio uploaded successfully: $downloadUrl');
+      return downloadUrl;
+    } catch (e) {
+      print('❌ Error uploading recorded audio: $e');
       rethrow;
     }
   }
@@ -493,154 +596,6 @@ class FirebaseStorageService {
       print('⚠️ No audio file found to delete');
     } catch (e) {
       print('❌ Error deleting audio: $e');
-      // Don't rethrow - file might not exist
-    }
-  }
-
-  Future<String> uploadMemorialProfileImage({
-    required String memorialId,
-    required File imageFile,
-  }) async {
-    try {
-      print('📤 Uploading profile image for memorial: $memorialId');
-
-      // Build storage path
-      final String path = 'memorials/$memorialId/profile.jpg';
-
-      // Create reference
-      final Reference ref = _storage.ref().child(path);
-
-      // Upload file
-      final UploadTask uploadTask = ref.putFile(
-        imageFile,
-        SettableMetadata(
-          contentType: 'image/jpeg',
-          customMetadata: {
-            'memorialId': memorialId,
-            'type': 'profile_image',
-            'uploadedAt': DateTime.now().toIso8601String(),
-          },
-        ),
-      );
-
-      // Wait for upload to complete
-      final TaskSnapshot snapshot = await uploadTask;
-
-      // Get download URL
-      final String downloadUrl = await snapshot.ref.getDownloadURL();
-
-      print('✅ Memorial profile image uploaded successfully: $downloadUrl');
-      return downloadUrl;
-    } catch (e) {
-      print('❌ Error uploading memorial profile image: $e');
-      rethrow;
-    }
-  }
-
-  /// Delete profile image for a memorial
-  Future<void> deleteMemorialProfileImage({
-    required String memorialId,
-  }) async {
-    try {
-      print('🗑️ Deleting profile image for memorial: $memorialId');
-
-      final String path = 'memorials/$memorialId/profile.jpg';
-      final Reference ref = _storage.ref().child(path);
-
-      await ref.delete();
-      print('✅ Memorial profile image deleted successfully');
-    } catch (e) {
-      print('❌ Error deleting memorial profile image: $e');
-      // Don't rethrow - file might not exist
-    }
-  }
-
-  /// Update profile image for a memorial (delete old, upload new)
-  Future<String> updateMemorialProfileImage({
-    required String memorialId,
-    required File newImageFile,
-  }) async {
-    try {
-      print('🔄 Updating profile image for memorial: $memorialId');
-
-      // Delete existing image first
-      await deleteMemorialProfileImage(memorialId: memorialId);
-
-      // Upload new image
-      return await uploadMemorialProfileImage(
-        memorialId: memorialId,
-        imageFile: newImageFile,
-      );
-    } catch (e) {
-      print('❌ Error updating memorial profile image: $e');
-      rethrow;
-    }
-  }
-
-  /// Upload recorded audio data directly (for in-app recordings)
-  /// Path: memorials/{memorialId}/blocks/{blockId}/audio.m4a
-  Future<String> uploadRecordedAudio({
-    required String memorialId,
-    required String blockId,
-    required Uint8List audioData,
-    String extension = 'm4a',
-    Function(double)? onProgress,
-  }) async {
-    try {
-      print('📤 Uploading recorded audio for block: $blockId');
-
-      // Check data size (max 10MB)
-      final maxSize = 10 * 1024 * 1024; // 10MB in bytes
-
-      if (audioData.length > maxSize) {
-        throw Exception('Audio ist zu groß. Maximale Größe: 10MB');
-      }
-
-      // Determine content type
-      final String contentType = _getAudioContentType(extension);
-
-      // Build storage path
-      final String path =
-          'memorials/$memorialId/blocks/$blockId/audio.$extension';
-
-      // Create reference
-      final Reference ref = _storage.ref().child(path);
-
-      // Upload data with progress tracking
-      final UploadTask uploadTask = ref.putData(
-        audioData,
-        SettableMetadata(
-          contentType: contentType,
-          customMetadata: {
-            'memorialId': memorialId,
-            'blockId': blockId,
-            'type': 'recorded_audio',
-            'uploadedAt': DateTime.now().toIso8601String(),
-          },
-        ),
-      );
-
-      // Track progress
-      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-        if (snapshot.totalBytes > 0) {
-          final progress = snapshot.bytesTransferred / snapshot.totalBytes;
-          onProgress?.call(progress.clamp(0.0, 1.0));
-          print(
-              '📊 Audio upload progress: ${(progress * 100).toStringAsFixed(1)}%');
-        }
-      });
-
-      // Wait for upload to complete
-      final TaskSnapshot snapshot = await uploadTask;
-
-      // Get download URL
-      final String downloadUrl = await snapshot.ref.getDownloadURL();
-
-      print('✅ Recorded audio uploaded successfully: $downloadUrl');
-      return downloadUrl;
-    } catch (e) {
-      print('❌ Error uploading recorded audio: $e');
-      rethrow;
     }
   }
 }

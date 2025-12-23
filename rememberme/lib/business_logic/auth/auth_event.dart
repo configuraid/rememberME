@@ -8,89 +8,78 @@ abstract class AuthEvent extends Equatable {
 }
 
 // ========================================
-// AUTH KEY / QR CODE LOGIN
+// REGISTER & LOGIN
 // ========================================
 
-/// Login mit Auth-Key (Organisation-Login)
-class AuthLoginWithKeyRequested extends AuthEvent {
-  final String authKey;
-
-  const AuthLoginWithKeyRequested(this.authKey);
-
-  @override
-  List<Object?> get props => [authKey];
-}
-
-/// Login mit QR-Code (Organisation-Login)
-class AuthLoginWithQRRequested extends AuthEvent {
-  final String qrCode;
-
-  const AuthLoginWithQRRequested(this.qrCode);
-
-  @override
-  List<Object?> get props => [qrCode];
-}
-
-// ========================================
-// USER SELECTION & PROFILE CREATION
-// ========================================
-
-/// User Selection - Wähle existierenden User aus Organisation
-class AuthUserSelectionRequested extends AuthEvent {
-  final String organizationId;
-  final String userId;
-  final String? pin; // Optional PIN für geschützte Profile
-
-  const AuthUserSelectionRequested({
-    required this.organizationId,
-    required this.userId,
-    this.pin,
-  });
-
-  @override
-  List<Object?> get props => [organizationId, userId, pin];
-}
-
-/// Neues Profil erstellen in Organisation
-class AuthNewProfileCreationRequested extends AuthEvent {
-  final String organizationId;
-  final String name;
+/// Registrierung mit Email/Password
+class AuthRegisterRequested extends AuthEvent {
   final String email;
-  final String? pin; // Optional PIN zum Schützen des Profils
+  final String password;
+  final String displayName;
 
-  const AuthNewProfileCreationRequested({
-    required this.organizationId,
-    required this.name,
+  const AuthRegisterRequested({
     required this.email,
-    this.pin,
+    required this.password,
+    required this.displayName,
   });
 
   @override
-  List<Object?> get props => [organizationId, name, email, pin];
+  List<Object?> get props => [email, password, displayName];
+}
+
+/// Login mit Email/Password
+class AuthLoginRequested extends AuthEvent {
+  final String email;
+  final String password;
+
+  const AuthLoginRequested({
+    required this.email,
+    required this.password,
+  });
+
+  @override
+  List<Object?> get props => [email, password];
+}
+
+/// Logout
+class AuthLogoutRequested extends AuthEvent {
+  const AuthLogoutRequested();
+}
+
+// ========================================
+// PASSWORD RESET
+// ========================================
+
+/// Passwort zurücksetzen
+class AuthPasswordResetRequested extends AuthEvent {
+  final String email;
+
+  const AuthPasswordResetRequested(this.email);
+
+  @override
+  List<Object?> get props => [email];
 }
 
 // ========================================
 // PROFILE MANAGEMENT
 // ========================================
 
-/// User-Profil aktualisieren
+/// Profil aktualisieren
 class AuthUpdateProfileRequested extends AuthEvent {
-  final String? name;
-  final String? email;
-  final String? profileImageUrl;
+  final String? displayName;
+  final String? avatarUrl;
 
   const AuthUpdateProfileRequested({
-    this.name,
-    this.email,
-    this.profileImageUrl,
+    this.displayName,
+    this.avatarUrl,
   });
 
   @override
-  List<Object?> get props => [name, email, profileImageUrl];
+  List<Object?> get props => [displayName, avatarUrl];
 }
 
 // ========================================
-// AUTH STATUS & SESSION
+// AUTH STATUS
 // ========================================
 
 /// Auth-Status prüfen (beim App-Start)
@@ -98,12 +87,11 @@ class AuthStatusChecked extends AuthEvent {
   const AuthStatusChecked();
 }
 
-/// Token erneuern
-class AuthTokenRefreshRequested extends AuthEvent {
-  const AuthTokenRefreshRequested();
-}
+// ========================================
+// ACCOUNT
+// ========================================
 
-/// Logout
-class AuthLogoutRequested extends AuthEvent {
-  const AuthLogoutRequested();
+/// Account löschen
+class AuthDeleteAccountRequested extends AuthEvent {
+  const AuthDeleteAccountRequested();
 }

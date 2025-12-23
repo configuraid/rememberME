@@ -3,8 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import '../models/content_block_model.dart';
-import '../models/memorial_page_model.dart';
+import 'package:rememberme/data/models/memorial_model.dart';
 
 /// Result class for preview operations
 class PreviewResult {
@@ -46,6 +45,8 @@ enum PreviewErrorType {
 }
 
 /// Service for handling preview functionality with Nuxt.js backend
+///
+/// Sendet Memorial-Daten an das Backend und erhält eine Preview-URL zurück.
 class PreviewService {
   static const String _baseUrl = 'https://remember-me-slug.vercel.app';
   static const Duration _timeout = Duration(seconds: 15);
@@ -57,11 +58,11 @@ class PreviewService {
 
   /// Sends memorial data to the preview endpoint and returns the preview URL
   ///
-  /// [memorial] - The memorial page model containing all data
+  /// [memorial] - The memorial model containing all data
   ///
   /// Returns a [PreviewResult] indicating success or failure
   Future<PreviewResult> createPreview({
-    required MemorialPageModel memorial,
+    required MemorialModel memorial,
   }) async {
     // Check for empty blocks
     if (memorial.contentBlocks.isEmpty) {
@@ -78,8 +79,13 @@ class PreviewService {
 
       final requestBody = {
         'memorial': {
+          'id': memorial.id,
           'name': memorial.name,
           'subtitle': memorial.subtitle ?? '',
+          'biography': memorial.biography ?? '',
+          'profileImageUrl': memorial.profileImageUrl,
+          'birthDate': memorial.birthDate?.toIso8601String(),
+          'deathDate': memorial.deathDate?.toIso8601String(),
         },
         'blocks': blocksJson,
       };
@@ -182,5 +188,15 @@ class PreviewService {
     } catch (_) {
       return false;
     }
+  }
+
+  /// Get the public memorial URL (for sharing)
+  String getPublicUrl(String memorialId) {
+    return '$_baseUrl/m/$memorialId';
+  }
+
+  /// Get the preview URL for a memorial
+  String getPreviewUrl(String previewId) {
+    return '$_baseUrl/preview/$previewId';
   }
 }

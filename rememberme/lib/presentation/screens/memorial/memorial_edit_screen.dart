@@ -3,16 +3,16 @@ import 'package:flutter/cupertino.dart';
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:rememberme/business_logic/memorial/memorial_bloc.dart';
-import 'package:rememberme/business_logic/memorial/memorial_event.dart';
-import 'package:rememberme/business_logic/memorial/memorial_state.dart';
-import 'package:rememberme/data/models/memorial_page_model.dart'
-    hide MemorialStatus;
+
+import '../../../business_logic/memorial/memorial_bloc.dart';
+import '../../../business_logic/memorial/memorial_event.dart';
+import '../../../business_logic/memorial/memorial_state.dart';
+import '../../../data/models/memorial_model.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 
 class MemorialEditScreen extends StatefulWidget {
-  final MemorialPageModel memorial;
+  final MemorialModel memorial;
 
   const MemorialEditScreen({super.key, required this.memorial});
 
@@ -422,6 +422,9 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
     );
   }
 
+  // ============================================================
+  // REFACTORED: Speichern mit MemorialModel
+  // ============================================================
   void _saveChanges() {
     if (_formKey.currentState?.validate() ?? false) {
       final updatedMemorial = widget.memorial.copyWith(
@@ -531,11 +534,11 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
   Widget build(BuildContext context) {
     return BlocListener<MemorialBloc, MemorialState>(
       listenWhen: (previous, current) {
-        return previous.status == MemorialStatus.updating &&
+        return previous.status == MemorialBlocStatus.updating &&
             previous.status != current.status;
       },
       listener: (context, state) {
-        if (state.status == MemorialStatus.success) {
+        if (state.status == MemorialBlocStatus.success) {
           _showSuccessAndPop();
         } else if (state.hasError) {
           _showError(state.errorMessage ?? AppStrings.errorOccurred);
@@ -582,7 +585,7 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
         actions: [
           BlocBuilder<MemorialBloc, MemorialState>(
             builder: (context, state) {
-              final isLoading = state.status == MemorialStatus.updating;
+              final isLoading = state.status == MemorialBlocStatus.updating;
               return TextButton(
                 onPressed: (_hasChanges && _isFormValid() && !isLoading)
                     ? _saveChanges
@@ -1045,7 +1048,7 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
         ),
         trailing: BlocBuilder<MemorialBloc, MemorialState>(
           builder: (context, state) {
-            final isLoading = state.status == MemorialStatus.updating;
+            final isLoading = state.status == MemorialBlocStatus.updating;
             return CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: (_hasChanges && _isFormValid() && !isLoading)

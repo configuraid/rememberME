@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:rememberme/presentation/screens/preview/webview_preview_screen.dart';
-import '../../../data/models/memorial_page_model.dart';
+import '../../../data/models/memorial_model.dart';
 import '../../../data/services/preview_service.dart';
 import '../../../core/constants/app_colors.dart';
 import 'preview_dialogs.dart';
@@ -16,7 +16,7 @@ mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
   /// Shows the web preview by sending memorial data to the server and opening WebView
   Future<void> showWebPreview({
     required BuildContext context,
-    required MemorialPageModel memorial,
+    required MemorialModel memorial,
   }) async {
     // Prevent double-tap
     if (_isPreviewLoading) return;
@@ -197,7 +197,7 @@ mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
 
 Future<void> showWebPreviewStandalone({
   required BuildContext context,
-  required MemorialPageModel memorial,
+  required MemorialModel memorial,
 }) async {
   final previewService = PreviewService();
 

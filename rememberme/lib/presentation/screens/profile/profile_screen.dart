@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rememberme/data/models/auth/user_model.dart';
+import 'package:rememberme/data/models/user_model.dart';
 import 'package:rememberme/presentation/widgets/profile/delete_account_sheet.dart';
 import '../../../business_logic/auth/auth_bloc.dart';
 import '../../../business_logic/auth/auth_event.dart';
@@ -298,7 +298,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       : null,
                   child: profileState.profileImageUrl == null
                       ? Text(
-                          _getInitials(user?.name),
+                          _getInitials(user?.displayName),
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
@@ -334,7 +334,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            profileState.name ?? user?.name ?? AppStrings.unknown,
+            profileState.displayName ?? user?.displayName ?? AppStrings.unknown,
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -383,7 +383,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       : null,
                   child: profileState.profileImageUrl == null
                       ? Text(
-                          _getInitials(user?.name),
+                          _getInitials(user?.displayName),
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
@@ -421,7 +421,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            profileState.name ?? user?.name ?? AppStrings.unknown,
+            profileState.displayName ?? user?.displayName ?? AppStrings.unknown,
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,

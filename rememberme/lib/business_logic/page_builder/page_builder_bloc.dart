@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rememberme/data/models/content_block_model.dart';
+import '../../data/models/content_block_model.dart';
 import '../../data/repositories/page_builder_repository.dart';
 import 'page_builder_event.dart';
 import 'page_builder_state.dart';
@@ -18,7 +18,13 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
     on<PageBuilderSaveRequested>(_onSave);
     on<PageBuilderUndoRequested>(_onUndo);
     on<PageBuilderRedoRequested>(_onRedo);
+    on<PageBuilderBlockSelectRequested>(_onSelectBlock);
+    on<PageBuilderAutoSaveRequested>(_onAutoSave);
   }
+
+  // ========================================
+  // LOAD
+  // ========================================
 
   Future<void> _onLoad(
     PageBuilderLoadRequested event,
@@ -32,7 +38,6 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
       final memorial =
           await pageBuilderRepository.getMemorial(event.memorialId);
 
-      // ✅ FIX: Prüfe ob Memorial existiert
       if (memorial == null) {
         print('❌ PageBuilderBloc - Memorial nicht gefunden');
         emit(PageBuilderState.error('Memorial nicht gefunden'));
@@ -52,6 +57,10 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
       emit(PageBuilderState.error('Fehler beim Laden: ${e.toString()}'));
     }
   }
+
+  // ========================================
+  // ADD BLOCK
+  // ========================================
 
   Future<void> _onAddBlock(
     PageBuilderBlockAddRequested event,
@@ -81,6 +90,10 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
       ));
     }
   }
+
+  // ========================================
+  // UPDATE BLOCK
+  // ========================================
 
   Future<void> _onUpdateBlock(
     PageBuilderBlockUpdateRequested event,
@@ -112,6 +125,10 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
     }
   }
 
+  // ========================================
+  // DELETE BLOCK
+  // ========================================
+
   Future<void> _onDeleteBlock(
     PageBuilderBlockDeleteRequested event,
     Emitter<PageBuilderState> emit,
@@ -141,6 +158,10 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
     }
   }
 
+  // ========================================
+  // REORDER BLOCK
+  // ========================================
+
   Future<void> _onReorderBlock(
     PageBuilderBlockReorderRequested event,
     Emitter<PageBuilderState> emit,
@@ -168,6 +189,10 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
       ));
     }
   }
+
+  // ========================================
+  // DUPLICATE BLOCK
+  // ========================================
 
   Future<void> _onDuplicateBlock(
     PageBuilderBlockDuplicateRequested event,
@@ -209,6 +234,23 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
     }
   }
 
+  // ========================================
+  // SELECT BLOCK
+  // ========================================
+
+  Future<void> _onSelectBlock(
+    PageBuilderBlockSelectRequested event,
+    Emitter<PageBuilderState> emit,
+  ) async {
+    emit(state.copyWith(
+      selectedBlockId: event.blockId,
+    ));
+  }
+
+  // ========================================
+  // SAVE
+  // ========================================
+
   Future<void> _onSave(
     PageBuilderSaveRequested event,
     Emitter<PageBuilderState> emit,
@@ -237,6 +279,34 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
       ));
     }
   }
+
+  // ========================================
+  // AUTO-SAVE
+  // ========================================
+
+  Future<void> _onAutoSave(
+    PageBuilderAutoSaveRequested event,
+    Emitter<PageBuilderState> emit,
+  ) async {
+    try {
+      print('💾 PageBuilderBloc - Auto-Save');
+
+      await pageBuilderRepository.autoSave(
+        memorialId: event.memorialId,
+        blocks: state.blocks,
+      );
+
+      // Kein Status-Update bei Auto-Save um UI nicht zu stören
+      print('✅ PageBuilderBloc - Auto-Save erfolgreich');
+    } catch (e) {
+      print('⚠️ PageBuilderBloc - Auto-Save fehlgeschlagen: $e');
+      // Auto-Save Fehler werden ignoriert
+    }
+  }
+
+  // ========================================
+  // UNDO / REDO
+  // ========================================
 
   Future<void> _onUndo(
     PageBuilderUndoRequested event,
@@ -288,7 +358,6 @@ class PageBuilderBloc extends Bloc<PageBuilderEvent, PageBuilderState> {
       historyIndex: limitedHistory.length - 1,
     ));
 
-    print(
-        '📜 PageBuilderBloc - History: ${limitedHistory.length} Einträge (Index: ${limitedHistory.length - 1})');
+    print('📜 PageBuilderBloc - History: ${limitedHistory.length} Einträge');
   }
 }

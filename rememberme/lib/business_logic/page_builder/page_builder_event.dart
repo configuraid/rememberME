@@ -1,7 +1,5 @@
-// lib/business_logic/page_builder/page_builder_event.dart
-
 import 'package:equatable/equatable.dart';
-import 'package:rememberme/data/models/content_block_model.dart';
+import '../../data/models/content_block_model.dart';
 
 abstract class PageBuilderEvent extends Equatable {
   const PageBuilderEvent();
@@ -10,7 +8,9 @@ abstract class PageBuilderEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-// ===== LOADING =====
+// ========================================
+// LOADING
+// ========================================
 
 /// Load page builder for a memorial
 class PageBuilderLoadRequested extends PageBuilderEvent {
@@ -25,7 +25,9 @@ class PageBuilderLoadRequested extends PageBuilderEvent {
   String toString() => 'PageBuilderLoadRequested(memorialId: $memorialId)';
 }
 
-// ===== BLOCK MANAGEMENT =====
+// ========================================
+// BLOCK MANAGEMENT
+// ========================================
 
 /// Add a new block
 class PageBuilderBlockAddRequested extends PageBuilderEvent {
@@ -104,7 +106,22 @@ class PageBuilderBlockDuplicateRequested extends PageBuilderEvent {
   String toString() => 'PageBuilderBlockDuplicateRequested(blockId: $blockId)';
 }
 
-// ===== SAVING =====
+/// Select a block for editing
+class PageBuilderBlockSelectRequested extends PageBuilderEvent {
+  final String? blockId;
+
+  const PageBuilderBlockSelectRequested(this.blockId);
+
+  @override
+  List<Object?> get props => [blockId];
+
+  @override
+  String toString() => 'PageBuilderBlockSelectRequested(blockId: $blockId)';
+}
+
+// ========================================
+// SAVING
+// ========================================
 
 /// Save all changes
 class PageBuilderSaveRequested extends PageBuilderEvent {
@@ -119,7 +136,22 @@ class PageBuilderSaveRequested extends PageBuilderEvent {
   String toString() => 'PageBuilderSaveRequested(memorialId: $memorialId)';
 }
 
-// ===== UNDO/REDO =====
+/// Auto-save changes
+class PageBuilderAutoSaveRequested extends PageBuilderEvent {
+  final String memorialId;
+
+  const PageBuilderAutoSaveRequested(this.memorialId);
+
+  @override
+  List<Object?> get props => [memorialId];
+
+  @override
+  String toString() => 'PageBuilderAutoSaveRequested(memorialId: $memorialId)';
+}
+
+// ========================================
+// UNDO/REDO
+// ========================================
 
 /// Undo last change
 class PageBuilderUndoRequested extends PageBuilderEvent {

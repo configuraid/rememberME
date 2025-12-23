@@ -1,7 +1,10 @@
 import 'package:equatable/equatable.dart';
-import '../../data/models/memorial_page_model.dart';
+import '../../data/models/memorial_model.dart';
+import '../../data/models/memorial_access_model.dart';
 
-enum MemorialStatus {
+export '../../data/models/memorial_model.dart' show MemorialStatus;
+
+enum MemorialBlocStatus {
   initial,
   loading,
   loaded,
@@ -14,39 +17,49 @@ enum MemorialStatus {
 }
 
 class MemorialState extends Equatable {
-  final MemorialStatus status;
-  final List<MemorialPageModel> memorials;
-  final MemorialPageModel? selectedMemorial;
+  final MemorialBlocStatus status;
+  final List<MemorialModel> memorials;
+  final MemorialModel? selectedMemorial;
+  final List<MemorialAccessModel> currentMemorialMembers;
   final String? errorMessage;
   final String? successMessage;
+  final String? lastCreatedInviteUrl;
 
   const MemorialState({
-    this.status = MemorialStatus.initial,
+    this.status = MemorialBlocStatus.initial,
     this.memorials = const [],
     this.selectedMemorial,
+    this.currentMemorialMembers = const [],
     this.errorMessage,
     this.successMessage,
+    this.lastCreatedInviteUrl,
   });
 
+  // ========================================
+  // FACTORY CONSTRUCTORS
+  // ========================================
+
   factory MemorialState.initial() {
-    return const MemorialState(status: MemorialStatus.initial);
+    return const MemorialState(status: MemorialBlocStatus.initial);
   }
 
   factory MemorialState.loading() {
-    return const MemorialState(status: MemorialStatus.loading);
+    return const MemorialState(status: MemorialBlocStatus.loading);
   }
 
-  factory MemorialState.loaded(List<MemorialPageModel> memorials) {
+  factory MemorialState.loaded(List<MemorialModel> memorials) {
     return MemorialState(
-      status: MemorialStatus.loaded,
+      status: MemorialBlocStatus.loaded,
       memorials: memorials,
     );
   }
 
-  factory MemorialState.success(String message,
-      {List<MemorialPageModel>? memorials}) {
+  factory MemorialState.success(
+    String message, {
+    List<MemorialModel>? memorials,
+  }) {
     return MemorialState(
-      status: MemorialStatus.success,
+      status: MemorialBlocStatus.success,
       successMessage: message,
       memorials: memorials ?? [],
     );
@@ -54,34 +67,62 @@ class MemorialState extends Equatable {
 
   factory MemorialState.error(String message) {
     return MemorialState(
-      status: MemorialStatus.error,
+      status: MemorialBlocStatus.error,
       errorMessage: message,
     );
   }
 
-  bool get isLoading =>
-      status == MemorialStatus.loading ||
-      status == MemorialStatus.creating ||
-      status == MemorialStatus.updating ||
-      status == MemorialStatus.deleting ||
-      status == MemorialStatus.publishing;
+  // ========================================
+  // GETTERS
+  // ========================================
 
-  bool get hasError => status == MemorialStatus.error;
-  bool get isSuccess => status == MemorialStatus.success;
+  bool get isLoading =>
+      status == MemorialBlocStatus.loading ||
+      status == MemorialBlocStatus.creating ||
+      status == MemorialBlocStatus.updating ||
+      status == MemorialBlocStatus.deleting ||
+      status == MemorialBlocStatus.publishing;
+
+  bool get hasError => status == MemorialBlocStatus.error;
+  bool get isSuccess => status == MemorialBlocStatus.success;
+  bool get hasMemorials => memorials.isNotEmpty;
+  bool get hasSelectedMemorial => selectedMemorial != null;
+
+  /// Anzahl der Memorials
+  int get memorialCount => memorials.length;
+
+  /// Eigene Memorials (wo User Owner ist)
+  List<MemorialModel> getOwnedMemorials(String userId) {
+    return memorials.where((m) => m.ownerId == userId).toList();
+  }
+
+  /// Shared Memorials (wo User eingeladen wurde)
+  List<MemorialModel> getSharedMemorials(String userId) {
+    return memorials.where((m) => m.ownerId != userId).toList();
+  }
+
+  // ========================================
+  // COPY WITH
+  // ========================================
 
   MemorialState copyWith({
-    MemorialStatus? status,
-    List<MemorialPageModel>? memorials,
-    MemorialPageModel? selectedMemorial,
+    MemorialBlocStatus? status,
+    List<MemorialModel>? memorials,
+    MemorialModel? selectedMemorial,
+    List<MemorialAccessModel>? currentMemorialMembers,
     String? errorMessage,
     String? successMessage,
+    String? lastCreatedInviteUrl,
   }) {
     return MemorialState(
       status: status ?? this.status,
       memorials: memorials ?? this.memorials,
       selectedMemorial: selectedMemorial ?? this.selectedMemorial,
+      currentMemorialMembers:
+          currentMemorialMembers ?? this.currentMemorialMembers,
       errorMessage: errorMessage,
       successMessage: successMessage,
+      lastCreatedInviteUrl: lastCreatedInviteUrl ?? this.lastCreatedInviteUrl,
     );
   }
 
@@ -90,7 +131,14 @@ class MemorialState extends Equatable {
         status,
         memorials,
         selectedMemorial,
+        currentMemorialMembers,
         errorMessage,
         successMessage,
+        lastCreatedInviteUrl,
       ];
+
+  @override
+  String toString() {
+    return 'MemorialState(status: $status, memorials: ${memorials.length}, selected: ${selectedMemorial?.name ?? 'null'})';
+  }
 }

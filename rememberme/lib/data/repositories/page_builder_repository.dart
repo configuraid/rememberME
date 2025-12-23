@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:rememberme/data/models/content_block_model.dart';
-import '../models/memorial_page_model.dart';
+import '../models/memorial_model.dart';
 import 'package:uuid/uuid.dart';
 
 class PageBuilderRepository {
@@ -8,7 +8,7 @@ class PageBuilderRepository {
   final _uuid = const Uuid();
 
   /// Load memorial with its content blocks
-  Future<MemorialPageModel?> getMemorial(String memorialId) async {
+  Future<MemorialModel?> getMemorial(String memorialId) async {
     print('📦 PageBuilderRepository - Lade Memorial: $memorialId');
 
     try {
@@ -20,8 +20,7 @@ class PageBuilderRepository {
         return null;
       }
 
-      final memorial =
-          MemorialPageModel.fromJson({...doc.data()!, 'id': doc.id});
+      final memorial = MemorialModel.fromJson({...doc.data()!, 'id': doc.id});
       print('✅ PageBuilderRepository - Memorial geladen: ${memorial.name}');
       print(
           '📊 PageBuilderRepository - ${memorial.contentBlocks.length} Blocks');

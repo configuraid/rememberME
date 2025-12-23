@@ -1,180 +1,275 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/memorial_page_model.dart';
-import '../models/content_block_model.dart';
 import 'package:uuid/uuid.dart';
+import '../models/memorial_model.dart';
+import '../models/memorial_access_model.dart';
+import '../models/content_block_model.dart';
 
 class MemorialRepository {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
   final _uuid = const Uuid();
 
-  MemorialRepository();
+  MemorialRepository({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  // ========== MEMORIALS NACH ORGANISATION ==========
+  // ========================================
+  // MEMORIAL CRUD
+  // ========================================
 
-  Future<List<MemorialPageModel>> getMemorialsByOrganization(
-      String organizationId) async {
-    print('🔍 Repository - Lade Memorials für Organisation: $organizationId');
-
+  /// Memorial erstellen
+  Future<MemorialModel> createMemorial({
+    required String ownerId,
+    required String name,
+    DateTime? birthDate,
+    DateTime? deathDate,
+    String? biography,
+    bool isPublic = false,
+    String templateId = 'default',
+  }) async {
     try {
-      final querySnapshot = await _firestore
+      print('➕ MemorialRepository - Erstelle Memorial: $name');
+
+      final memorialId = _uuid.v4();
+      final now = DateTime.now();
+
+      final memorial = MemorialModel(
+        id: memorialId,
+        ownerId: ownerId,
+        name: name,
+        birthDate: birthDate,
+        deathDate: deathDate,
+        biography: biography,
+        isPublic: isPublic,
+        templateId: templateId,
+        status: MemorialStatus.draft,
+        contentBlocks: [
+          // Standard Header Block
+          ContentBlock(
+            type: ContentBlockType.header,
+            content: {
+              'text': 'In liebevoller Erinnerung',
+              'level': 1,
+              'align': 'center',
+              'color': '#000000',
+            },
+          ),
+        ],
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      // 1. Memorial speichern
+      await _firestore
           .collection('memorials')
-          .where('organizationId', isEqualTo: organizationId)
-          .orderBy('createdAt', descending: true)
-          .get();
+          .doc(memorialId)
+          .set(memorial.toJson());
 
-      print(
-          '📊 Repository - Query Result: ${querySnapshot.docs.length} Dokumente');
+      // 2. Owner als ersten Member hinzufügen
+      await _addAccess(
+        memorialId: memorialId,
+        userId: ownerId,
+        invitedById: null, // Owner wurde nicht eingeladen
+      );
 
-      final memorials = querySnapshot.docs.map((doc) {
-        final data = {...doc.data(), 'id': doc.id};
-        print('📄 Repository - Doc: ${doc.id}');
-        print('   → Data: $data');
-        return MemorialPageModel.fromJson(data);
-      }).toList();
-
-      print('✅ Repository - ${memorials.length} Memorial(s) gefunden');
-      return memorials;
-    } catch (e, stackTrace) {
-      print('❌ Repository - Fehler beim Laden der Memorials: $e');
-      print('📚 StackTrace: $stackTrace');
-      return [];
+      print('✅ MemorialRepository - Memorial erstellt: $memorialId');
+      return memorial;
+    } catch (e) {
+      print('❌ MemorialRepository - Fehler beim Erstellen: $e');
+      rethrow;
     }
   }
 
-  // ========== EINZELNE GEDENKSEITE ==========
-
-  Future<MemorialPageModel?> getMemorialById(String memorialId) async {
-    print('🔍 Repository - Lade Memorial: $memorialId');
-
+  /// Memorial nach ID laden
+  Future<MemorialModel?> getMemorialById(String memorialId) async {
     try {
+      print('🔍 MemorialRepository - Lade Memorial: $memorialId');
+
       final doc =
           await _firestore.collection('memorials').doc(memorialId).get();
 
       if (!doc.exists) {
-        print('❌ Repository - Memorial nicht gefunden: $memorialId');
+        print('❌ MemorialRepository - Memorial nicht gefunden');
         return null;
       }
 
-      final memorial =
-          MemorialPageModel.fromJson({...doc.data()!, 'id': doc.id});
-      print('✅ Repository - Memorial gefunden: ${memorial.name}');
-      print('   → ContentBlocks: ${memorial.contentBlocks.length}');
-      print('   → isPublic: ${memorial.isPublic}');
+      final memorial = MemorialModel.fromJson({...doc.data()!, 'id': doc.id});
+      print('✅ MemorialRepository - Memorial geladen: ${memorial.name}');
       return memorial;
     } catch (e) {
-      print('❌ Repository - Fehler: $e');
+      print('❌ MemorialRepository - Fehler: $e');
       return null;
     }
   }
 
-  // ========== ERSTELLEN ==========
-
-  Future<MemorialPageModel> createMemorial({
-    required String organizationId,
-    required String ownerId,
-    required String name,
-    required String templateId,
-    DateTime? birthDate,
-    DateTime? deathDate,
-    bool isPublic = false,
-    String? biography, // NEU
-  }) async {
-    print('➕ Repository - Erstelle neue Gedenkseite: $name');
-    print('📍 Organisation: $organizationId');
-    print('👤 Owner: $ownerId');
-    print('🔒 isPublic: $isPublic');
-    print('📝 biography: ${biography ?? "nicht angegeben"}');
-
-    final now = DateTime.now();
-    final newId = _uuid.v4();
-
-    final newMemorial = MemorialPageModel(
-      id: newId,
-      organizationId: organizationId,
-      ownerId: ownerId,
-      name: name,
-      subtitle: 'In liebevoller Erinnerung',
-      biography: biography, // NEU
-      birthDate: birthDate,
-      deathDate: deathDate,
-      templateId: templateId,
-      isPublic: isPublic,
-      createdAt: now,
-      contentBlocks: [
-        ContentBlock(
-          id: _uuid.v4(),
-          type: ContentBlockType.header,
-        ),
-      ],
-    );
-
+  /// Alle Memorials eines Users laden (eigene + eingeladene)
+  Future<List<MemorialModel>> getMemorialsForUser(String userId) async {
     try {
-      final jsonData = newMemorial.toJson();
-      print('🔍 Zu speicherndes JSON:');
-      print('   id: ${jsonData['id']}');
-      print('   name: ${jsonData['name']}');
-      print('   organizationId: ${jsonData['organizationId']}');
-      print('   isPublic: ${jsonData['isPublic']}');
-      print('   biography: ${jsonData['biography']}');
-      print('   contentBlocks: ${jsonData['contentBlocks']}');
+      print('📚 MemorialRepository - Lade Memorials für User: $userId');
 
-      await _firestore.collection('memorials').doc(newId).set(jsonData);
+      // 1. Alle MemorialAccess für diesen User laden
+      final accessQuery = await _firestore
+          .collection('memorialAccess')
+          .where('userId', isEqualTo: userId)
+          .get();
 
-      await _firestore.collection('organizations').doc(organizationId).update({
-        'memorialIds': FieldValue.arrayUnion([newId]),
-      });
+      if (accessQuery.docs.isEmpty) {
+        print('ℹ️ MemorialRepository - Keine Memorials gefunden');
+        return [];
+      }
 
-      print('✅ Repository - Memorial erstellt: ${newMemorial.id}');
-      print('✅ Repository - Memorial zur Organisation hinzugefügt');
+      // 2. Memorial IDs extrahieren
+      final memorialIds = accessQuery.docs
+          .map((doc) => doc.data()['memorialId'] as String)
+          .toList();
 
-      return newMemorial;
-    } catch (e, stackTrace) {
-      print('❌ Repository - Fehler beim Erstellen: $e');
-      print('📚 StackTrace: $stackTrace');
-      rethrow;
+      // 3. Memorials laden (Firestore 'whereIn' max 10 items)
+      final memorials = <MemorialModel>[];
+
+      for (var i = 0; i < memorialIds.length; i += 10) {
+        final batch = memorialIds.skip(i).take(10).toList();
+        final query = await _firestore
+            .collection('memorials')
+            .where(FieldPath.documentId, whereIn: batch)
+            .get();
+
+        memorials.addAll(
+          query.docs.map((doc) => MemorialModel.fromJson({
+                ...doc.data(),
+                'id': doc.id,
+              })),
+        );
+      }
+
+      // 4. Nach Erstellungsdatum sortieren (neueste zuerst)
+      memorials.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+      print('✅ MemorialRepository - ${memorials.length} Memorials geladen');
+      return memorials;
+    } catch (e) {
+      print('❌ MemorialRepository - Fehler: $e');
+      return [];
     }
   }
 
-  // ========== AKTUALISIEREN ==========
-
-  Future<MemorialPageModel> updateMemorial(MemorialPageModel memorial) async {
-    print(
-        '🔄 Repository - Aktualisiere Memorial: ${memorial.name} (${memorial.id})');
-    print('   → ContentBlocks: ${memorial.contentBlocks.length}');
-    print('   → isPublic: ${memorial.isPublic}');
-
+  /// Memorial aktualisieren
+  Future<MemorialModel> updateMemorial(MemorialModel memorial) async {
     try {
-      final jsonData = memorial.toJson();
+      print('🔄 MemorialRepository - Aktualisiere Memorial: ${memorial.id}');
 
-      print('🔍 Update JSON:');
-      print('   isPublic: ${jsonData['isPublic']}');
-      print('   contentBlocks: ${jsonData['contentBlocks']}');
+      final updated = memorial.copyWith(updatedAt: DateTime.now());
 
       await _firestore
           .collection('memorials')
           .doc(memorial.id)
-          .update(jsonData);
+          .update(updated.toJson());
 
-      print('✅ Repository - Memorial aktualisiert');
-      return memorial;
-    } catch (e, stackTrace) {
-      print('❌ Repository - Fehler beim Aktualisieren: $e');
-      print('📚 StackTrace: $stackTrace');
+      print('✅ MemorialRepository - Memorial aktualisiert');
+      return updated;
+    } catch (e) {
+      print('❌ MemorialRepository - Fehler: $e');
       rethrow;
     }
   }
 
-  // ========== SICHTBARKEIT ÄNDERN ==========
-
-  Future<MemorialPageModel> updateMemorialVisibility(
-    String memorialId,
-    bool isPublic,
-  ) async {
-    print('🔒 Repository - Ändere Sichtbarkeit: $memorialId → $isPublic');
-
+  /// Memorial löschen (nur Owner!)
+  Future<void> deleteMemorial({
+    required String memorialId,
+    required String requestingUserId,
+  }) async {
     try {
+      print('🗑️ MemorialRepository - Lösche Memorial: $memorialId');
+
+      // 1. Memorial laden und Owner prüfen
+      final memorial = await getMemorialById(memorialId);
+      if (memorial == null) {
+        throw Exception('Memorial nicht gefunden');
+      }
+
+      if (memorial.ownerId != requestingUserId) {
+        throw Exception('Nur der Ersteller kann das Memorial löschen');
+      }
+
+      // 2. Alle Access-Einträge löschen
+      final accessQuery = await _firestore
+          .collection('memorialAccess')
+          .where('memorialId', isEqualTo: memorialId)
+          .get();
+
+      for (var doc in accessQuery.docs) {
+        await doc.reference.delete();
+      }
+
+      // 3. Alle Invitations löschen
+      final inviteQuery = await _firestore
+          .collection('invitations')
+          .where('memorialId', isEqualTo: memorialId)
+          .get();
+
+      for (var doc in inviteQuery.docs) {
+        await doc.reference.delete();
+      }
+
+      // 4. Memorial löschen
+      await _firestore.collection('memorials').doc(memorialId).delete();
+
+      print('✅ MemorialRepository - Memorial gelöscht');
+    } catch (e) {
+      print('❌ MemorialRepository - Fehler: $e');
+      rethrow;
+    }
+  }
+
+  // ========================================
+  // VISIBILITY & STATUS
+  // ========================================
+
+  /// Sichtbarkeit ändern (nur Owner!)
+  Future<MemorialModel> updateVisibility({
+    required String memorialId,
+    required String requestingUserId,
+    required bool isPublic,
+  }) async {
+    try {
+      print(
+          '🔒 MemorialRepository - Ändere Sichtbarkeit: $memorialId → $isPublic');
+
+      final memorial = await getMemorialById(memorialId);
+      if (memorial == null) {
+        throw Exception('Memorial nicht gefunden');
+      }
+
+      if (memorial.ownerId != requestingUserId) {
+        throw Exception('Nur der Ersteller kann die Sichtbarkeit ändern');
+      }
+
+      final updated = memorial.copyWith(
+        isPublic: isPublic,
+        updatedAt: DateTime.now(),
+      );
+
+      await _firestore
+          .collection('memorials')
+          .doc(memorialId)
+          .update({'isPublic': isPublic, 'updatedAt': Timestamp.now()});
+
+      print('✅ MemorialRepository - Sichtbarkeit geändert');
+      return updated;
+    } catch (e) {
+      print('❌ MemorialRepository - Fehler: $e');
+      rethrow;
+    }
+  }
+
+  /// Status ändern (publish, unpublish, archive)
+  Future<MemorialModel> updateStatus({
+    required String memorialId,
+    required MemorialStatus status,
+  }) async {
+    try {
+      print('📊 MemorialRepository - Ändere Status: $memorialId → $status');
+
       await _firestore.collection('memorials').doc(memorialId).update({
-        'isPublic': isPublic,
+        'status': status.name,
+        'updatedAt': Timestamp.now(),
       });
 
       final memorial = await getMemorialById(memorialId);
@@ -182,230 +277,309 @@ class MemorialRepository {
         throw Exception('Memorial nicht gefunden nach Update');
       }
 
-      print('✅ Repository - Sichtbarkeit geändert: ${memorial.isPublic}');
+      print('✅ MemorialRepository - Status geändert');
       return memorial;
-    } catch (e, stackTrace) {
-      print('❌ Repository - Fehler beim Ändern der Sichtbarkeit: $e');
-      print('📚 StackTrace: $stackTrace');
+    } catch (e) {
+      print('❌ MemorialRepository - Fehler: $e');
       rethrow;
     }
   }
 
-  // ========== LÖSCHEN ==========
+  // ========================================
+  // MEMORIAL ACCESS
+  // ========================================
 
-  Future<void> deleteMemorial(String memorialId) async {
-    print('🗑️ Repository - Lösche Memorial: $memorialId');
-
+  /// Prüfen ob User Zugang hat
+  Future<bool> hasAccess({
+    required String memorialId,
+    required String userId,
+  }) async {
     try {
+      final query = await _firestore
+          .collection('memorialAccess')
+          .where('memorialId', isEqualTo: memorialId)
+          .where('userId', isEqualTo: userId)
+          .limit(1)
+          .get();
+
+      return query.docs.isNotEmpty;
+    } catch (e) {
+      print('❌ MemorialRepository - hasAccess Fehler: $e');
+      return false;
+    }
+  }
+
+  /// Prüfen ob User Owner ist
+  Future<bool> isOwner({
+    required String memorialId,
+    required String userId,
+  }) async {
+    try {
+      final memorial = await getMemorialById(memorialId);
+      return memorial?.ownerId == userId;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Access hinzufügen (intern)
+  Future<MemorialAccessModel> _addAccess({
+    required String memorialId,
+    required String userId,
+    String? invitedById,
+  }) async {
+    final accessId = _uuid.v4();
+
+    final access = invitedById != null
+        ? MemorialAccessModel.createForInvitee(
+            id: accessId,
+            userId: userId,
+            memorialId: memorialId,
+            invitedById: invitedById,
+          )
+        : MemorialAccessModel.createForOwner(
+            id: accessId,
+            userId: userId,
+            memorialId: memorialId,
+          );
+
+    await _firestore
+        .collection('memorialAccess')
+        .doc(accessId)
+        .set(access.toJson());
+
+    return access;
+  }
+
+  /// Access für eingeladenen User hinzufügen
+  Future<MemorialAccessModel> addMemberAccess({
+    required String memorialId,
+    required String userId,
+    required String invitedById,
+  }) async {
+    try {
+      print('➕ MemorialRepository - Füge Member hinzu: $userId');
+
+      // Bereits Member?
+      final alreadyMember = await hasAccess(
+        memorialId: memorialId,
+        userId: userId,
+      );
+
+      if (alreadyMember) {
+        throw Exception('User hat bereits Zugang');
+      }
+
+      final access = await _addAccess(
+        memorialId: memorialId,
+        userId: userId,
+        invitedById: invitedById,
+      );
+
+      print('✅ MemorialRepository - Member hinzugefügt');
+      return access;
+    } catch (e) {
+      print('❌ MemorialRepository - Fehler: $e');
+      rethrow;
+    }
+  }
+
+  /// Alle Members eines Memorials laden
+  Future<List<MemorialAccessModel>> getMembersForMemorial(
+      String memorialId) async {
+    try {
+      print('👥 MemorialRepository - Lade Members für: $memorialId');
+
+      final query = await _firestore
+          .collection('memorialAccess')
+          .where('memorialId', isEqualTo: memorialId)
+          .orderBy('joinedAt')
+          .get();
+
+      final members = query.docs
+          .map((doc) =>
+              MemorialAccessModel.fromJson({...doc.data(), 'id': doc.id}))
+          .toList();
+
+      print('✅ MemorialRepository - ${members.length} Members geladen');
+      return members;
+    } catch (e) {
+      print('❌ MemorialRepository - Fehler: $e');
+      return [];
+    }
+  }
+
+  /// Member entfernen (Owner kann nicht entfernt werden)
+  Future<void> removeMember({
+    required String memorialId,
+    required String userIdToRemove,
+    required String requestingUserId,
+  }) async {
+    try {
+      print('🗑️ MemorialRepository - Entferne Member: $userIdToRemove');
+
+      // Owner darf nicht entfernt werden
+      final memorial = await getMemorialById(memorialId);
+      if (memorial != null && memorial.ownerId == userIdToRemove) {
+        throw Exception('Der Ersteller kann nicht entfernt werden');
+      }
+
+      // Nur Owner oder der User selbst darf entfernen
+      if (requestingUserId != userIdToRemove) {
+        final isRequesterOwner = await isOwner(
+          memorialId: memorialId,
+          userId: requestingUserId,
+        );
+        if (!isRequesterOwner) {
+          throw Exception('Keine Berechtigung');
+        }
+      }
+
+      final query = await _firestore
+          .collection('memorialAccess')
+          .where('memorialId', isEqualTo: memorialId)
+          .where('userId', isEqualTo: userIdToRemove)
+          .limit(1)
+          .get();
+
+      if (query.docs.isNotEmpty) {
+        await query.docs.first.reference.delete();
+        print('✅ MemorialRepository - Member entfernt');
+      }
+    } catch (e) {
+      print('❌ MemorialRepository - Fehler: $e');
+      rethrow;
+    }
+  }
+
+  // ========================================
+  // CONTENT BLOCKS
+  // ========================================
+
+  /// ContentBlock hinzufügen
+  Future<MemorialModel> addContentBlock({
+    required String memorialId,
+    required ContentBlock block,
+  }) async {
+    try {
+      print('➕ MemorialRepository - Füge Block hinzu: ${block.type.name}');
+
       final memorial = await getMemorialById(memorialId);
       if (memorial == null) {
         throw Exception('Memorial nicht gefunden');
       }
 
-      await _firestore.collection('memorials').doc(memorialId).delete();
+      final updatedMemorial = memorial.addContentBlock(block);
+      await updateMemorial(updatedMemorial);
 
-      await _firestore
-          .collection('organizations')
-          .doc(memorial.organizationId)
-          .update({
-        'memorialIds': FieldValue.arrayRemove([memorialId]),
+      print('✅ MemorialRepository - Block hinzugefügt');
+      return updatedMemorial;
+    } catch (e) {
+      print('❌ MemorialRepository - Fehler: $e');
+      rethrow;
+    }
+  }
+
+  /// ContentBlock aktualisieren
+  Future<MemorialModel> updateContentBlock({
+    required String memorialId,
+    required ContentBlock block,
+  }) async {
+    try {
+      print('🔄 MemorialRepository - Aktualisiere Block: ${block.id}');
+
+      final memorial = await getMemorialById(memorialId);
+      if (memorial == null) {
+        throw Exception('Memorial nicht gefunden');
+      }
+
+      final updatedMemorial = memorial.updateContentBlock(block);
+      await updateMemorial(updatedMemorial);
+
+      print('✅ MemorialRepository - Block aktualisiert');
+      return updatedMemorial;
+    } catch (e) {
+      print('❌ MemorialRepository - Fehler: $e');
+      rethrow;
+    }
+  }
+
+  /// ContentBlock löschen
+  Future<MemorialModel> deleteContentBlock({
+    required String memorialId,
+    required String blockId,
+  }) async {
+    try {
+      print('🗑️ MemorialRepository - Lösche Block: $blockId');
+
+      final memorial = await getMemorialById(memorialId);
+      if (memorial == null) {
+        throw Exception('Memorial nicht gefunden');
+      }
+
+      final updatedMemorial = memorial.removeContentBlock(blockId);
+      await updateMemorial(updatedMemorial);
+
+      print('✅ MemorialRepository - Block gelöscht');
+      return updatedMemorial;
+    } catch (e) {
+      print('❌ MemorialRepository - Fehler: $e');
+      rethrow;
+    }
+  }
+
+  /// ContentBlocks neu ordnen
+  Future<MemorialModel> reorderContentBlocks({
+    required String memorialId,
+    required int oldIndex,
+    required int newIndex,
+  }) async {
+    try {
+      print('🔀 MemorialRepository - Sortiere Blocks: $oldIndex → $newIndex');
+
+      final memorial = await getMemorialById(memorialId);
+      if (memorial == null) {
+        throw Exception('Memorial nicht gefunden');
+      }
+
+      final updatedMemorial = memorial.reorderContentBlocks(oldIndex, newIndex);
+      await updateMemorial(updatedMemorial);
+
+      print('✅ MemorialRepository - Blocks sortiert');
+      return updatedMemorial;
+    } catch (e) {
+      print('❌ MemorialRepository - Fehler: $e');
+      rethrow;
+    }
+  }
+
+  /// Alle ContentBlocks speichern (Batch-Update)
+  Future<MemorialModel> saveContentBlocks({
+    required String memorialId,
+    required List<ContentBlock> blocks,
+  }) async {
+    try {
+      print('💾 MemorialRepository - Speichere ${blocks.length} Blocks');
+
+      final memorial = await getMemorialById(memorialId);
+      if (memorial == null) {
+        throw Exception('Memorial nicht gefunden');
+      }
+
+      final updatedMemorial = memorial.copyWith(
+        contentBlocks: blocks,
+        updatedAt: DateTime.now(),
+      );
+
+      await _firestore.collection('memorials').doc(memorialId).update({
+        'contentBlocks': blocks.map((b) => b.toJson()).toList(),
+        'updatedAt': Timestamp.now(),
       });
 
-      print('✅ Repository - Memorial gelöscht');
-      print('✅ Repository - Memorial aus Organisation entfernt');
-    } catch (e, stackTrace) {
-      print('❌ Repository - Fehler beim Löschen: $e');
-      print('📚 StackTrace: $stackTrace');
-      rethrow;
-    }
-  }
-
-  // ========== CONTENT BLOCKS ==========
-
-  Future<MemorialPageModel> addContentBlock(
-    String memorialId,
-    ContentBlock block,
-  ) async {
-    print('➕ Repository - Füge Content-Block hinzu: ${block.type}');
-
-    try {
-      final memorial = await getMemorialById(memorialId);
-      if (memorial == null) {
-        throw Exception('Gedenkseite nicht gefunden');
-      }
-
-      final updatedBlocks = [...memorial.contentBlocks, block];
-      final updatedMemorial = memorial.copyWith(contentBlocks: updatedBlocks);
-
-      await updateMemorial(updatedMemorial);
-
-      print(
-          '✅ Repository - Block hinzugefügt, nun ${updatedBlocks.length} Blocks');
+      print('✅ MemorialRepository - Blocks gespeichert');
       return updatedMemorial;
     } catch (e) {
-      print('❌ Repository - Fehler: $e');
-      rethrow;
-    }
-  }
-
-  Future<MemorialPageModel> updateContentBlock(
-    String memorialId,
-    ContentBlock block,
-  ) async {
-    print('🔄 Repository - Aktualisiere Content-Block: ${block.id}');
-
-    try {
-      final memorial = await getMemorialById(memorialId);
-      if (memorial == null) {
-        throw Exception('Gedenkseite nicht gefunden');
-      }
-
-      final updatedBlocks = memorial.contentBlocks.map((b) {
-        return b.id == block.id ? block : b;
-      }).toList();
-
-      final updatedMemorial = memorial.copyWith(contentBlocks: updatedBlocks);
-      await updateMemorial(updatedMemorial);
-
-      print('✅ Repository - Block aktualisiert');
-      return updatedMemorial;
-    } catch (e) {
-      print('❌ Repository - Fehler: $e');
-      rethrow;
-    }
-  }
-
-  Future<MemorialPageModel> deleteContentBlock(
-    String memorialId,
-    String blockId,
-  ) async {
-    print('🗑️ Repository - Lösche Content-Block: $blockId');
-
-    try {
-      final memorial = await getMemorialById(memorialId);
-      if (memorial == null) {
-        throw Exception('Gedenkseite nicht gefunden');
-      }
-
-      final countBefore = memorial.contentBlocks.length;
-      final updatedBlocks =
-          memorial.contentBlocks.where((b) => b.id != blockId).toList();
-
-      final updatedMemorial = memorial.copyWith(contentBlocks: updatedBlocks);
-      await updateMemorial(updatedMemorial);
-
-      print(
-          '✅ Repository - Block gelöscht, ${countBefore} → ${updatedBlocks.length} Blocks');
-      return updatedMemorial;
-    } catch (e) {
-      print('❌ Repository - Fehler: $e');
-      rethrow;
-    }
-  }
-
-  Future<MemorialPageModel> reorderContentBlocks(
-    String memorialId,
-    List<String> blockIds,
-  ) async {
-    print('🔀 Repository - Sortiere ${blockIds.length} Content-Blocks neu');
-
-    try {
-      final memorial = await getMemorialById(memorialId);
-      if (memorial == null) {
-        throw Exception('Gedenkseite nicht gefunden');
-      }
-
-      final reorderedBlocks = <ContentBlock>[];
-      for (var blockId in blockIds) {
-        final block = memorial.contentBlocks.firstWhere(
-          (b) => b.id == blockId,
-          orElse: () => throw Exception('Block nicht gefunden: $blockId'),
-        );
-        reorderedBlocks.add(block);
-      }
-
-      final updatedMemorial = memorial.copyWith(contentBlocks: reorderedBlocks);
-      await updateMemorial(updatedMemorial);
-
-      print('✅ Repository - Blocks neu sortiert');
-      return updatedMemorial;
-    } catch (e) {
-      print('❌ Repository - Fehler: $e');
-      rethrow;
-    }
-  }
-
-  // ========== VERÖFFENTLICHEN ==========
-
-  Future<MemorialPageModel> publishMemorial(String memorialId) async {
-    print('🌐 Repository - Veröffentliche Memorial: $memorialId');
-
-    try {
-      final memorial = await getMemorialById(memorialId);
-      if (memorial == null) {
-        throw Exception('Gedenkseite nicht gefunden');
-      }
-
-      if (memorial.contentBlocks.isEmpty) {
-        throw Exception('Gedenkseite muss mindestens einen Block enthalten');
-      }
-
-      final updatedMemorial = memorial.copyWith(
-        status: MemorialStatus.published,
-      );
-
-      await updateMemorial(updatedMemorial);
-
-      print('✅ Repository - Memorial veröffentlicht');
-      return updatedMemorial;
-    } catch (e) {
-      print('❌ Repository - Fehler: $e');
-      rethrow;
-    }
-  }
-
-  Future<MemorialPageModel> unpublishMemorial(String memorialId) async {
-    print('📝 Repository - Zurück zu Entwurf: $memorialId');
-
-    try {
-      final memorial = await getMemorialById(memorialId);
-      if (memorial == null) {
-        throw Exception('Gedenkseite nicht gefunden');
-      }
-
-      final updatedMemorial = memorial.copyWith(
-        status: MemorialStatus.draft,
-      );
-
-      await updateMemorial(updatedMemorial);
-
-      print('✅ Repository - Memorial ist nun Entwurf');
-      return updatedMemorial;
-    } catch (e) {
-      print('❌ Repository - Fehler: $e');
-      rethrow;
-    }
-  }
-
-  Future<MemorialPageModel> archiveMemorial(String memorialId) async {
-    print('📦 Repository - Archiviere Memorial: $memorialId');
-
-    try {
-      final memorial = await getMemorialById(memorialId);
-      if (memorial == null) {
-        throw Exception('Gedenkseite nicht gefunden');
-      }
-
-      final updatedMemorial = memorial.copyWith(
-        status: MemorialStatus.archived,
-      );
-
-      await updateMemorial(updatedMemorial);
-
-      print('✅ Repository - Memorial archiviert');
-      return updatedMemorial;
-    } catch (e) {
-      print('❌ Repository - Fehler: $e');
+      print('❌ MemorialRepository - Fehler: $e');
       rethrow;
     }
   }

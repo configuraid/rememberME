@@ -7,7 +7,11 @@ abstract class ProfileEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-// Profil laden
+// ========================================
+// PROFILE LOAD
+// ========================================
+
+/// Profil laden
 class ProfileLoadRequested extends ProfileEvent {
   final String userId;
 
@@ -17,27 +21,31 @@ class ProfileLoadRequested extends ProfileEvent {
   List<Object?> get props => [userId];
 }
 
-// Profil aktualisieren
+// ========================================
+// PROFILE UPDATE
+// ========================================
+
+/// Profil aktualisieren
 class ProfileUpdateRequested extends ProfileEvent {
   final String userId;
-  final String? name;
+  final String? displayName;
   final String? email;
   final String? phone;
   final String? bio;
 
   const ProfileUpdateRequested({
     required this.userId,
-    this.name,
+    this.displayName,
     this.email,
     this.phone,
     this.bio,
   });
 
   @override
-  List<Object?> get props => [userId, name, email, phone, bio];
+  List<Object?> get props => [userId, displayName, email, phone, bio];
 }
 
-// Profilbild aktualisieren
+/// Profilbild aktualisieren
 class ProfileImageUpdateRequested extends ProfileEvent {
   final String userId;
   final String imagePath;
@@ -51,7 +59,21 @@ class ProfileImageUpdateRequested extends ProfileEvent {
   List<Object?> get props => [userId, imagePath];
 }
 
-// Einstellungen laden
+/// Profilbild löschen
+class ProfileImageDeleteRequested extends ProfileEvent {
+  final String userId;
+
+  const ProfileImageDeleteRequested(this.userId);
+
+  @override
+  List<Object?> get props => [userId];
+}
+
+// ========================================
+// SETTINGS
+// ========================================
+
+/// Einstellungen laden
 class ProfileSettingsLoadRequested extends ProfileEvent {
   final String userId;
 
@@ -61,7 +83,7 @@ class ProfileSettingsLoadRequested extends ProfileEvent {
   List<Object?> get props => [userId];
 }
 
-// Theme ändern
+/// Theme ändern
 class ProfileThemeChangeRequested extends ProfileEvent {
   final String userId;
   final String themeMode; // 'light', 'dark', 'system'
@@ -75,7 +97,7 @@ class ProfileThemeChangeRequested extends ProfileEvent {
   List<Object?> get props => [userId, themeMode];
 }
 
-// Sprache ändern
+/// Sprache ändern
 class ProfileLanguageChangeRequested extends ProfileEvent {
   final String userId;
   final String languageCode; // 'de', 'en'
@@ -89,20 +111,20 @@ class ProfileLanguageChangeRequested extends ProfileEvent {
   List<Object?> get props => [userId, languageCode];
 }
 
-// Benachrichtigungen aktualisieren
+/// Benachrichtigungen aktualisieren
 class ProfileNotificationsUpdateRequested extends ProfileEvent {
   final String userId;
-  final bool pushEnabled;
-  final bool emailEnabled;
-  final bool memorialUpdates;
-  final bool groupInvites;
+  final bool? pushEnabled;
+  final bool? emailEnabled;
+  final bool? memorialUpdates;
+  final bool? groupInvites;
 
   const ProfileNotificationsUpdateRequested({
     required this.userId,
-    required this.pushEnabled,
-    required this.emailEnabled,
-    required this.memorialUpdates,
-    required this.groupInvites,
+    this.pushEnabled,
+    this.emailEnabled,
+    this.memorialUpdates,
+    this.groupInvites,
   });
 
   @override
@@ -110,18 +132,18 @@ class ProfileNotificationsUpdateRequested extends ProfileEvent {
       [userId, pushEnabled, emailEnabled, memorialUpdates, groupInvites];
 }
 
-// Datenschutzeinstellungen aktualisieren
+/// Datenschutzeinstellungen aktualisieren
 class ProfilePrivacyUpdateRequested extends ProfileEvent {
   final String userId;
-  final bool profilePublic;
-  final bool showEmail;
-  final bool allowSearchEngines;
+  final bool? profilePublic;
+  final bool? showEmail;
+  final bool? allowSearchEngines;
 
   const ProfilePrivacyUpdateRequested({
     required this.userId,
-    required this.profilePublic,
-    required this.showEmail,
-    required this.allowSearchEngines,
+    this.profilePublic,
+    this.showEmail,
+    this.allowSearchEngines,
   });
 
   @override
@@ -129,23 +151,25 @@ class ProfilePrivacyUpdateRequested extends ProfileEvent {
       [userId, profilePublic, showEmail, allowSearchEngines];
 }
 
-// Passwort ändern
+// ========================================
+// PASSWORD & ACCOUNT
+// ========================================
+
+/// Passwort ändern
 class ProfilePasswordChangeRequested extends ProfileEvent {
-  final String userId;
   final String currentPassword;
   final String newPassword;
 
   const ProfilePasswordChangeRequested({
-    required this.userId,
     required this.currentPassword,
     required this.newPassword,
   });
 
   @override
-  List<Object?> get props => [userId, currentPassword, newPassword];
+  List<Object?> get props => [currentPassword, newPassword];
 }
 
-// Account löschen
+/// Account löschen
 class ProfileDeleteAccountRequested extends ProfileEvent {
   final String userId;
   final String password;
@@ -159,7 +183,11 @@ class ProfileDeleteAccountRequested extends ProfileEvent {
   List<Object?> get props => [userId, password];
 }
 
-// Statistiken laden
+// ========================================
+// STATISTICS
+// ========================================
+
+/// Statistiken laden
 class ProfileStatisticsLoadRequested extends ProfileEvent {
   final String userId;
 

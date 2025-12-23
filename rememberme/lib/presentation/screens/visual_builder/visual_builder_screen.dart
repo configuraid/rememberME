@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:io';
 import 'package:rememberme/data/models/content_block_model.dart';
-import 'package:rememberme/data/models/memorial_page_model.dart';
+import 'package:rememberme/data/models/memorial_model.dart';
 import 'package:rememberme/business_logic/memorial/memorial_bloc.dart';
 import 'package:rememberme/business_logic/memorial/memorial_event.dart';
 import 'package:rememberme/core/constants/app_colors.dart';
@@ -16,7 +16,7 @@ import '../../widgets/preview/web_preview_mixin.dart';
 import 'block_configuration_screen.dart';
 
 class IntuitivePageBuilderScreen extends StatefulWidget {
-  final MemorialPageModel memorial;
+  final MemorialModel memorial;
 
   const IntuitivePageBuilderScreen({
     super.key,
@@ -121,14 +121,6 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
       _showIOSToast(message, isError: false);
     } else {
       _showAndroidSnackBar(message, isError: false);
-    }
-  }
-
-  void _showErrorToast(String message) {
-    if (Platform.isIOS) {
-      _showIOSToast(message, isError: true);
-    } else {
-      _showAndroidSnackBar(message, isError: true);
     }
   }
 

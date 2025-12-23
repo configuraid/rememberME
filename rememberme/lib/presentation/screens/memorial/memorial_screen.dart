@@ -2,29 +2,54 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rememberme/business_logic/auth/auth_bloc.dart';
-import 'package:rememberme/business_logic/memorial/memorial_bloc.dart';
-import 'package:rememberme/business_logic/memorial/memorial_event.dart';
-import 'package:rememberme/business_logic/memorial/memorial_state.dart';
-import 'package:rememberme/presentation/widgets/preview/web_preview_mixin.dart';
-import '../../../data/models/memorial_page_model.dart' hide MemorialStatus;
-import '../../../data/models/content_block_model.dart';
+import 'package:rememberme/presentation/widgets/show_memorial_share_sheet.dart';
+
+import '../../../business_logic/auth/auth_bloc.dart';
+import '../../../business_logic/memorial/memorial_bloc.dart';
+import '../../../business_logic/memorial/memorial_event.dart';
+import '../../../business_logic/memorial/memorial_state.dart';
+import '../../../data/models/memorial_model.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_routes.dart';
 import 'memorial_create_screen.dart';
 import 'memorial_edit_screen.dart';
+import '../../widgets/preview/web_preview_mixin.dart';
 
-class MemorialDetailScreen extends StatelessWidget {
-  final MemorialPageModel? memorial;
+class MemorialDetailScreen extends StatefulWidget {
+  final MemorialModel? memorial;
 
   const MemorialDetailScreen({super.key, this.memorial});
 
   @override
+  State<MemorialDetailScreen> createState() => _MemorialDetailScreenState();
+}
+
+class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _loadMemorialsIfNeeded();
+  }
+
+  void _loadMemorialsIfNeeded() {
+    final state = context.read<MemorialBloc>().state;
+    final authState = context.read<AuthBloc>().state;
+    final user = authState.user;
+
+    // Lade Memorials wenn noch nicht geladen
+    if (user != null && state.status == MemorialBlocStatus.initial) {
+      context.read<MemorialBloc>().add(
+            MemorialLoadRequested(userId: user.id),
+          );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocListener<MemorialBloc, MemorialState>(
+    return BlocConsumer<MemorialBloc, MemorialState>(
       listener: (context, state) {
-        if (state.status == MemorialStatus.success) {
+        if (state.status == MemorialBlocStatus.success) {
           if (state.memorials.isEmpty) {
             Navigator.of(context).popUntil((route) => route.isFirst);
           }
@@ -34,54 +59,44 @@ class MemorialDetailScreen extends StatelessWidget {
           _showErrorSnackBar(context, state.errorMessage!);
         }
 
-        if (state.status == MemorialStatus.success &&
+        if (state.status == MemorialBlocStatus.success &&
             state.successMessage != null) {
           _showSuccessSnackBar(context, state.successMessage!);
         }
       },
-      child: BlocBuilder<MemorialBloc, MemorialState>(
-        builder: (context, state) {
-          if (memorial == null && state.memorials.isEmpty) {
-            if (state.status == MemorialStatus.initial) {
-              final authState = context.read<AuthBloc>().state;
-              final user = authState.user;
+      builder: (context, state) {
+        // 1. Noch am Laden?
+        if (state.isLoading && state.status == MemorialBlocStatus.loading) {
+          return _buildLoadingScreen(context);
+        }
 
-              if (user != null && user.primaryOrganizationId != null) {
-                context.read<MemorialBloc>().add(
-                      MemorialLoadRequested(
-                        organizationId: user.primaryOrganizationId!,
-                      ),
-                    );
-              }
-            }
+        // 2. Keine Memorials vorhanden? → Create Screen zeigen
+        if (state.memorials.isEmpty) {
+          return const MemorialCreateScreen();
+        }
 
-            if (state.isLoading && state.status == MemorialStatus.loading) {
-              return _buildLoadingScreen(context);
-            }
+        // 3. Memorial bestimmen (Priorität):
+        //    a) Übergebenes Memorial
+        //    b) Selected Memorial aus State
+        //    c) Route Arguments
+        //    d) ERSTES Memorial aus der Liste (NEU!)
+        final MemorialModel memorialToShow = widget.memorial ??
+            state.selectedMemorial ??
+            (ModalRoute.of(context)?.settings.arguments as MemorialModel?) ??
+            state.memorials.first; // ← FIX: Nimm erstes Memorial!
 
-            return const MemorialCreateScreen();
-          }
+        // 4. Aktualisiertes Memorial aus State holen (falls es Änderungen gab)
+        final updatedMemorial = state.memorials.firstWhere(
+          (m) => m.id == memorialToShow.id,
+          orElse: () => memorialToShow,
+        );
 
-          final memorialData = memorial ??
-              state.selectedMemorial ??
-              (ModalRoute.of(context)?.settings.arguments
-                  as MemorialPageModel?);
-
-          if (memorialData == null) {
-            return const MemorialCreateScreen();
-          }
-
-          final updatedMemorial = state.memorials.firstWhere(
-            (m) => m.id == memorialData.id,
-            orElse: () => memorialData,
-          );
-
-          if (Platform.isIOS) {
-            return _buildIOSView(context, updatedMemorial);
-          }
-          return _buildAndroidView(context, updatedMemorial);
-        },
-      ),
+        // 5. Platform-spezifische View
+        if (Platform.isIOS) {
+          return _buildIOSView(context, updatedMemorial);
+        }
+        return _buildAndroidView(context, updatedMemorial);
+      },
     );
   }
 
@@ -222,7 +237,7 @@ class MemorialDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAndroidView(BuildContext context, MemorialPageModel memorial) {
+  Widget _buildAndroidView(BuildContext context, MemorialModel memorial) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -243,8 +258,16 @@ class MemorialDetailScreen extends StatelessWidget {
             : AppColors.surface.withOpacity(0.94),
         foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
         surfaceTintColor: Colors.transparent,
-        // NEU: Bearbeiten-Button wie bei ProfileScreen
         actions: [
+          // Share Button
+          IconButton(
+            onPressed: () => _showShareSheet(context, memorial),
+            icon: Icon(
+              Icons.share_rounded,
+              color: isDark ? AppColors.accent : AppColors.primary,
+            ),
+          ),
+          // Edit Button
           IconButton(
             onPressed: () => _navigateToEditScreen(context, memorial),
             icon: Icon(
@@ -288,6 +311,15 @@ class MemorialDetailScreen extends StatelessWidget {
                         isDark: isDark,
                         onPressed: () => _showPreview(context, memorial),
                       ),
+                      const SizedBox(height: 12),
+                      // Share Button
+                      _buildSecondaryButton(
+                        context: context,
+                        icon: Icons.share_rounded,
+                        label: 'Gedenkseite teilen',
+                        isDark: isDark,
+                        onPressed: () => _showShareSheet(context, memorial),
+                      ),
                       const SizedBox(height: 24),
                       _buildActionsSection(context, memorial, isDark),
                       const SizedBox(height: 32),
@@ -302,7 +334,7 @@ class MemorialDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildIOSView(BuildContext context, MemorialPageModel memorial) {
+  Widget _buildIOSView(BuildContext context, MemorialModel memorial) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return CupertinoPageScaffold(
@@ -317,15 +349,31 @@ class MemorialDetailScreen extends StatelessWidget {
             fontFamily: '.SF Pro Text',
           ),
         ),
-        // NEU: Bearbeiten-Button wie bei ProfileScreen
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () => _navigateToEditScreen(context, memorial),
-          child: Icon(
-            CupertinoIcons.pencil,
-            color: isDark ? AppColors.accent : AppColors.primary,
-            size: 24,
-          ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Share Button
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => _showShareSheet(context, memorial),
+              child: Icon(
+                CupertinoIcons.share,
+                color: isDark ? AppColors.accent : AppColors.primary,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Edit Button
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => _navigateToEditScreen(context, memorial),
+              child: Icon(
+                CupertinoIcons.pencil,
+                color: isDark ? AppColors.accent : AppColors.primary,
+                size: 24,
+              ),
+            ),
+          ],
         ),
         backgroundColor: isDark
             ? AppColors.backgroundDarkElevated.withOpacity(0.8)
@@ -356,7 +404,6 @@ class MemorialDetailScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Edit Button - filled style
                           CupertinoButton.filled(
                             onPressed: () =>
                                 _navigateToPageBuilder(context, memorial),
@@ -376,7 +423,6 @@ class MemorialDetailScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          // Preview Button - NOW ALSO filled style (same as edit button)
                           CupertinoButton.filled(
                             onPressed: () => _showPreview(context, memorial),
                             child: Row(
@@ -389,6 +435,38 @@ class MemorialDetailScreen extends StatelessWidget {
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontFamily: '.SF Pro Text',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // Share Button
+                          CupertinoButton(
+                            onPressed: () => _showShareSheet(context, memorial),
+                            color: isDark
+                                ? AppColors.backgroundDarkElevated
+                                : AppColors.surface,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  CupertinoIcons.share,
+                                  size: 20,
+                                  color: isDark
+                                      ? AppColors.accent
+                                      : AppColors.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Gedenkseite teilen',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontFamily: '.SF Pro Text',
+                                    color: isDark
+                                        ? AppColors.accent
+                                        : AppColors.primary,
                                   ),
                                 ),
                               ],
@@ -453,8 +531,53 @@ class MemorialDetailScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildSecondaryButton({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required bool isDark,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: isDark ? AppColors.accent : AppColors.primary,
+          side: BorderSide(
+            color: isDark ? AppColors.accent : AppColors.primary,
+            width: 1.5,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isDark ? AppColors.accent : AppColors.primary,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.accent : AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildHeader(
-      BuildContext context, MemorialPageModel memorial, bool isDark) {
+      BuildContext context, MemorialModel memorial, bool isDark) {
     final isIOS = Platform.isIOS;
 
     return Container(
@@ -477,7 +600,7 @@ class MemorialDetailScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Profilbild mit Visibility-Badge
+          // Profilbild
           Stack(
             children: [
               Container(
@@ -647,7 +770,7 @@ class MemorialDetailScreen extends StatelessWidget {
   }
 
   Widget _buildActionsSection(
-      BuildContext context, MemorialPageModel memorial, bool isDark) {
+      BuildContext context, MemorialModel memorial, bool isDark) {
     final isIOS = Platform.isIOS;
 
     return Column(
@@ -697,7 +820,7 @@ class MemorialDetailScreen extends StatelessWidget {
           isIOS ? CupertinoIcons.trash : Icons.delete_outline_rounded,
           AppStrings.deleteMemorial,
           AppStrings.deleteMemorialPage,
-          () => _showDeleteDialog(context, memorial.id),
+          () => _showDeleteDialog(context, memorial),
           isDark: isDark,
           isDestructive: true,
         ),
@@ -835,67 +958,14 @@ class MemorialDetailScreen extends StatelessWidget {
     );
   }
 
-  IconData _getBlockIcon(ContentBlockType type, bool isIOS) {
-    if (isIOS) {
-      switch (type) {
-        case ContentBlockType.text:
-          return CupertinoIcons.textformat;
-        case ContentBlockType.video:
-          return CupertinoIcons.videocam;
-        case ContentBlockType.gallery:
-          return CupertinoIcons.photo_on_rectangle;
-        case ContentBlockType.image:
-          return CupertinoIcons.photo;
-        case ContentBlockType.quote:
-          return CupertinoIcons.quote_bubble;
-        default:
-          return CupertinoIcons.doc;
-      }
-    } else {
-      switch (type) {
-        case ContentBlockType.text:
-          return Icons.text_fields_rounded;
-        case ContentBlockType.video:
-          return Icons.videocam_outlined;
-        case ContentBlockType.gallery:
-          return Icons.photo_library_outlined;
-        case ContentBlockType.image:
-          return Icons.image_outlined;
-        case ContentBlockType.quote:
-          return Icons.format_quote_rounded;
-        default:
-          return Icons.article_outlined;
-      }
-    }
-  }
-
-  String _getBlockTypeName(ContentBlockType type) {
-    switch (type) {
-      case ContentBlockType.text:
-        return AppStrings.blockTypeText;
-      case ContentBlockType.video:
-        return AppStrings.blockTypeVideo;
-      case ContentBlockType.gallery:
-        return AppStrings.blockTypeGallery;
-      case ContentBlockType.image:
-        return AppStrings.blockTypeImage;
-      case ContentBlockType.quote:
-        return AppStrings.blockTypeQuote;
-      default:
-        return type.toString().split('.').last;
-    }
-  }
-
-  void _navigateToPageBuilder(
-      BuildContext context, MemorialPageModel memorial) {
+  void _navigateToPageBuilder(BuildContext context, MemorialModel memorial) {
     Navigator.of(context, rootNavigator: true).pushNamed(
       AppRoutes.pageBuilder,
       arguments: memorial,
     );
   }
 
-  // NEU: Navigation zum Edit Screen
-  void _navigateToEditScreen(BuildContext context, MemorialPageModel memorial) {
+  void _navigateToEditScreen(BuildContext context, MemorialModel memorial) {
     if (Platform.isIOS) {
       Navigator.push(
         context,
@@ -913,15 +983,34 @@ class MemorialDetailScreen extends StatelessWidget {
     }
   }
 
-  void _showPreview(BuildContext context, MemorialPageModel memorial) {
+  void _showPreview(BuildContext context, MemorialModel memorial) {
     showWebPreviewStandalone(
       context: context,
       memorial: memorial,
     );
   }
 
-  void _showDeleteDialog(BuildContext context, String memorialId) {
+  // ✅ NEU: Share Sheet anzeigen
+  void _showShareSheet(BuildContext context, MemorialModel memorial) {
+    final authState = context.read<AuthBloc>().state;
+    final currentUserId = authState.user?.id;
+
+    if (currentUserId == null) {
+      _showErrorSnackBar(context, 'Bitte melde dich an, um zu teilen.');
+      return;
+    }
+
+    showMemorialShareSheet(
+      context: context,
+      memorial: memorial,
+      currentUserId: currentUserId,
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, MemorialModel memorial) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final authState = context.read<AuthBloc>().state;
+    final currentUserId = authState.user?.id;
 
     if (Platform.isIOS) {
       showCupertinoDialog(
@@ -958,9 +1047,14 @@ class MemorialDetailScreen extends StatelessWidget {
             ),
             CupertinoDialogAction(
               onPressed: () {
-                context
-                    .read<MemorialBloc>()
-                    .add(MemorialDeleteRequested(memorialId: memorialId));
+                if (currentUserId != null) {
+                  context.read<MemorialBloc>().add(
+                        MemorialDeleteRequested(
+                          memorialId: memorial.id,
+                          requestingUserId: currentUserId,
+                        ),
+                      );
+                }
                 Navigator.of(ctx).pop();
               },
               isDestructiveAction: true,
@@ -1102,9 +1196,14 @@ class MemorialDetailScreen extends StatelessWidget {
                       Expanded(
                         child: FilledButton(
                           onPressed: () {
-                            context.read<MemorialBloc>().add(
-                                MemorialDeleteRequested(
-                                    memorialId: memorialId));
+                            if (currentUserId != null) {
+                              context.read<MemorialBloc>().add(
+                                    MemorialDeleteRequested(
+                                      memorialId: memorial.id,
+                                      requestingUserId: currentUserId,
+                                    ),
+                                  );
+                            }
                             Navigator.of(ctx).pop();
                           },
                           style: FilledButton.styleFrom(

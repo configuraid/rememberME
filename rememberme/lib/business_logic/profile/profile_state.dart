@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../data/repositories/profile_repository.dart';
 
 enum ProfileStatus {
   initial,
@@ -10,72 +11,6 @@ enum ProfileStatus {
   deleted,
 }
 
-class ProfileSettings {
-  final String themeMode;
-  final String languageCode;
-  final bool pushNotifications;
-  final bool emailNotifications;
-  final bool memorialUpdates;
-  final bool groupInvites;
-  final bool profilePublic;
-  final bool showEmail;
-  final bool allowSearchEngines;
-
-  const ProfileSettings({
-    this.themeMode = 'system',
-    this.languageCode = 'de',
-    this.pushNotifications = true,
-    this.emailNotifications = true,
-    this.memorialUpdates = true,
-    this.groupInvites = true,
-    this.profilePublic = false,
-    this.showEmail = false,
-    this.allowSearchEngines = false,
-  });
-
-  ProfileSettings copyWith({
-    String? themeMode,
-    String? languageCode,
-    bool? pushNotifications,
-    bool? emailNotifications,
-    bool? memorialUpdates,
-    bool? groupInvites,
-    bool? profilePublic,
-    bool? showEmail,
-    bool? allowSearchEngines,
-  }) {
-    return ProfileSettings(
-      themeMode: themeMode ?? this.themeMode,
-      languageCode: languageCode ?? this.languageCode,
-      pushNotifications: pushNotifications ?? this.pushNotifications,
-      emailNotifications: emailNotifications ?? this.emailNotifications,
-      memorialUpdates: memorialUpdates ?? this.memorialUpdates,
-      groupInvites: groupInvites ?? this.groupInvites,
-      profilePublic: profilePublic ?? this.profilePublic,
-      showEmail: showEmail ?? this.showEmail,
-      allowSearchEngines: allowSearchEngines ?? this.allowSearchEngines,
-    );
-  }
-}
-
-class ProfileStatistics {
-  final int totalMemorials;
-  final int publishedMemorials;
-  final int totalViews;
-  final int totalCondolences;
-  final int groupMemberships;
-  final DateTime memberSince;
-
-  const ProfileStatistics({
-    this.totalMemorials = 0,
-    this.publishedMemorials = 0,
-    this.totalViews = 0,
-    this.totalCondolences = 0,
-    this.groupMemberships = 0,
-    required this.memberSince,
-  });
-}
-
 class ProfileState extends Equatable {
   final ProfileStatus status;
   final ProfileSettings settings;
@@ -83,21 +18,37 @@ class ProfileState extends Equatable {
   final String? errorMessage;
   final String? successMessage;
   final String? profileImageUrl;
-  final String? name;
+  final String? displayName;
   final String? email;
   final String? phone;
+  final String? bio;
 
   const ProfileState({
     this.status = ProfileStatus.initial,
-    this.settings = const ProfileSettings(),
+    this.settings = const ProfileSettings(
+      themeMode: 'system',
+      languageCode: 'de',
+      pushNotifications: true,
+      emailNotifications: true,
+      memorialUpdates: true,
+      groupInvites: true,
+      profilePublic: false,
+      showEmail: false,
+      allowSearchEngines: false,
+    ),
     this.statistics,
     this.errorMessage,
     this.successMessage,
     this.profileImageUrl,
-    this.name,
+    this.displayName,
     this.email,
     this.phone,
+    this.bio,
   });
+
+  // ========================================
+  // FACTORY CONSTRUCTORS
+  // ========================================
 
   factory ProfileState.initial() {
     return const ProfileState(status: ProfileStatus.initial);
@@ -111,7 +62,7 @@ class ProfileState extends Equatable {
     required ProfileSettings settings,
     ProfileStatistics? statistics,
     String? profileImageUrl,
-    String? name,
+    String? displayName,
     String? email,
     String? phone,
     String? bio,
@@ -121,9 +72,10 @@ class ProfileState extends Equatable {
       settings: settings,
       statistics: statistics,
       profileImageUrl: profileImageUrl,
-      name: name,
+      displayName: displayName,
       email: email,
       phone: phone,
+      bio: bio,
     );
   }
 
@@ -140,6 +92,7 @@ class ProfileState extends Equatable {
       errorMessage: message,
     );
   }
+
   factory ProfileState.deleted() {
     return const ProfileState(
       status: ProfileStatus.deleted,
@@ -147,11 +100,31 @@ class ProfileState extends Equatable {
     );
   }
 
+  // ========================================
+  // GETTERS
+  // ========================================
+
   bool get isLoading =>
       status == ProfileStatus.loading || status == ProfileStatus.updating;
   bool get hasError => status == ProfileStatus.error;
   bool get isSuccess => status == ProfileStatus.success;
   bool get isDeleted => status == ProfileStatus.deleted;
+  bool get hasProfileImage =>
+      profileImageUrl != null && profileImageUrl!.isNotEmpty;
+
+  /// Initialen für Avatar-Fallback
+  String get initials {
+    if (displayName == null || displayName!.isEmpty) return '?';
+    final parts = displayName!.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+    }
+    return displayName![0].toUpperCase();
+  }
+
+  // ========================================
+  // COPY WITH
+  // ========================================
 
   ProfileState copyWith({
     ProfileStatus? status,
@@ -160,7 +133,8 @@ class ProfileState extends Equatable {
     String? errorMessage,
     String? successMessage,
     String? profileImageUrl,
-    String? name,
+    bool clearProfileImage = false,
+    String? displayName,
     String? email,
     String? phone,
     String? bio,
@@ -171,10 +145,12 @@ class ProfileState extends Equatable {
       statistics: statistics ?? this.statistics,
       errorMessage: errorMessage,
       successMessage: successMessage,
-      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
-      name: name ?? this.name,
+      profileImageUrl:
+          clearProfileImage ? null : (profileImageUrl ?? this.profileImageUrl),
+      displayName: displayName ?? this.displayName,
       email: email ?? this.email,
       phone: phone ?? this.phone,
+      bio: bio ?? this.bio,
     );
   }
 
@@ -186,8 +162,14 @@ class ProfileState extends Equatable {
         errorMessage,
         successMessage,
         profileImageUrl,
-        name,
+        displayName,
         email,
         phone,
+        bio,
       ];
+
+  @override
+  String toString() {
+    return 'ProfileState(status: $status, displayName: $displayName)';
+  }
 }

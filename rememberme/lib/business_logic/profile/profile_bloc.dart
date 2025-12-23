@@ -3,6 +3,9 @@ import '../../data/repositories/profile_repository.dart';
 import 'profile_event.dart';
 import 'profile_state.dart';
 
+/// Profile Bloc
+///
+/// Verwaltet User-Profil, Settings und Statistiken.
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   final ProfileRepository profileRepository;
 
@@ -11,6 +14,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<ProfileLoadRequested>(_onLoadProfile);
     on<ProfileUpdateRequested>(_onUpdateProfile);
     on<ProfileImageUpdateRequested>(_onUpdateProfileImage);
+    on<ProfileImageDeleteRequested>(_onDeleteProfileImage);
     on<ProfileSettingsLoadRequested>(_onLoadSettings);
     on<ProfileThemeChangeRequested>(_onChangeTheme);
     on<ProfileLanguageChangeRequested>(_onChangeLanguage);
@@ -21,6 +25,10 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<ProfileStatisticsLoadRequested>(_onLoadStatistics);
   }
 
+  // ========================================
+  // LOAD PROFILE
+  // ========================================
+
   Future<void> _onLoadProfile(
     ProfileLoadRequested event,
     Emitter<ProfileState> emit,
@@ -28,24 +36,32 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     emit(ProfileState.loading());
 
     try {
+      print('👤 ProfileBloc - Lade Profil: ${event.userId}');
+
       final settings = await profileRepository.getSettings(event.userId);
       final statistics = await profileRepository.getStatistics(event.userId);
       final profile = await profileRepository.getProfile(event.userId);
 
+      print('✅ ProfileBloc - Profil geladen');
       emit(ProfileState.loaded(
         settings: settings,
         statistics: statistics,
-        profileImageUrl: profile['imageUrl'],
-        name: profile['name'],
-        email: profile['email'],
-        phone: profile['phone'],
-        bio: profile['bio'],
+        profileImageUrl: profile['avatarUrl'] as String?,
+        displayName: profile['displayName'] as String?,
+        email: profile['email'] as String?,
+        phone: profile['phone'] as String?,
+        bio: profile['bio'] as String?,
       ));
     } catch (e) {
+      print('❌ ProfileBloc - Fehler: $e');
       emit(
           ProfileState.error('Fehler beim Laden des Profils: ${e.toString()}'));
     }
   }
+
+  // ========================================
+  // UPDATE PROFILE
+  // ========================================
 
   Future<void> _onUpdateProfile(
     ProfileUpdateRequested event,
@@ -54,27 +70,34 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     emit(state.copyWith(status: ProfileStatus.updating));
 
     try {
+      print('📝 ProfileBloc - Aktualisiere Profil');
+
       await profileRepository.updateProfile(
         userId: event.userId,
-        name: event.name,
+        displayName: event.displayName,
         email: event.email,
         phone: event.phone,
         bio: event.bio,
       );
 
+      print('✅ ProfileBloc - Profil aktualisiert');
       emit(state.copyWith(
         status: ProfileStatus.success,
         successMessage: 'Profil erfolgreich aktualisiert',
-        name: event.name,
+        displayName: event.displayName,
         email: event.email,
         phone: event.phone,
         bio: event.bio,
       ));
     } catch (e) {
-      emit(ProfileState.error(
-          'Fehler beim Aktualisieren des Profils: ${e.toString()}'));
+      print('❌ ProfileBloc - Fehler: $e');
+      emit(ProfileState.error('Fehler beim Aktualisieren: ${e.toString()}'));
     }
   }
+
+  // ========================================
+  // PROFILE IMAGE
+  // ========================================
 
   Future<void> _onUpdateProfileImage(
     ProfileImageUpdateRequested event,
@@ -83,21 +106,48 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     emit(state.copyWith(status: ProfileStatus.updating));
 
     try {
+      print('📷 ProfileBloc - Aktualisiere Profilbild');
+
       final imageUrl = await profileRepository.updateProfileImage(
         userId: event.userId,
         imagePath: event.imagePath,
       );
 
+      print('✅ ProfileBloc - Profilbild aktualisiert');
       emit(state.copyWith(
         status: ProfileStatus.success,
         successMessage: 'Profilbild erfolgreich aktualisiert',
         profileImageUrl: imageUrl,
       ));
     } catch (e) {
+      print('❌ ProfileBloc - Fehler: $e');
       emit(ProfileState.error(
           'Fehler beim Aktualisieren des Profilbilds: ${e.toString()}'));
     }
   }
+
+  Future<void> _onDeleteProfileImage(
+    ProfileImageDeleteRequested event,
+    Emitter<ProfileState> emit,
+  ) async {
+    emit(state.copyWith(status: ProfileStatus.updating));
+
+    try {
+      await profileRepository.deleteProfileImage(event.userId);
+
+      emit(state.copyWith(
+        status: ProfileStatus.success,
+        successMessage: 'Profilbild gelöscht',
+        clearProfileImage: true,
+      ));
+    } catch (e) {
+      emit(ProfileState.error('Fehler: ${e.toString()}'));
+    }
+  }
+
+  // ========================================
+  // SETTINGS
+  // ========================================
 
   Future<void> _onLoadSettings(
     ProfileSettingsLoadRequested event,
@@ -180,8 +230,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         successMessage: 'Benachrichtigungseinstellungen aktualisiert',
       ));
     } catch (e) {
-      emit(ProfileState.error(
-          'Fehler beim Aktualisieren der Benachrichtigungen: ${e.toString()}'));
+      emit(ProfileState.error('Fehler: ${e.toString()}'));
     }
   }
 
@@ -209,10 +258,13 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         successMessage: 'Datenschutzeinstellungen aktualisiert',
       ));
     } catch (e) {
-      emit(ProfileState.error(
-          'Fehler beim Aktualisieren der Datenschutzeinstellungen: ${e.toString()}'));
+      emit(ProfileState.error('Fehler: ${e.toString()}'));
     }
   }
+
+  // ========================================
+  // PASSWORD
+  // ========================================
 
   Future<void> _onChangePassword(
     ProfilePasswordChangeRequested event,
@@ -222,7 +274,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
     try {
       await profileRepository.changePassword(
-        userId: event.userId,
         currentPassword: event.currentPassword,
         newPassword: event.newPassword,
       );
@@ -236,6 +287,10 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           'Fehler beim Ändern des Passworts: ${e.toString()}'));
     }
   }
+
+  // ========================================
+  // DELETE ACCOUNT
+  // ========================================
 
   Future<void> _onDeleteAccount(
     ProfileDeleteAccountRequested event,
@@ -255,6 +310,10 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           'Fehler beim Löschen des Accounts: ${e.toString()}'));
     }
   }
+
+  // ========================================
+  // STATISTICS
+  // ========================================
 
   Future<void> _onLoadStatistics(
     ProfileStatisticsLoadRequested event,

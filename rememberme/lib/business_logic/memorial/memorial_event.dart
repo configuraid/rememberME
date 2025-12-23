@@ -1,8 +1,7 @@
 import 'dart:io';
 import 'package:equatable/equatable.dart';
-import '../../data/models/auth/user_model.dart';
 import '../../data/models/content_block_model.dart';
-import '../../data/models/memorial_page_model.dart';
+import '../../data/models/memorial_model.dart';
 
 abstract class MemorialEvent extends Equatable {
   const MemorialEvent();
@@ -11,15 +10,21 @@ abstract class MemorialEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class MemorialLoadRequested extends MemorialEvent {
-  final String organizationId;
+// ========================================
+// LOAD MEMORIALS
+// ========================================
 
-  const MemorialLoadRequested({required this.organizationId});
+/// Lade alle Memorials für einen User
+class MemorialLoadRequested extends MemorialEvent {
+  final String userId;
+
+  const MemorialLoadRequested({required this.userId});
 
   @override
-  List<Object?> get props => [organizationId];
+  List<Object?> get props => [userId];
 }
 
+/// Lade ein einzelnes Memorial
 class MemorialDetailLoadRequested extends MemorialEvent {
   final String memorialId;
 
@@ -29,45 +34,52 @@ class MemorialDetailLoadRequested extends MemorialEvent {
   List<Object?> get props => [memorialId];
 }
 
+// ========================================
+// CREATE MEMORIAL
+// ========================================
+
+/// Neues Memorial erstellen
 class MemorialCreateRequested extends MemorialEvent {
-  final String organizationId;
   final String ownerId;
   final String name;
-  final String templateId;
-  final File profileImage;
-  final String biography;
   final DateTime? birthDate;
   final DateTime? deathDate;
+  final String? biography;
+  final File? profileImage;
   final bool isPublic;
+  final String templateId;
 
   const MemorialCreateRequested({
-    required this.organizationId,
     required this.ownerId,
     required this.name,
-    required this.templateId,
-    required this.profileImage,
-    required this.biography,
     this.birthDate,
     this.deathDate,
+    this.biography,
+    this.profileImage,
     this.isPublic = false,
+    this.templateId = 'default',
   });
 
   @override
   List<Object?> get props => [
-        organizationId,
         ownerId,
         name,
-        templateId,
-        profileImage,
-        biography,
         birthDate,
         deathDate,
-        isPublic
+        biography,
+        profileImage,
+        isPublic,
+        templateId,
       ];
 }
 
+// ========================================
+// UPDATE MEMORIAL
+// ========================================
+
+/// Memorial aktualisieren
 class MemorialUpdateRequested extends MemorialEvent {
-  final MemorialPageModel memorial;
+  final MemorialModel memorial;
   final File? newProfileImage;
 
   const MemorialUpdateRequested({
@@ -79,28 +91,69 @@ class MemorialUpdateRequested extends MemorialEvent {
   List<Object?> get props => [memorial, newProfileImage];
 }
 
+// ========================================
+// DELETE MEMORIAL
+// ========================================
+
+/// Memorial löschen (nur Owner!)
 class MemorialDeleteRequested extends MemorialEvent {
   final String memorialId;
+  final String requestingUserId;
 
-  const MemorialDeleteRequested({required this.memorialId});
+  const MemorialDeleteRequested({
+    required this.memorialId,
+    required this.requestingUserId,
+  });
+
+  @override
+  List<Object?> get props => [memorialId, requestingUserId];
+}
+
+// ========================================
+// VISIBILITY & STATUS
+// ========================================
+
+/// Sichtbarkeit ändern (nur Owner!)
+class MemorialVisibilityToggleRequested extends MemorialEvent {
+  final String memorialId;
+  final String requestingUserId;
+  final bool isPublic;
+
+  const MemorialVisibilityToggleRequested({
+    required this.memorialId,
+    required this.requestingUserId,
+    required this.isPublic,
+  });
+
+  @override
+  List<Object?> get props => [memorialId, requestingUserId, isPublic];
+}
+
+/// Memorial veröffentlichen
+class MemorialPublishRequested extends MemorialEvent {
+  final String memorialId;
+
+  const MemorialPublishRequested({required this.memorialId});
 
   @override
   List<Object?> get props => [memorialId];
 }
 
-class MemorialVisibilityToggleRequested extends MemorialEvent {
+/// Memorial zurück zu Entwurf
+class MemorialUnpublishRequested extends MemorialEvent {
   final String memorialId;
-  final bool isPublic;
 
-  const MemorialVisibilityToggleRequested({
-    required this.memorialId,
-    required this.isPublic,
-  });
+  const MemorialUnpublishRequested({required this.memorialId});
 
   @override
-  List<Object?> get props => [memorialId, isPublic];
+  List<Object?> get props => [memorialId];
 }
 
+// ========================================
+// CONTENT BLOCKS
+// ========================================
+
+/// ContentBlock hinzufügen
 class MemorialContentBlockAddRequested extends MemorialEvent {
   final String memorialId;
   final ContentBlock block;
@@ -114,6 +167,7 @@ class MemorialContentBlockAddRequested extends MemorialEvent {
   List<Object?> get props => [memorialId, block];
 }
 
+/// ContentBlock aktualisieren
 class MemorialContentBlockUpdateRequested extends MemorialEvent {
   final String memorialId;
   final ContentBlock block;
@@ -127,6 +181,7 @@ class MemorialContentBlockUpdateRequested extends MemorialEvent {
   List<Object?> get props => [memorialId, block];
 }
 
+/// ContentBlock löschen
 class MemorialContentBlockDeleteRequested extends MemorialEvent {
   final String memorialId;
   final String blockId;
@@ -140,34 +195,81 @@ class MemorialContentBlockDeleteRequested extends MemorialEvent {
   List<Object?> get props => [memorialId, blockId];
 }
 
-class MemorialPublishRequested extends MemorialEvent {
+// ========================================
+// INVITATIONS
+// ========================================
+
+/// Einladungslink erstellen
+class MemorialInviteCreateRequested extends MemorialEvent {
   final String memorialId;
+  final String invitedById;
+  final String? email;
+  final int validDays;
 
-  const MemorialPublishRequested({required this.memorialId});
-
-  @override
-  List<Object?> get props => [memorialId];
-}
-
-class MemorialInviteMemberRequested extends MemorialEvent {
-  final String memorialId;
-  final String userEmail;
-  final UserRole role;
-
-  const MemorialInviteMemberRequested({
+  const MemorialInviteCreateRequested({
     required this.memorialId,
-    required this.userEmail,
-    required this.role,
+    required this.invitedById,
+    this.email,
+    this.validDays = 7,
   });
 
   @override
-  List<Object?> get props => [memorialId, userEmail, role];
+  List<Object?> get props => [memorialId, invitedById, email, validDays];
 }
 
-class MemorialIncrementViewRequested extends MemorialEvent {
+/// Einladung einlösen
+class MemorialInviteRedeemRequested extends MemorialEvent {
+  final String token;
+  final String userId;
+
+  const MemorialInviteRedeemRequested({
+    required this.token,
+    required this.userId,
+  });
+
+  @override
+  List<Object?> get props => [token, userId];
+}
+
+/// Einladung widerrufen
+class MemorialInviteRevokeRequested extends MemorialEvent {
+  final String invitationId;
+  final String requestingUserId;
+
+  const MemorialInviteRevokeRequested({
+    required this.invitationId,
+    required this.requestingUserId,
+  });
+
+  @override
+  List<Object?> get props => [invitationId, requestingUserId];
+}
+
+// ========================================
+// MEMBERS
+// ========================================
+
+/// Member entfernen
+class MemorialMemberRemoveRequested extends MemorialEvent {
+  final String memorialId;
+  final String userIdToRemove;
+  final String requestingUserId;
+
+  const MemorialMemberRemoveRequested({
+    required this.memorialId,
+    required this.userIdToRemove,
+    required this.requestingUserId,
+  });
+
+  @override
+  List<Object?> get props => [memorialId, userIdToRemove, requestingUserId];
+}
+
+/// Members laden
+class MemorialMembersLoadRequested extends MemorialEvent {
   final String memorialId;
 
-  const MemorialIncrementViewRequested({required this.memorialId});
+  const MemorialMembersLoadRequested({required this.memorialId});
 
   @override
   List<Object?> get props => [memorialId];

@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:rememberme/data/models/content_block_model.dart';
-import '../../data/models/memorial_page_model.dart';
+import '../../data/models/content_block_model.dart';
+import '../../data/models/memorial_model.dart';
 
 enum PageBuilderStatus {
   initial,
@@ -14,7 +14,7 @@ enum PageBuilderStatus {
 
 class PageBuilderState extends Equatable {
   final PageBuilderStatus status;
-  final MemorialPageModel? memorial;
+  final MemorialModel? memorial;
   final List<ContentBlock> blocks;
   final String? selectedBlockId;
   final String? errorMessage;
@@ -35,6 +35,10 @@ class PageBuilderState extends Equatable {
     this.historyIndex = -1,
   });
 
+  // ========================================
+  // FACTORY CONSTRUCTORS
+  // ========================================
+
   factory PageBuilderState.initial() {
     return const PageBuilderState(status: PageBuilderStatus.initial);
   }
@@ -44,7 +48,7 @@ class PageBuilderState extends Equatable {
   }
 
   factory PageBuilderState.loaded({
-    required MemorialPageModel memorial,
+    required MemorialModel memorial,
     required List<ContentBlock> blocks,
   }) {
     return PageBuilderState(
@@ -63,7 +67,10 @@ class PageBuilderState extends Equatable {
     );
   }
 
-  // Computed Properties
+  // ========================================
+  // COMPUTED PROPERTIES
+  // ========================================
+
   bool get isLoading =>
       status == PageBuilderStatus.loading || status == PageBuilderStatus.saving;
 
@@ -77,6 +84,11 @@ class PageBuilderState extends Equatable {
 
   int get blockCount => blocks.length;
 
+  bool get hasUnsavedChanges => status == PageBuilderStatus.editing;
+
+  bool get isSaved => status == PageBuilderStatus.saved;
+
+  /// Aktuell ausgewählter Block
   ContentBlock? get selectedBlock {
     if (selectedBlockId == null) return null;
     try {
@@ -86,6 +98,7 @@ class PageBuilderState extends Equatable {
     }
   }
 
+  /// Block nach ID finden
   ContentBlock? getBlockById(String blockId) {
     try {
       return blocks.firstWhere((block) => block.id == blockId);
@@ -94,17 +107,28 @@ class PageBuilderState extends Equatable {
     }
   }
 
+  /// Blocks nach Typ filtern
   List<ContentBlock> getBlocksByType(ContentBlockType type) {
     return blocks.where((block) => block.type == type).toList();
   }
 
+  /// Prüfen ob ein Block-Typ existiert
   bool hasBlockType(ContentBlockType type) {
     return blocks.any((block) => block.type == type);
   }
 
+  /// Index eines Blocks
+  int getBlockIndex(String blockId) {
+    return blocks.indexWhere((b) => b.id == blockId);
+  }
+
+  // ========================================
+  // COPY WITH
+  // ========================================
+
   PageBuilderState copyWith({
     PageBuilderStatus? status,
-    MemorialPageModel? memorial,
+    MemorialModel? memorial,
     List<ContentBlock>? blocks,
     String? selectedBlockId,
     bool clearSelectedBlock = false,

@@ -3,12 +3,14 @@ import 'package:flutter/cupertino.dart';
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:rememberme/business_logic/auth/auth_bloc.dart';
-import 'package:rememberme/business_logic/memorial/memorial_bloc.dart';
-import 'package:rememberme/business_logic/memorial/memorial_event.dart';
-import 'package:rememberme/business_logic/memorial/memorial_state.dart';
+
+import '../../../business_logic/auth/auth_bloc.dart';
+import '../../../business_logic/memorial/memorial_bloc.dart';
+import '../../../business_logic/memorial/memorial_event.dart';
+import '../../../business_logic/memorial/memorial_state.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/constants/app_routes.dart';
 
 enum CreateTab { details, design }
 
@@ -23,10 +25,10 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _biographyController = TextEditingController(); // NEU
+  final _biographyController = TextEditingController();
 
-  final ImagePicker _imagePicker = ImagePicker(); // NEU
-  File? _profileImage; // NEU
+  final ImagePicker _imagePicker = ImagePicker();
+  File? _profileImage;
 
   DateTime? _birthDate;
   DateTime? _deathDate;
@@ -36,7 +38,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
 
   late TabController _tabController;
 
-  static const int _maxBiographyLength = 200; // NEU
+  static const int _maxBiographyLength = 200;
 
   final List<Map<String, dynamic>> _templates = [
     {
@@ -90,7 +92,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
   }
 
   // ============================================================
-  // NEU: Image Picker Methoden
+  // Image Picker Methoden
   // ============================================================
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -430,6 +432,9 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     );
   }
 
+  // ============================================================
+  // Memorial erstellen
+  // ============================================================
   void _createMemorial() {
     if (_formKey.currentState?.validate() ?? false) {
       final authState = context.read<AuthBloc>().state;
@@ -440,11 +445,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         return;
       }
 
-      if (user.primaryOrganizationId == null) {
-        _showError(AppStrings.organizationNotFound);
-        return;
-      }
-
       if (_profileImage == null) {
         _showError('Bitte wählen Sie ein Foto aus');
         return;
@@ -452,7 +452,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
 
       context.read<MemorialBloc>().add(
             MemorialCreateRequested(
-              organizationId: user.primaryOrganizationId!,
               ownerId: user.id,
               name: _nameController.text.trim(),
               templateId: _selectedTemplate,
@@ -541,9 +540,18 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
   Widget build(BuildContext context) {
     return BlocListener<MemorialBloc, MemorialState>(
       listener: (context, state) {
-        if (state.status == MemorialStatus.success) {
-          Navigator.of(context).pop();
-        } else if (state.hasError) {
+        // ✅ FIX: Nach erfolgreicher Erstellung zum HomeScreen navigieren
+        // Das stellt sicher, dass die Tab-Bar sichtbar ist
+        if (state.status == MemorialBlocStatus.success &&
+            state.memorials.isNotEmpty) {
+          // Navigiere zum HomeScreen (ersetzt den gesamten Stack)
+          Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+            AppRoutes.home,
+            (route) => false,
+          );
+        }
+
+        if (state.hasError) {
           _showError(state.errorMessage ?? AppStrings.errorOccurred);
         }
       },
@@ -572,6 +580,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
             : AppColors.surface.withOpacity(0.94),
         foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
         surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading:
+            false, // Kein Back-Button da inline gerendert
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: _buildMaterialTabBar(isDark),
@@ -579,7 +589,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
       ),
       body: BlocBuilder<MemorialBloc, MemorialState>(
         builder: (context, state) {
-          if (state.status == MemorialStatus.creating) {
+          if (state.status == MemorialBlocStatus.creating) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -705,13 +715,14 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         backgroundColor: isDark
             ? AppColors.backgroundDarkElevated.withOpacity(0.8)
             : AppColors.surface.withOpacity(0.94),
+        automaticallyImplyLeading: false, // Kein Back-Button
       ),
       child: Material(
         type: MaterialType.transparency,
         child: SafeArea(
           child: BlocBuilder<MemorialBloc, MemorialState>(
             builder: (context, state) {
-              if (state.status == MemorialStatus.creating) {
+              if (state.status == MemorialBlocStatus.creating) {
                 return Center(
                   child: CupertinoActivityIndicator(
                     radius: 20,
@@ -830,11 +841,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           children: [
             _buildIOSHeader(isDark),
             const SizedBox(height: 32),
-
-            // NEU: Profilbild Upload
             _buildIOSProfileImagePicker(isDark),
             const SizedBox(height: 20),
-
             CupertinoTextField(
               controller: _nameController,
               placeholder: AppStrings.personName,
@@ -864,11 +872,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               ),
             ),
             const SizedBox(height: 20),
-
-            // NEU: Biografie Textfeld
             _buildIOSBiographyField(isDark),
             const SizedBox(height: 20),
-
             _buildIOSDateField(
               label: AppStrings.birthDate,
               date: _birthDate,
@@ -930,8 +935,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
 
   Widget _buildIOSProfileImagePicker(bool isDark) {
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.stretch, // GEÄNDERT von .start zu .stretch
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
@@ -959,7 +963,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
         GestureDetector(
           onTap: _showImageSourceSheet,
           child: Container(
-            width: double.infinity, // HINZUGEFÜGT
+            width: double.infinity,
             height: 160,
             decoration: BoxDecoration(
               color:
@@ -1082,7 +1086,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     );
   }
 
-  // NEU: iOS Biografie Textfeld
   Widget _buildIOSBiographyField(bool isDark) {
     final currentLength = _biographyController.text.length;
     final isOverLimit = currentLength > _maxBiographyLength;
@@ -1639,11 +1642,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           children: [
             _buildHeader(isDark),
             const SizedBox(height: 32),
-
-            // NEU: Profilbild Upload
             _buildAndroidProfileImagePicker(isDark),
             const SizedBox(height: 20),
-
             Container(
               decoration: BoxDecoration(
                 color: isDark
@@ -1683,11 +1683,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               ),
             ),
             const SizedBox(height: 20),
-
-            // NEU: Biografie Textfeld
             _buildAndroidBiographyField(isDark),
             const SizedBox(height: 20),
-
             _buildDateField(
               label: AppStrings.birthDateRequired,
               date: _birthDate,
@@ -1748,8 +1745,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
 
   Widget _buildAndroidProfileImagePicker(bool isDark) {
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.stretch, // GEÄNDERT von .start zu .stretch
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
@@ -1777,7 +1773,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
           onTap: _showImageSourceSheet,
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            width: double.infinity, // HINZUGEFÜGT
+            width: double.infinity,
             height: 160,
             decoration: BoxDecoration(
               color:
@@ -1897,7 +1893,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
     );
   }
 
-  // NEU: Android Biografie Textfeld
   Widget _buildAndroidBiographyField(bool isDark) {
     final currentLength = _biographyController.text.length;
     final isOverLimit = currentLength > _maxBiographyLength;
@@ -1966,7 +1961,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
               contentPadding: const EdgeInsets.all(12),
-              counterText: '', // Versteckt den eingebauten Counter
+              counterText: '',
             ),
           ),
         ),

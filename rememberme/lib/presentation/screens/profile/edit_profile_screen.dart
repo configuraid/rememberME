@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../../business_logic/auth/auth_bloc.dart';
-import '../../../business_logic/auth/auth_state.dart';
 import '../../../business_logic/profile/profile_bloc.dart';
 import '../../../business_logic/profile/profile_event.dart';
 import '../../../business_logic/profile/profile_state.dart';
@@ -35,7 +34,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final authState = context.read<AuthBloc>().state;
 
     _nameController = TextEditingController(
-      text: profileState.name ?? authState.user?.name ?? '',
+      text: profileState.displayName ?? authState.user?.displayName ?? '',
     );
     _emailController = TextEditingController(
       text: profileState.email ?? authState.user?.email ?? '',
@@ -460,7 +459,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         context.read<ProfileBloc>().add(
               ProfileUpdateRequested(
                 userId: userId,
-                name: _nameController.text,
+                displayName: _nameController.text,
                 email: _emailController.text,
                 phone: _phoneController.text,
               ),

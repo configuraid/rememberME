@@ -1,9 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/services.dart';
 import 'package:rememberme/core/constants/app_colors.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class WebViewPreviewScreen extends StatefulWidget {
@@ -107,7 +105,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
       case -1003:
         return 'Server nicht erreichbar.';
       default:
-        return error.description ?? 'Ein Fehler ist aufgetreten.';
+        return error.description;
     }
   }
 

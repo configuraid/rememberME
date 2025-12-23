@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 
@@ -93,35 +94,19 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Widget _buildContent(bool isDark, {required bool isIOS}) {
-    final topPadding = isIOS
-        ? MediaQuery.of(context).padding.top +
-            44 // SafeArea top + NavBar height
-        : 0.0;
+    final topPadding = isIOS ? MediaQuery.of(context).padding.top + 44 : 0.0;
 
     return ListView(
       padding: EdgeInsets.only(top: topPadding, bottom: 32),
       children: [
-        // App Logo & Name Header
         _buildHeader(isDark),
-
         const SizedBox(height: 24),
-
-        // Info Card
         _buildInfoSection(isDark),
-
         const SizedBox(height: 16),
-
-        // Kontakt Card
         _buildContactSection(isDark),
-
         const SizedBox(height: 40),
-
-        // Social Media Section
         _buildSocialSection(isDark),
-
         const SizedBox(height: 32),
-
-        // Copyright
         _buildCopyright(isDark),
       ],
     );
@@ -132,7 +117,6 @@ class _AboutScreenState extends State<AboutScreen> {
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 32),
       child: Column(
         children: [
-          // Logo
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
@@ -617,7 +601,6 @@ class _AboutScreenState extends State<AboutScreen> {
 
   Future<void> _launchUrl(String urlString) async {
     final Uri url = Uri.parse(urlString);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
