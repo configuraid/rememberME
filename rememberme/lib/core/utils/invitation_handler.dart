@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rememberme/data/models/memorial_model.dart';
 import 'package:rememberme/data/services/invitation_redeem_service.dart';
+import 'package:rememberme/business_logic/memorial/memorial_bloc.dart';
+import 'package:rememberme/business_logic/memorial/memorial_event.dart';
 import 'dart:io';
 
 import '../../core/utils/deep_link_handler.dart';
@@ -64,8 +67,12 @@ class InvitationHandler {
     final result =
         await _redeemService.checkAndRedeemPendingInvitation(_currentUserId!);
 
-    if (result != null && result.success && _context != null) {
-      _showSuccessDialog(result.memorial, result.alreadyHadAccess);
+    if (result != null && _context != null) {
+      if (result.success) {
+        // ✅ FIX: Reload memorials after successful invitation redemption
+        _reloadMemorials();
+        _showSuccessDialog(result.memorial, result.alreadyHadAccess);
+      }
     }
   }
 
@@ -81,9 +88,25 @@ class InvitationHandler {
     );
 
     if (result.success) {
+      // ✅ FIX: Reload memorials after successful invitation redemption
+      _reloadMemorials();
       _showSuccessDialog(result.memorial, result.alreadyHadAccess);
     } else {
       _showErrorDialog(result.message ?? 'Fehler beim Einlösen der Einladung');
+    }
+  }
+
+  /// ✅ NEW: Reload memorials in the MemorialBloc
+  void _reloadMemorials() {
+    if (_context == null || _currentUserId == null) return;
+
+    try {
+      final memorialBloc = _context!.read<MemorialBloc>();
+      debugPrint(
+          '🔄 InvitationHandler: Reloading memorials for user: $_currentUserId');
+      memorialBloc.add(MemorialLoadRequested(userId: _currentUserId!));
+    } catch (e) {
+      debugPrint('⚠️ InvitationHandler: Could not reload memorials: $e');
     }
   }
 

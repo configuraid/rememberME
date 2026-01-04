@@ -2,23 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rememberme/core/utils/deep_link_handler.dart';
 import 'dart:io';
 
 import '../../../business_logic/auth/auth_bloc.dart';
 import '../../../business_logic/auth/auth_event.dart';
 import '../../../business_logic/auth/auth_state.dart';
+import '../../../business_logic/memorial/memorial_bloc.dart';
+import '../../../business_logic/memorial/memorial_event.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
-import '../../../data/services/invitation_redeem_service.dart';
 
 class LoginScreen extends StatefulWidget {
-  final bool hasPendingInvitation;
-
-  const LoginScreen({
-    super.key,
-    this.hasPendingInvitation = false,
-  });
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -34,25 +29,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   String? _emailError;
   String? _passwordError;
-
-  late bool _hasPendingInvitation;
-  final InvitationRedeemService _invitationService = InvitationRedeemService();
-
-  @override
-  void initState() {
-    super.initState();
-    _hasPendingInvitation = widget.hasPendingInvitation;
-    _checkPendingInvitation();
-  }
-
-  Future<void> _checkPendingInvitation() async {
-    if (!_hasPendingInvitation) {
-      final hasPending = await deepLinkHandler.hasPendingInvitation();
-      if (mounted && hasPending) {
-        setState(() => _hasPendingInvitation = true);
-      }
-    }
-  }
 
   @override
   void dispose() {
@@ -112,81 +88,6 @@ class _LoginScreenState extends State<LoginScreen> {
         );
   }
 
-  Future<void> _handleLoginSuccess(AuthState state) async {
-    if (state.user == null) return;
-
-    // Check for pending invitation
-    final redeemResult = await _invitationService
-        .checkAndRedeemPendingInvitation(state.user!.id);
-
-    if (!mounted) return;
-
-    if (redeemResult != null && redeemResult.success) {
-      _showInvitationSuccess(redeemResult);
-    } else {
-      Navigator.of(context).pushReplacementNamed(AppRoutes.home);
-    }
-  }
-
-  void _showInvitationSuccess(RedeemResult result) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final memorialName = result.memorial?.name ?? 'Gedenkseite';
-
-    HapticFeedback.heavyImpact();
-
-    if (Platform.isIOS) {
-      showCupertinoDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => CupertinoAlertDialog(
-          title: const Text('Willkommen! 🎉'),
-          content: Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Text(
-              'Du hast jetzt Zugang zur Gedenkseite "$memorialName".',
-            ),
-          ),
-          actions: [
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).pushReplacementNamed(AppRoutes.home);
-              },
-              child: const Text('Öffnen'),
-            ),
-          ],
-        ),
-      );
-    } else {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Text('Willkommen! 🎉'),
-          content: Text(
-            'Du hast jetzt Zugang zur Gedenkseite "$memorialName".',
-          ),
-          actions: [
-            FilledButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).pushReplacementNamed(AppRoutes.home);
-              },
-              style: FilledButton.styleFrom(
-                backgroundColor: isDark ? AppColors.accent : AppColors.primary,
-              ),
-              child: const Text('Öffnen'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
   void _showError(String message) {
     if (Platform.isIOS) {
       showCupertinoDialog(
@@ -233,7 +134,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (state.isAuthenticated && state.user != null) {
           HapticFeedback.heavyImpact();
-          _handleLoginSuccess(state);
+
+          // ✅ FIX: MemorialBloc zurücksetzen und neue Memorials laden
+          context.read<MemorialBloc>().add(const MemorialsClearRequested());
+          context.read<MemorialBloc>().add(
+                MemorialLoadRequested(userId: state.user!.id),
+              );
+
+          Navigator.of(context).pushReplacementNamed(AppRoutes.home);
         } else if (state.hasError) {
           _showError(state.errorMessage ?? 'Login fehlgeschlagen');
         }
@@ -335,12 +243,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
 
-        // Pending invitation hint
-        if (_hasPendingInvitation) ...[
-          const SizedBox(height: 24),
-          _buildInvitationHint(isDark, isIOS),
-        ],
-
         const SizedBox(height: 40),
 
         // Email Field
@@ -405,8 +307,8 @@ class _LoginScreenState extends State<LoginScreen> {
               isIOS
                   ? CupertinoButton(
                       padding: EdgeInsets.zero,
-                      onPressed: () => Navigator.of(context)
-                          .pushReplacementNamed(AppRoutes.register),
+                      onPressed: () =>
+                          Navigator.of(context).pushNamed(AppRoutes.register),
                       child: Text(
                         'Registrieren',
                         style: TextStyle(
@@ -417,8 +319,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     )
                   : TextButton(
-                      onPressed: () => Navigator.of(context)
-                          .pushReplacementNamed(AppRoutes.register),
+                      onPressed: () =>
+                          Navigator.of(context).pushNamed(AppRoutes.register),
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
                         minimumSize: Size.zero,
@@ -439,66 +341,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
         const SizedBox(height: 40),
       ],
-    );
-  }
-
-  Widget _buildInvitationHint(bool isDark, bool isIOS) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.accent.withOpacity(0.1)
-            : AppColors.primary.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark
-              ? AppColors.accent.withOpacity(0.3)
-              : AppColors.primary.withOpacity(0.2),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.accent.withOpacity(0.2)
-                  : AppColors.primary.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isIOS ? CupertinoIcons.gift : Icons.card_giftcard_rounded,
-              size: 20,
-              color: isDark ? AppColors.accent : AppColors.primary,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Einladung erhalten',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Melde dich an, um die Gedenkseite zu öffnen',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -547,10 +389,8 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 6),
             Padding(
               padding: const EdgeInsets.only(left: 4),
-              child: Text(
-                _emailError!,
-                style: const TextStyle(fontSize: 12, color: AppColors.error),
-              ),
+              child: Text(_emailError!,
+                  style: const TextStyle(fontSize: 12, color: AppColors.error)),
             ),
           ],
         ],
@@ -571,10 +411,8 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: InputDecoration(
         hintText: 'E-Mail-Adresse',
         errorText: _emailError,
-        prefixIcon: Icon(
-          Icons.email_outlined,
-          color: _emailError != null ? AppColors.error : AppColors.grey,
-        ),
+        prefixIcon: Icon(Icons.email_outlined,
+            color: _emailError != null ? AppColors.error : AppColors.grey),
         filled: true,
         fillColor:
             isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
@@ -585,15 +423,12 @@ class _LoginScreenState extends State<LoginScreen> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(
-            color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-          ),
+              color: isDark ? AppColors.borderDark : AppColors.greyLighter),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(
-            color: isDark ? AppColors.accent : AppColors.primary,
-            width: 2,
-          ),
+              color: isDark ? AppColors.accent : AppColors.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -667,10 +502,8 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 6),
             Padding(
               padding: const EdgeInsets.only(left: 4),
-              child: Text(
-                _passwordError!,
-                style: const TextStyle(fontSize: 12, color: AppColors.error),
-              ),
+              child: Text(_passwordError!,
+                  style: const TextStyle(fontSize: 12, color: AppColors.error)),
             ),
           ],
         ],
@@ -690,10 +523,8 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: InputDecoration(
         hintText: 'Passwort',
         errorText: _passwordError,
-        prefixIcon: Icon(
-          Icons.lock_outline,
-          color: _passwordError != null ? AppColors.error : AppColors.grey,
-        ),
+        prefixIcon: Icon(Icons.lock_outline,
+            color: _passwordError != null ? AppColors.error : AppColors.grey),
         suffixIcon: IconButton(
           icon: Icon(
             _obscurePassword
@@ -713,15 +544,12 @@ class _LoginScreenState extends State<LoginScreen> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(
-            color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-          ),
+              color: isDark ? AppColors.borderDark : AppColors.greyLighter),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(
-            color: isDark ? AppColors.accent : AppColors.primary,
-            width: 2,
-          ),
+              color: isDark ? AppColors.accent : AppColors.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -746,8 +574,7 @@ class _LoginScreenState extends State<LoginScreen> {
           onPressed: _isLoading ? null : _login,
           child: _isLoading
               ? CupertinoActivityIndicator(
-                  color: isDark ? AppColors.primary : AppColors.textLight,
-                )
+                  color: isDark ? AppColors.primary : AppColors.textLight)
               : Text(
                   'Anmelden',
                   style: TextStyle(
@@ -768,10 +595,8 @@ class _LoginScreenState extends State<LoginScreen> {
         style: FilledButton.styleFrom(
           backgroundColor: isDark ? AppColors.accent : AppColors.primary,
           foregroundColor: isDark ? AppColors.primary : AppColors.textLight,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          elevation: 0,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         child: _isLoading
             ? SizedBox(
@@ -780,14 +605,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    isDark ? AppColors.primary : AppColors.textLight,
-                  ),
+                      isDark ? AppColors.primary : AppColors.textLight),
                 ),
               )
-            : const Text(
-                'Anmelden',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-              ),
+            : const Text('Anmelden',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
       ),
     );
   }

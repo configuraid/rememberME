@@ -1,0 +1,476 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:rememberme/core/constants/app_colors.dart';
+import 'package:rememberme/data/services/qr_code_services/memorial_validation_service.dart';
+import 'dart:io';
+
+import 'package:rememberme/data/services/qr_code_services/qr_scanner_service.dart';
+
+/// Professional QR Scanner with square scan area
+class QrScannerScreen extends StatefulWidget {
+  const QrScannerScreen({super.key});
+
+  @override
+  State<QrScannerScreen> createState() => _QrScannerScreenState();
+}
+
+class _QrScannerScreenState extends State<QrScannerScreen>
+    with SingleTickerProviderStateMixin {
+  final MobileScannerController _scannerController = MobileScannerController(
+    detectionSpeed: DetectionSpeed.normal,
+    facing: CameraFacing.back,
+    torchEnabled: false,
+  );
+
+  final QrScannerService _qrService = QrScannerService();
+  final MemorialValidationService _validationService =
+      MemorialValidationService();
+
+  bool _isProcessing = false;
+  bool _hasScanned = false;
+  String? _statusMessage;
+  bool _showSuccess = false;
+
+  late AnimationController _scanLineController;
+  late Animation<double> _scanLineAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _scanLineController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    )..repeat();
+
+    _scanLineAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _scanLineController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _scanLineController.dispose();
+    _scannerController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _onDetect(BarcodeCapture capture) async {
+    if (_isProcessing || _hasScanned) return;
+
+    final List<Barcode> barcodes = capture.barcodes;
+    if (barcodes.isEmpty) return;
+
+    final String? rawValue = barcodes.first.rawValue;
+    if (rawValue == null || rawValue.isEmpty) return;
+
+    setState(() {
+      _isProcessing = true;
+      _hasScanned = true;
+      _statusMessage = 'QR-Code wird überprüft...';
+    });
+
+    HapticFeedback.mediumImpact();
+
+    final parseResult = _qrService.parseQrCode(rawValue);
+
+    if (!parseResult.success) {
+      _showError(parseResult.errorMessage ?? 'Ungültiger QR-Code');
+      _resetScanner();
+      return;
+    }
+
+    setState(() {
+      _statusMessage = 'Gedenkseite wird gesucht...';
+    });
+
+    final validationResult =
+        await _validationService.validateMemorial(parseResult.memorialId!);
+
+    if (!mounted) return;
+
+    if (!validationResult.exists) {
+      _showError(validationResult.errorMessage ?? 'Gedenkseite nicht gefunden');
+      _resetScanner();
+      return;
+    }
+
+    setState(() {
+      _showSuccess = true;
+      _statusMessage = 'Gedenkseite gefunden';
+    });
+
+    _scanLineController.stop();
+    HapticFeedback.heavyImpact();
+
+    await Future.delayed(const Duration(milliseconds: 600));
+
+    if (!mounted) return;
+
+    Navigator.of(context).pop(QrScanResult(
+      success: true,
+      memorialId: parseResult.memorialId!,
+      memorialName: validationResult.memorialName!,
+    ));
+  }
+
+  void _resetScanner() {
+    setState(() {
+      _isProcessing = false;
+      _hasScanned = false;
+      _statusMessage = null;
+      _showSuccess = false;
+    });
+    _scanLineController.repeat();
+  }
+
+  void _showError(String message) {
+    HapticFeedback.heavyImpact();
+
+    if (Platform.isIOS) {
+      showCupertinoDialog(
+        context: context,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: const Text('Fehler'),
+          content: Text(message),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    }
+  }
+
+  void _toggleFlash() async {
+    await _scannerController.toggleTorch();
+    HapticFeedback.lightImpact();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (Platform.isIOS) {
+      return _buildIOSView();
+    }
+    return _buildAndroidView();
+  }
+
+  Widget _buildAndroidView() {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: const Text(
+          'QR-Code scannen',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          ValueListenableBuilder<MobileScannerState>(
+            valueListenable: _scannerController,
+            builder: (context, state, child) {
+              final isOn = state.torchState == TorchState.on;
+              return IconButton(
+                icon: Icon(
+                  isOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                  color: isOn ? AppColors.accent : Colors.white,
+                ),
+                onPressed: _toggleFlash,
+              );
+            },
+          ),
+        ],
+      ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildIOSView() {
+    return CupertinoPageScaffold(
+      backgroundColor: Colors.black,
+      navigationBar: CupertinoNavigationBar(
+        middle: const Text(
+          'QR-Code scannen',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: Colors.transparent,
+        border: null,
+        leading: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Icon(CupertinoIcons.back, color: Colors.white),
+        ),
+        trailing: ValueListenableBuilder<MobileScannerState>(
+          valueListenable: _scannerController,
+          builder: (context, state, child) {
+            final isOn = state.torchState == TorchState.on;
+            return CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: _toggleFlash,
+              child: Icon(
+                isOn ? CupertinoIcons.bolt_fill : CupertinoIcons.bolt,
+                color: isOn ? AppColors.accent : Colors.white,
+              ),
+            );
+          },
+        ),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: _buildBody(),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    final size = MediaQuery.of(context).size;
+    final scanSize = size.width * 0.7;
+    final scanTop = size.height * 0.3;
+    final scanLeft = (size.width - scanSize) / 2;
+
+    return Stack(
+      children: [
+        // Camera
+        MobileScanner(
+          controller: _scannerController,
+          onDetect: _onDetect,
+        ),
+
+        // Overlay
+        CustomPaint(
+          painter: _OverlayPainter(
+            scanRect: Rect.fromLTWH(scanLeft, scanTop, scanSize, scanSize),
+            borderColor: _showSuccess ? AppColors.success : AppColors.accent,
+          ),
+          child: const SizedBox.expand(),
+        ),
+
+        // Scan line
+        if (!_showSuccess)
+          AnimatedBuilder(
+            animation: _scanLineAnimation,
+            builder: (context, child) {
+              final lineY = scanTop + (scanSize * _scanLineAnimation.value);
+              return Positioned(
+                top: lineY,
+                left: scanLeft + 10,
+                right: size.width - scanLeft - scanSize + 10,
+                child: Container(
+                  height: 2,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        AppColors.accent,
+                        AppColors.accent,
+                        Colors.transparent,
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.accent.withOpacity(0.5),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+
+        // Success icon
+        if (_showSuccess)
+          Positioned(
+            top: scanTop + (scanSize - 80) / 2,
+            left: (size.width - 80) / 2,
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppColors.success,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Platform.isIOS ? CupertinoIcons.checkmark_alt : Icons.check,
+                color: Colors.white,
+                size: 45,
+              ),
+            ),
+          ),
+
+        // Status
+        if (_statusMessage != null)
+          Positioned(
+            top: scanTop + scanSize + 30,
+            left: 24,
+            right: 24,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: _showSuccess ? AppColors.success : Colors.black87,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (!_showSuccess)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 12),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(Colors.white),
+                        ),
+                      ),
+                    ),
+                  Text(
+                    _statusMessage!,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        // Instructions
+        Positioned(
+          bottom: 50,
+          left: 24,
+          right: 24,
+          child: Text(
+            'QR-Code im Rahmen platzieren',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OverlayPainter extends CustomPainter {
+  final Rect scanRect;
+  final Color borderColor;
+
+  _OverlayPainter({required this.scanRect, required this.borderColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Dark overlay
+    final overlayPath = Path()
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..addRRect(RRect.fromRectAndRadius(scanRect, const Radius.circular(16)))
+      ..fillType = PathFillType.evenOdd;
+
+    canvas.drawPath(
+        overlayPath, Paint()..color = Colors.black.withOpacity(0.7));
+
+    // Border
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(scanRect, const Radius.circular(16)),
+      Paint()
+        ..color = borderColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
+
+    // Corner accents
+    _drawCorners(canvas, scanRect, borderColor);
+  }
+
+  void _drawCorners(Canvas canvas, Rect rect, Color color) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5
+      ..strokeCap = StrokeCap.round;
+
+    const len = 25.0;
+    const r = 16.0;
+
+    // Top-left
+    canvas.drawPath(
+      Path()
+        ..moveTo(rect.left, rect.top + len)
+        ..lineTo(rect.left, rect.top + r)
+        ..quadraticBezierTo(rect.left, rect.top, rect.left + r, rect.top)
+        ..lineTo(rect.left + len, rect.top),
+      paint,
+    );
+
+    // Top-right
+    canvas.drawPath(
+      Path()
+        ..moveTo(rect.right - len, rect.top)
+        ..lineTo(rect.right - r, rect.top)
+        ..quadraticBezierTo(rect.right, rect.top, rect.right, rect.top + r)
+        ..lineTo(rect.right, rect.top + len),
+      paint,
+    );
+
+    // Bottom-left
+    canvas.drawPath(
+      Path()
+        ..moveTo(rect.left, rect.bottom - len)
+        ..lineTo(rect.left, rect.bottom - r)
+        ..quadraticBezierTo(rect.left, rect.bottom, rect.left + r, rect.bottom)
+        ..lineTo(rect.left + len, rect.bottom),
+      paint,
+    );
+
+    // Bottom-right
+    canvas.drawPath(
+      Path()
+        ..moveTo(rect.right - len, rect.bottom)
+        ..lineTo(rect.right - r, rect.bottom)
+        ..quadraticBezierTo(
+            rect.right, rect.bottom, rect.right, rect.bottom - r)
+        ..lineTo(rect.right, rect.bottom - len),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _OverlayPainter old) =>
+      old.borderColor != borderColor;
+}
+
+class QrScanResult {
+  final bool success;
+  final String? memorialId;
+  final String? memorialName;
+
+  QrScanResult({
+    required this.success,
+    this.memorialId,
+    this.memorialName,
+  });
+}

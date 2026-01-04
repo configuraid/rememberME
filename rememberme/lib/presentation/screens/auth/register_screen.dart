@@ -7,6 +7,8 @@ import 'dart:io';
 import '../../../business_logic/auth/auth_bloc.dart';
 import '../../../business_logic/auth/auth_event.dart';
 import '../../../business_logic/auth/auth_state.dart';
+import '../../../business_logic/memorial/memorial_bloc.dart';
+import '../../../business_logic/memorial/memorial_event.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
 
@@ -189,8 +191,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state.isAuthenticated) {
+        if (state.isAuthenticated && state.user != null) {
           setState(() => _isLoading = false);
+
+          // ✅ FIX: MemorialBloc zurücksetzen und neue Memorials laden
+          context.read<MemorialBloc>().add(const MemorialsClearRequested());
+          context.read<MemorialBloc>().add(
+                MemorialLoadRequested(userId: state.user!.id),
+              );
+
           Navigator.of(context).pushReplacementNamed(AppRoutes.memorialDetail);
         } else if (state.hasError) {
           setState(() => _isLoading = false);
@@ -308,8 +317,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state.isAuthenticated) {
+        if (state.isAuthenticated && state.user != null) {
           setState(() => _isLoading = false);
+
+          // ✅ FIX: MemorialBloc zurücksetzen und neue Memorials laden
+          context.read<MemorialBloc>().add(const MemorialsClearRequested());
+          context.read<MemorialBloc>().add(
+                MemorialLoadRequested(userId: state.user!.id),
+              );
+
           Navigator.of(context).pushReplacementNamed(AppRoutes.memorialDetail);
         } else if (state.hasError) {
           setState(() => _isLoading = false);

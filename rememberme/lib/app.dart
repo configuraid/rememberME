@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rememberme/business_logic/auth/auth_state.dart';
-import 'package:rememberme/core/utils/invitation_andler.dart';
+import 'package:rememberme/core/utils/invitation_handler.dart';
 import 'package:rememberme/presentation/screens/home_screen.dart';
 import 'package:rememberme/presentation/screens/visual_builder/visual_builder_screen.dart';
 import 'dart:io';

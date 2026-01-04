@@ -111,6 +111,16 @@ class MemorialRepository {
           .where('userId', isEqualTo: userId)
           .get();
 
+      print(
+          '📋 MemorialRepository - ${accessQuery.docs.length} Access-Einträge gefunden');
+
+      // Debug: Zeige alle Access-Einträge
+      for (var doc in accessQuery.docs) {
+        final data = doc.data();
+        print(
+            '   📎 Access: memorialId=${data['memorialId']}, visitorType=${data['visitorType']}');
+      }
+
       if (accessQuery.docs.isEmpty) {
         print('ℹ️ MemorialRepository - Keine Memorials gefunden');
         return [];
@@ -120,6 +130,8 @@ class MemorialRepository {
       final memorialIds = accessQuery.docs
           .map((doc) => doc.data()['memorialId'] as String)
           .toList();
+
+      print('📋 MemorialRepository - Memorial IDs: $memorialIds');
 
       // 3. Memorials laden (Firestore 'whereIn' max 10 items)
       final memorials = <MemorialModel>[];
@@ -347,6 +359,9 @@ class MemorialRepository {
         .collection('memorialAccess')
         .doc(accessId)
         .set(access.toJson());
+
+    print(
+        '✅ MemorialRepository - Access erstellt: $accessId für User $userId auf Memorial $memorialId');
 
     return access;
   }

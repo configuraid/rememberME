@@ -5,10 +5,6 @@ import '../../data/services/firebase_storage_service.dart';
 import 'memorial_event.dart';
 import 'memorial_state.dart';
 
-/// Memorial Bloc
-///
-/// Verwaltet Memorials OHNE Organization!
-/// Berechtigungen über MemorialAccess.
 class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
   final MemorialRepository memorialRepository;
   final InvitationRepository invitationRepository;
@@ -22,6 +18,8 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     // Memorial CRUD
     on<MemorialLoadRequested>(_onLoadMemorials);
     on<MemorialDetailLoadRequested>(_onLoadMemorialDetail);
+    on<MemorialSelected>(_onMemorialSelected);
+    on<MemorialsClearRequested>(_onClearMemorials);
     on<MemorialCreateRequested>(_onCreateMemorial);
     on<MemorialUpdateRequested>(_onUpdateMemorial);
     on<MemorialDeleteRequested>(_onDeleteMemorial);
@@ -96,6 +94,32 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
       emit(MemorialState.error(
           'Fehler beim Laden der Gedenkseite: ${e.toString()}'));
     }
+  }
+
+  // ========================================
+  // SELECT MEMORIAL
+  // ========================================
+
+  void _onMemorialSelected(
+    MemorialSelected event,
+    Emitter<MemorialState> emit,
+  ) {
+    print('🎯 MemorialBloc - Memorial ausgewählt: ${event.memorial.name}');
+    emit(state.copyWith(
+      selectedMemorial: event.memorial,
+    ));
+  }
+
+  // ========================================
+  // CLEAR MEMORIALS (Logout/User-Wechsel)
+  // ========================================
+
+  void _onClearMemorials(
+    MemorialsClearRequested event,
+    Emitter<MemorialState> emit,
+  ) {
+    print('🧹 MemorialBloc - State zurückgesetzt');
+    emit(MemorialState.initial());
   }
 
   // ========================================

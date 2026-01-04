@@ -16,7 +16,6 @@ import 'data/repositories/invitation_repository.dart';
 
 // Services
 import 'data/services/firebase_storage_service.dart';
-import 'data/services/qr_decryption_service.dart';
 import 'data/services/preview_service.dart';
 
 // Blocs
@@ -32,14 +31,6 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  // QR Decryption Service initialisieren
-  try {
-    await QrDecryptionService.instance.initialize();
-  } catch (e) {
-    debugPrint('⚠️ QrDecryptionService initialization failed: $e');
-    // App kann trotzdem starten, QR-Scanning funktioniert dann nicht
-  }
 
   // Deep Link Handler initialisieren
   await deepLinkHandler.initialize();

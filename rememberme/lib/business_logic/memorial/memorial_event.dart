@@ -34,6 +34,21 @@ class MemorialDetailLoadRequested extends MemorialEvent {
   List<Object?> get props => [memorialId];
 }
 
+/// Memorial auswählen (für UI-Wechsel zwischen Memorials)
+class MemorialSelected extends MemorialEvent {
+  final MemorialModel memorial;
+
+  const MemorialSelected({required this.memorial});
+
+  @override
+  List<Object?> get props => [memorial];
+}
+
+/// State komplett zurücksetzen (bei Logout/User-Wechsel)
+class MemorialsClearRequested extends MemorialEvent {
+  const MemorialsClearRequested();
+}
+
 // ========================================
 // CREATE MEMORIAL
 // ========================================

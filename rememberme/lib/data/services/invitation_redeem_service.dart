@@ -12,6 +12,9 @@ class InvitationRedeemService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final ShareService _shareService = ShareService();
 
+  // ✅ FIX: Consistent collection name (must match MemorialRepository!)
+  static const String _memorialAccessCollection = 'memorialAccess';
+
   /// Redeems an invitation for a user
   /// Returns the memorial if successful
   Future<RedeemResult> redeemInvitation({
@@ -57,8 +60,9 @@ class InvitationRedeemService {
       }
 
       // 4. Check if user already has access to this memorial
+      // ✅ FIX: Use correct collection name
       final existingAccess = await _firestore
-          .collection('memorial_access')
+          .collection(_memorialAccessCollection)
           .where('userId', isEqualTo: userId)
           .where('memorialId', isEqualTo: invitation.memorialId)
           .get();
@@ -83,8 +87,9 @@ class InvitationRedeemService {
         invitedById: invitation.invitedById,
       );
 
+      // ✅ FIX: Use correct collection name
       await _firestore
-          .collection('memorial_access')
+          .collection(_memorialAccessCollection)
           .doc('${userId}_${invitation.memorialId}')
           .set(access.toJson());
 
@@ -177,9 +182,10 @@ class InvitationRedeemService {
         }));
       }
 
-      // 2. Get shared memorials (via memorial_access)
+      // 2. Get shared memorials (via memorialAccess)
+      // ✅ FIX: Use correct collection name
       final accessDocs = await _firestore
-          .collection('memorial_access')
+          .collection(_memorialAccessCollection)
           .where('userId', isEqualTo: userId)
           .get();
 
