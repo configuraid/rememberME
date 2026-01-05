@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/repositories/memorial_repository.dart';
 import '../../data/repositories/invitation_repository.dart';
@@ -55,15 +57,15 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(MemorialState.loading());
 
     try {
-      print('📚 MemorialBloc - Lade Memorials für User: ${event.userId}');
+      debugPrint('📚 MemorialBloc - Lade Memorials für User: ${event.userId}');
 
       final memorials =
           await memorialRepository.getMemorialsForUser(event.userId);
 
-      print('✅ MemorialBloc - ${memorials.length} Memorials geladen');
+      debugPrint('✅ MemorialBloc - ${memorials.length} Memorials geladen');
       emit(MemorialState.loaded(memorials));
     } catch (e) {
-      print('❌ MemorialBloc - Fehler: $e');
+      debugPrint('❌ MemorialBloc - Fehler: $e');
       emit(MemorialState.error(
           'Fehler beim Laden der Gedenkseiten: ${e.toString()}'));
     }
@@ -76,7 +78,7 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(state.copyWith(status: MemorialBlocStatus.loading));
 
     try {
-      print('🔍 MemorialBloc - Lade Memorial: ${event.memorialId}');
+      debugPrint('🔍 MemorialBloc - Lade Memorial: ${event.memorialId}');
 
       final memorial =
           await memorialRepository.getMemorialById(event.memorialId);
@@ -90,7 +92,7 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
         emit(MemorialState.error('Gedenkseite nicht gefunden'));
       }
     } catch (e) {
-      print('❌ MemorialBloc - Fehler: $e');
+      debugPrint('❌ MemorialBloc - Fehler: $e');
       emit(MemorialState.error(
           'Fehler beim Laden der Gedenkseite: ${e.toString()}'));
     }
@@ -104,7 +106,7 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     MemorialSelected event,
     Emitter<MemorialState> emit,
   ) {
-    print('🎯 MemorialBloc - Memorial ausgewählt: ${event.memorial.name}');
+    debugPrint('🎯 MemorialBloc - Memorial ausgewählt: ${event.memorial.name}');
     emit(state.copyWith(
       selectedMemorial: event.memorial,
     ));
@@ -118,7 +120,7 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     MemorialsClearRequested event,
     Emitter<MemorialState> emit,
   ) {
-    print('🧹 MemorialBloc - State zurückgesetzt');
+    debugPrint('🧹 MemorialBloc - State zurückgesetzt');
     emit(MemorialState.initial());
   }
 
@@ -133,7 +135,10 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(state.copyWith(status: MemorialBlocStatus.creating));
 
     try {
-      print('➕ MemorialBloc - Erstelle Memorial: ${event.name}');
+      debugPrint('➕ MemorialBloc - Erstelle Memorial: ${event.name}');
+      if (event.qrCodeId != null) {
+        debugPrint('📱 MemorialBloc - Mit QR-Code: ${event.qrCodeId}');
+      }
 
       // 1. Memorial erstellen
       var newMemorial = await memorialRepository.createMemorial(
@@ -157,17 +162,38 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
         await memorialRepository.updateMemorial(newMemorial);
       }
 
-      // 3. Liste neu laden
+      // 3. NEU: QR-Code aktivieren (falls vorhanden)
+      if (event.qrCodeId != null) {
+        debugPrint('🔗 MemorialBloc - Aktiviere QR-Code: ${event.qrCodeId}');
+        try {
+          await FirebaseFirestore.instance
+              .collection('qrCodes')
+              .doc(event.qrCodeId)
+              .update({
+            'status': 'active',
+            'memorialId': newMemorial.id,
+            'ownerId': event.ownerId,
+            'activatedAt': FieldValue.serverTimestamp(),
+          });
+          debugPrint('✅ MemorialBloc - QR-Code aktiviert!');
+        } catch (qrError) {
+          debugPrint(
+              '⚠️ MemorialBloc - QR-Code Aktivierung fehlgeschlagen: $qrError');
+          // Wir werfen hier keinen Fehler, da das Memorial bereits erstellt wurde
+        }
+      }
+
+      // 4. Liste neu laden
       final memorials =
           await memorialRepository.getMemorialsForUser(event.ownerId);
 
-      print('✅ MemorialBloc - Memorial erstellt: ${newMemorial.id}');
+      debugPrint('✅ MemorialBloc - Memorial erstellt: ${newMemorial.id}');
       emit(MemorialState.success(
         'Gedenkseite erfolgreich erstellt',
         memorials: memorials,
       ).copyWith(selectedMemorial: newMemorial));
     } catch (e) {
-      print('❌ MemorialBloc - Fehler: $e');
+      debugPrint('❌ MemorialBloc - Fehler: $e');
       emit(MemorialState.error(
           'Fehler beim Erstellen der Gedenkseite: ${e.toString()}'));
     }
@@ -184,7 +210,8 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(state.copyWith(status: MemorialBlocStatus.updating));
 
     try {
-      print('🔄 MemorialBloc - Aktualisiere Memorial: ${event.memorial.id}');
+      debugPrint(
+          '🔄 MemorialBloc - Aktualisiere Memorial: ${event.memorial.id}');
 
       var memorialToSave = event.memorial;
 
@@ -205,13 +232,13 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
         return m.id == updatedMemorial.id ? updatedMemorial : m;
       }).toList();
 
-      print('✅ MemorialBloc - Memorial aktualisiert');
+      debugPrint('✅ MemorialBloc - Memorial aktualisiert');
       emit(MemorialState.success(
         'Gedenkseite erfolgreich aktualisiert',
         memorials: updatedMemorials,
       ).copyWith(selectedMemorial: updatedMemorial));
     } catch (e) {
-      print('❌ MemorialBloc - Fehler: $e');
+      debugPrint('❌ MemorialBloc - Fehler: $e');
       emit(MemorialState.error('Fehler beim Aktualisieren: ${e.toString()}'));
     }
   }
@@ -227,7 +254,7 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(state.copyWith(status: MemorialBlocStatus.deleting));
 
     try {
-      print('🗑️ MemorialBloc - Lösche Memorial: ${event.memorialId}');
+      debugPrint('🗑️ MemorialBloc - Lösche Memorial: ${event.memorialId}');
 
       // Profilbild löschen
       try {
@@ -243,13 +270,13 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
       final updatedMemorials =
           state.memorials.where((m) => m.id != event.memorialId).toList();
 
-      print('✅ MemorialBloc - Memorial gelöscht');
+      debugPrint('✅ MemorialBloc - Memorial gelöscht');
       emit(MemorialState.success(
         'Gedenkseite erfolgreich gelöscht',
         memorials: updatedMemorials,
       ));
     } catch (e) {
-      print('❌ MemorialBloc - Fehler: $e');
+      debugPrint('❌ MemorialBloc - Fehler: $e');
       emit(MemorialState.error('Fehler beim Löschen: ${e.toString()}'));
     }
   }
@@ -265,7 +292,7 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(state.copyWith(status: MemorialBlocStatus.updating));
 
     try {
-      print(
+      debugPrint(
           '🔒 MemorialBloc - Ändere Sichtbarkeit: ${event.memorialId} → ${event.isPublic}');
 
       final updatedMemorial = await memorialRepository.updateVisibility(
@@ -285,7 +312,7 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
       emit(MemorialState.success(message, memorials: updatedMemorials)
           .copyWith(selectedMemorial: updatedMemorial));
     } catch (e) {
-      print('❌ MemorialBloc - Fehler: $e');
+      debugPrint('❌ MemorialBloc - Fehler: $e');
       emit(MemorialState.error(
           'Fehler beim Ändern der Sichtbarkeit: ${e.toString()}'));
     }
@@ -298,7 +325,8 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(state.copyWith(status: MemorialBlocStatus.publishing));
 
     try {
-      print('🌐 MemorialBloc - Veröffentliche Memorial: ${event.memorialId}');
+      debugPrint(
+          '🌐 MemorialBloc - Veröffentliche Memorial: ${event.memorialId}');
 
       final publishedMemorial = await memorialRepository.updateStatus(
         memorialId: event.memorialId,
@@ -314,7 +342,7 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
         memorials: updatedMemorials,
       ).copyWith(selectedMemorial: publishedMemorial));
     } catch (e) {
-      print('❌ MemorialBloc - Fehler: $e');
+      debugPrint('❌ MemorialBloc - Fehler: $e');
       emit(MemorialState.error('Fehler beim Veröffentlichen: ${e.toString()}'));
     }
   }
@@ -434,7 +462,8 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(state.copyWith(status: MemorialBlocStatus.updating));
 
     try {
-      print('📨 MemorialBloc - Erstelle Einladung für: ${event.memorialId}');
+      debugPrint(
+          '📨 MemorialBloc - Erstelle Einladung für: ${event.memorialId}');
 
       final invitation = await invitationRepository.createInvitation(
         memorialId: event.memorialId,
@@ -443,14 +472,15 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
         validDays: event.validDays,
       );
 
-      print('✅ MemorialBloc - Einladung erstellt: ${invitation.inviteUrl}');
+      debugPrint(
+          '✅ MemorialBloc - Einladung erstellt: ${invitation.inviteUrl}');
       emit(state.copyWith(
         status: MemorialBlocStatus.success,
         successMessage: 'Einladungslink erstellt',
         lastCreatedInviteUrl: invitation.inviteUrl,
       ));
     } catch (e) {
-      print('❌ MemorialBloc - Fehler: $e');
+      debugPrint('❌ MemorialBloc - Fehler: $e');
       emit(MemorialState.error(
           'Fehler beim Erstellen der Einladung: ${e.toString()}'));
     }
@@ -463,7 +493,7 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(state.copyWith(status: MemorialBlocStatus.loading));
 
     try {
-      print('🎫 MemorialBloc - Löse Einladung ein: ${event.token}');
+      debugPrint('🎫 MemorialBloc - Löse Einladung ein: ${event.token}');
 
       final access = await invitationRepository.redeemInvitation(
         token: event.token,
@@ -478,13 +508,13 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
       final memorials =
           await memorialRepository.getMemorialsForUser(event.userId);
 
-      print('✅ MemorialBloc - Einladung eingelöst');
+      debugPrint('✅ MemorialBloc - Einladung eingelöst');
       emit(MemorialState.success(
         'Du hast jetzt Zugang zu dieser Gedenkseite',
         memorials: memorials,
       ).copyWith(selectedMemorial: memorial));
     } catch (e) {
-      print('❌ MemorialBloc - Fehler: $e');
+      debugPrint('❌ MemorialBloc - Fehler: $e');
       emit(MemorialState.error(e.toString()));
     }
   }
@@ -518,7 +548,7 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     emit(state.copyWith(status: MemorialBlocStatus.updating));
 
     try {
-      print('👤 MemorialBloc - Entferne Member: ${event.userIdToRemove}');
+      debugPrint('👤 MemorialBloc - Entferne Member: ${event.userIdToRemove}');
 
       await memorialRepository.removeMember(
         memorialId: event.memorialId,
@@ -531,7 +561,7 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
         successMessage: 'Mitglied entfernt',
       ));
     } catch (e) {
-      print('❌ MemorialBloc - Fehler: $e');
+      debugPrint('❌ MemorialBloc - Fehler: $e');
       emit(MemorialState.error('Fehler: ${e.toString()}'));
     }
   }

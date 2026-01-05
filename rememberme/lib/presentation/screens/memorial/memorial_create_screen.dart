@@ -31,6 +31,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
   File? _profileImage;
 
   DateTime? _birthDate;
+  String? _qrCodeId;
   DateTime? _deathDate;
   String _selectedTemplate = 'classic';
   bool _isPublic = false;
@@ -64,6 +65,17 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map<String, dynamic> && args.containsKey('qrCodeId')) {
+        setState(() {
+          _qrCodeId = args['qrCodeId'] as String?;
+        });
+        debugPrint('📱 MemorialCreateScreen: QR-Code ID erhalten: $_qrCodeId');
+      }
+    });
+
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
@@ -460,6 +472,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
               birthDate: _birthDate,
               deathDate: _deathDate,
               isPublic: _isPublic,
+              qrCodeId: _qrCodeId,
             ),
           );
     }

@@ -289,56 +289,6 @@ class _LoginScreenState extends State<LoginScreen> {
         // Login Button
         _buildLoginButton(isDark, isIOS),
 
-        const SizedBox(height: 32),
-
-        // Register Link
-        Center(
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(
-                'Noch kein Konto? ',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: AppColors.grey,
-                ),
-              ),
-              isIOS
-                  ? CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      onPressed: () =>
-                          Navigator.of(context).pushNamed(AppRoutes.register),
-                      child: Text(
-                        'Registrieren',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.accent : AppColors.primary,
-                        ),
-                      ),
-                    )
-                  : TextButton(
-                      onPressed: () =>
-                          Navigator.of(context).pushNamed(AppRoutes.register),
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(
-                        'Registrieren',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.accent : AppColors.primary,
-                        ),
-                      ),
-                    ),
-            ],
-          ),
-        ),
-
         const SizedBox(height: 40),
       ],
     );

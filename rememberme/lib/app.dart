@@ -3,6 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rememberme/business_logic/auth/auth_state.dart';
 import 'package:rememberme/core/utils/invitation_handler.dart';
+import 'package:rememberme/core/utils/qr_claiming_handler.dart';
+import 'package:rememberme/data/repositories/memorial_repository.dart';
+import 'package:rememberme/data/repositories/qr_code_repository.dart';
 import 'package:rememberme/presentation/screens/home_screen.dart';
 import 'package:rememberme/presentation/screens/visual_builder/visual_builder_screen.dart';
 import 'dart:io';
@@ -20,11 +23,10 @@ import 'business_logic/auth/auth_bloc.dart';
 // Screens
 import 'presentation/screens/splash_screen.dart';
 import 'presentation/screens/auth/login_screen.dart';
-import 'presentation/screens/auth/register_screen.dart';
 import 'presentation/screens/auth/forgot_password_screen.dart';
 import 'presentation/screens/memorial/memorial_screen.dart';
 import 'presentation/screens/memorial/memorial_create_screen.dart';
-import 'presentation/screens/memorial/memorial_edit_screen.dart'; // NEU!
+import 'presentation/screens/memorial/memorial_edit_screen.dart';
 import 'presentation/screens/profile/profile_screen.dart';
 import 'presentation/screens/profile/about_screen.dart';
 
@@ -42,11 +44,17 @@ class _RememberMeAppState extends State<RememberMeApp> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        // Initialize/update invitation handler when auth state changes
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_navigatorKey.currentContext != null) {
             invitationHandler.initialize(
               context: _navigatorKey.currentContext!,
+              userId: state.user?.id,
+            );
+
+            qrClaimingHandler.initialize(
+              context: _navigatorKey.currentContext!,
+              qrCodeRepository: context.read<QrCodeRepository>(),
+              memorialRepository: context.read<MemorialRepository>(),
               userId: state.user?.id,
             );
           }
@@ -74,6 +82,33 @@ class _RememberMeAppState extends State<RememberMeApp> {
     debugPrint(
         '🚀 Navigate to: ${settings.name} with args: ${settings.arguments}');
 
+    final routeName = settings.name ?? '';
+
+    // ==================== DEEP LINK ROUTES ====================
+    // Diese werden vom DeepLinkHandler / QrClaimingHandler verarbeitet
+    if (_isDeepLinkRoute(routeName)) {
+      debugPrint(
+          '⚠️ Blocking deep link route: $routeName (handled by DeepLinkHandler)');
+
+      // Route die sich sofort wieder schließt
+      return PageRouteBuilder(
+        settings: settings,
+        opaque: false,
+        pageBuilder: (context, _, __) {
+          // Sofort wieder zurück navigieren
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
+          });
+          // Transparenter Container (unsichtbar)
+          return const SizedBox.shrink();
+        },
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      );
+    }
+
     Widget page;
 
     switch (settings.name) {
@@ -84,10 +119,6 @@ class _RememberMeAppState extends State<RememberMeApp> {
 
       case AppRoutes.login:
         page = const LoginScreen();
-        break;
-
-      case AppRoutes.register:
-        page = const RegisterScreen();
         break;
 
       case AppRoutes.forgotPassword:
@@ -125,7 +156,6 @@ class _RememberMeAppState extends State<RememberMeApp> {
           debugPrint('❌ Kein Memorial übergeben an PageBuilder!');
           return _buildErrorRoute(settings, 'Memorial nicht gefunden');
         }
-        // FIX: Echter PageBuilder statt Placeholder!
         page = IntuitivePageBuilderScreen(memorial: memorial);
         break;
 
@@ -156,15 +186,6 @@ class _RememberMeAppState extends State<RememberMeApp> {
       // ==================== 404 Route ====================
       case AppRoutes.notFound:
       default:
-        // Check if this might be an invitation token (ignore those)
-        final routeName = settings.name ?? '';
-        if (_looksLikeInvitationToken(routeName)) {
-          debugPrint(
-              '⚠️ Ignoring route that looks like invitation token: $routeName');
-          // Return null - the invitation handler takes care of the token
-          return null;
-        }
-
         debugPrint('❌ Route nicht gefunden: ${settings.name}');
         return _buildErrorRoute(settings, 'Seite nicht gefunden');
     }
@@ -183,18 +204,38 @@ class _RememberMeAppState extends State<RememberMeApp> {
     );
   }
 
-  /// Check if a route name looks like an invitation token
-  bool _looksLikeInvitationToken(String routeName) {
-    // Remove leading slash
+  /// Prüft ob eine Route ein Deep Link ist (wird von Handlers verarbeitet)
+  bool _isDeepLinkRoute(String routeName) {
+    // Ignoriere leere Routes
+    if (routeName.isEmpty || routeName == '/') {
+      return false;
+    }
+
+    // Entferne führenden Slash
     final name = routeName.startsWith('/') ? routeName.substring(1) : routeName;
 
-    // Token is 16 alphanumeric characters
-    if (name.length == 16 && RegExp(r'^[a-zA-Z0-9]+$').hasMatch(name)) {
+    // /memorial/{qrCodeId} - QR-Code Deep Link
+    if (routeName.startsWith('/memorial/') || name.startsWith('memorial/')) {
       return true;
     }
 
-    // Or it's an invite path
+    // /m/{qrCodeId} - Kurze QR-Code URL
+    if (routeName.startsWith('/m/') || name.startsWith('m/')) {
+      return true;
+    }
+
+    // /invite/{token} - Einladungs-Link
     if (routeName.contains('invite/')) {
+      return true;
+    }
+
+    // HTTPS URLs (Universal Links)
+    if (routeName.startsWith('https://') || routeName.startsWith('http://')) {
+      return true;
+    }
+
+    // Token ist 16 alphanumerische Zeichen
+    if (name.length == 16 && RegExp(r'^[a-zA-Z0-9]+$').hasMatch(name)) {
       return true;
     }
 

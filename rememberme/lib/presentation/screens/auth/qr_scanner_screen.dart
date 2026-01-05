@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:rememberme/core/constants/app_colors.dart';
-import 'package:rememberme/data/services/qr_code_services/memorial_validation_service.dart';
+import 'package:rememberme/core/constants/app_routes.dart';
+import 'package:rememberme/data/repositories/qr_code_repository.dart';
+import 'package:rememberme/data/models/qr_code_model.dart';
+import 'package:rememberme/business_logic/auth/auth_bloc.dart';
+import 'package:rememberme/business_logic/auth/auth_state.dart';
 import 'dart:io';
 
-import 'package:rememberme/data/services/qr_code_services/qr_scanner_service.dart';
-
-/// Professional QR Scanner with square scan area
+/// QR Scanner Screen - Angepasst für neuen Claiming-Flow
 class QrScannerScreen extends StatefulWidget {
   const QrScannerScreen({super.key});
 
@@ -24,14 +27,11 @@ class _QrScannerScreenState extends State<QrScannerScreen>
     torchEnabled: false,
   );
 
-  final QrScannerService _qrService = QrScannerService();
-  final MemorialValidationService _validationService =
-      MemorialValidationService();
-
   bool _isProcessing = false;
   bool _hasScanned = false;
   String? _statusMessage;
   bool _showSuccess = false;
+  QrScanResultType? _resultType;
 
   late AnimationController _scanLineController;
   late Animation<double> _scanLineAnimation;
@@ -73,46 +73,104 @@ class _QrScannerScreenState extends State<QrScannerScreen>
 
     HapticFeedback.mediumImpact();
 
-    final parseResult = _qrService.parseQrCode(rawValue);
+    // QR-Code ID extrahieren
+    final qrCodeId = _extractQrCodeId(rawValue);
 
-    if (!parseResult.success) {
-      _showError(parseResult.errorMessage ?? 'Ungültiger QR-Code');
+    if (qrCodeId == null) {
+      _showError('Ungültiger QR-Code. Bitte scanne einen RememberMe QR-Code.');
       _resetScanner();
       return;
     }
 
     setState(() {
-      _statusMessage = 'Gedenkseite wird gesucht...';
+      _statusMessage = 'Status wird geprüft...';
     });
 
-    final validationResult =
-        await _validationService.validateMemorial(parseResult.memorialId!);
+    // QR-Code Status prüfen
+    final qrCodeRepository = context.read<QrCodeRepository>();
+    final checkResult = await qrCodeRepository.checkQrCodeStatus(qrCodeId);
 
     if (!mounted) return;
 
-    if (!validationResult.exists) {
-      _showError(validationResult.errorMessage ?? 'Gedenkseite nicht gefunden');
+    if (!checkResult.exists) {
+      _showError('QR-Code nicht gefunden. Bitte überprüfe den Code.');
       _resetScanner();
       return;
     }
 
+    // Entscheiden was zu tun ist basierend auf Status
+    if (checkResult.canBeClaimed) {
+      // QR-Code ist UNCLAIMED → Claiming-Flow starten
+      _handleUnclaimedQrCode(qrCodeId);
+    } else if (checkResult.memorialId != null) {
+      // QR-Code ist ACTIVE → Zum Memorial navigieren
+      _handleActiveQrCode(qrCodeId, checkResult.memorialId!);
+    } else {
+      // Claiming läuft bereits
+      _showError(checkResult.message);
+      _resetScanner();
+    }
+  }
+
+  /// Extrahiert die QR-Code ID aus verschiedenen Formaten
+  String? _extractQrCodeId(String rawValue) {
+    // Format 1: Volle URL - https://domain.com/m/{qrCodeId}
+    final uri = Uri.tryParse(rawValue);
+    if (uri != null && uri.pathSegments.isNotEmpty) {
+      final mIndex = uri.pathSegments.indexOf('m');
+      if (mIndex >= 0 && mIndex < uri.pathSegments.length - 1) {
+        return uri.pathSegments[mIndex + 1];
+      }
+    }
+
+    // Format 2: Kurze ID (alphanumerisch, typischerweise 6-20 Zeichen)
+    if (RegExp(r'^[a-zA-Z0-9]{3,30}$').hasMatch(rawValue)) {
+      return rawValue;
+    }
+
+    return null;
+  }
+
+  /// Handhabt unclaimed QR-Code → Claiming starten
+  void _handleUnclaimedQrCode(String qrCodeId) {
     setState(() {
       _showSuccess = true;
-      _statusMessage = 'Gedenkseite gefunden';
+      _statusMessage = 'QR-Code verfügbar!';
+      _resultType = QrScanResultType.unclaimed;
     });
 
     _scanLineController.stop();
     HapticFeedback.heavyImpact();
 
-    await Future.delayed(const Duration(milliseconds: 600));
+    // Kurz warten, dann Result zurückgeben
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
+      Navigator.of(context).pop(QrScanResult(
+        type: QrScanResultType.unclaimed,
+        qrCodeId: qrCodeId,
+      ));
+    });
+  }
 
-    if (!mounted) return;
+  /// Handhabt active QR-Code → Zum Memorial navigieren
+  void _handleActiveQrCode(String qrCodeId, String memorialId) {
+    setState(() {
+      _showSuccess = true;
+      _statusMessage = 'Gedenkseite gefunden!';
+      _resultType = QrScanResultType.active;
+    });
 
-    Navigator.of(context).pop(QrScanResult(
-      success: true,
-      memorialId: parseResult.memorialId!,
-      memorialName: validationResult.memorialName!,
-    ));
+    _scanLineController.stop();
+    HapticFeedback.heavyImpact();
+
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
+      Navigator.of(context).pop(QrScanResult(
+        type: QrScanResultType.active,
+        qrCodeId: qrCodeId,
+        memorialId: memorialId,
+      ));
+    });
   }
 
   void _resetScanner() {
@@ -121,6 +179,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
       _hasScanned = false;
       _statusMessage = null;
       _showSuccess = false;
+      _resultType = null;
     });
     _scanLineController.repeat();
   }
@@ -344,12 +403,15 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                         ),
                       ),
                     ),
-                  Text(
-                    _statusMessage!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
+                  Flexible(
+                    child: Text(
+                      _statusMessage!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ],
@@ -363,7 +425,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
           left: 24,
           right: 24,
           child: Text(
-            'QR-Code im Rahmen platzieren',
+            'RememberMe QR-Code im Rahmen platzieren',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white.withOpacity(0.7),
@@ -376,6 +438,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   }
 }
 
+// Overlay Painter (gleich wie vorher)
 class _OverlayPainter extends CustomPainter {
   final Rect scanRect;
   final Color borderColor;
@@ -384,7 +447,6 @@ class _OverlayPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Dark overlay
     final overlayPath = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
       ..addRRect(RRect.fromRectAndRadius(scanRect, const Radius.circular(16)))
@@ -393,7 +455,6 @@ class _OverlayPainter extends CustomPainter {
     canvas.drawPath(
         overlayPath, Paint()..color = Colors.black.withOpacity(0.7));
 
-    // Border
     canvas.drawRRect(
       RRect.fromRectAndRadius(scanRect, const Radius.circular(16)),
       Paint()
@@ -402,7 +463,6 @@ class _OverlayPainter extends CustomPainter {
         ..strokeWidth = 3,
     );
 
-    // Corner accents
     _drawCorners(canvas, scanRect, borderColor);
   }
 
@@ -463,14 +523,21 @@ class _OverlayPainter extends CustomPainter {
       old.borderColor != borderColor;
 }
 
+/// Ergebnis-Typ des QR-Scans
+enum QrScanResultType {
+  unclaimed, // QR-Code kann geclaimed werden
+  active, // QR-Code ist bereits aktiviert, Memorial existiert
+}
+
+/// Scan-Ergebnis
 class QrScanResult {
-  final bool success;
-  final String? memorialId;
-  final String? memorialName;
+  final QrScanResultType type;
+  final String? qrCodeId;
+  final String? memorialId; // Nur bei type == active
 
   QrScanResult({
-    required this.success,
+    required this.type,
+    this.qrCodeId,
     this.memorialId,
-    this.memorialName,
   });
 }

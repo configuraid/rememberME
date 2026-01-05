@@ -1,8 +1,10 @@
+// main.dart
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rememberme/core/utils/deep_link_handler.dart';
+import 'package:rememberme/data/services/qr_code_services/claiming_service.dart';
 
 import 'app.dart';
 import 'firebase_options.dart';
@@ -13,6 +15,7 @@ import 'data/repositories/memorial_repository.dart';
 import 'data/repositories/profile_repository.dart';
 import 'data/repositories/page_builder_repository.dart';
 import 'data/repositories/invitation_repository.dart';
+import 'data/repositories/qr_code_repository.dart';
 
 // Services
 import 'data/services/firebase_storage_service.dart';
@@ -27,15 +30,12 @@ import 'business_logic/page_builder/page_builder_bloc.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Firebase initialisieren
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Deep Link Handler initialisieren
   await deepLinkHandler.initialize();
 
-  // System-UI Styling
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -44,16 +44,22 @@ void main() async {
     ),
   );
 
-  // Repositories initialisieren
+  // Repositories
   final authRepository = AuthRepository();
   final memorialRepository = MemorialRepository();
   final profileRepository = ProfileRepository();
   final pageBuilderRepository = PageBuilderRepository();
   final invitationRepository = InvitationRepository();
+  final qrCodeRepository = QrCodeRepository(); // NEU!
 
-  // Services initialisieren
+  // Services
   final storageService = FirebaseStorageService();
   final previewService = PreviewService();
+  final claimingService = ClaimingService(
+    // NEU!
+    qrCodeRepository: qrCodeRepository,
+    memorialRepository: memorialRepository,
+  );
 
   runApp(
     MultiRepositoryProvider(
@@ -63,8 +69,10 @@ void main() async {
         RepositoryProvider.value(value: profileRepository),
         RepositoryProvider.value(value: pageBuilderRepository),
         RepositoryProvider.value(value: invitationRepository),
+        RepositoryProvider.value(value: qrCodeRepository), // NEU!
         RepositoryProvider.value(value: storageService),
         RepositoryProvider.value(value: previewService),
+        RepositoryProvider.value(value: claimingService), // NEU!
       ],
       child: MultiBlocProvider(
         providers: [

@@ -1,3 +1,4 @@
+// presentation/screens/memorial/memorial_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -5,6 +6,8 @@ import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rememberme/presentation/screens/auth/qr_scanner_screen.dart';
 import 'package:rememberme/presentation/widgets/show_memorial_share_sheet.dart';
+import 'package:rememberme/core/utils/qr_claiming_handler.dart'; // NEU!
+import 'package:rememberme/data/repositories/memorial_repository.dart'; // NEU!
 
 import '../../../business_logic/auth/auth_bloc.dart';
 import '../../../business_logic/memorial/memorial_bloc.dart';
@@ -14,7 +17,6 @@ import '../../../data/models/memorial_model.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_routes.dart';
-import '../../../data/services/qr_code_services/memorial_validation_service.dart';
 import 'memorial_create_screen.dart';
 import 'memorial_edit_screen.dart';
 import '../../widgets/preview/web_preview_mixin.dart';
@@ -29,8 +31,7 @@ class MemorialDetailScreen extends StatefulWidget {
 }
 
 class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
-  final MemorialValidationService _validationService =
-      MemorialValidationService();
+  // ❌ ENTFERNT: final MemorialValidationService _validationService = MemorialValidationService();
 
   @override
   void initState() {
@@ -318,7 +319,6 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
             : AppColors.surface.withOpacity(0.94),
       ),
       child: SafeArea(
-        // ✅ FIX: Material wrapper to prevent yellow underlines
         child: Material(
           type: MaterialType.transparency,
           child: CustomScrollView(
@@ -398,7 +398,6 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
   ) {
     final isIOS = Platform.isIOS;
 
-    // Separate owned and shared memorials
     final ownedMemorials =
         allMemorials.where((m) => m.ownerId == currentUserId).toList();
     final sharedMemorials =
@@ -415,7 +414,6 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section: Eigene Gedenkseiten
           if (ownedMemorials.isNotEmpty) ...[
             _buildSectionHeader(
               context,
@@ -434,8 +432,6 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
                   isOwner: true,
                 )),
           ],
-
-          // Divider between sections
           if (ownedMemorials.isNotEmpty && sharedMemorials.isNotEmpty) ...[
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -445,8 +441,6 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
               ),
             ),
           ],
-
-          // Section: Eingeladene Gedenkseiten
           if (sharedMemorials.isNotEmpty) ...[
             _buildSectionHeader(
               context,
@@ -557,7 +551,6 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
         ),
         child: Row(
           children: [
-            // Profile Image
             Container(
               width: 40,
               height: 40,
@@ -585,8 +578,6 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
               ),
             ),
             const SizedBox(width: 12),
-
-            // Name and Lifespan
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -607,7 +598,6 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      // Ownership Badge
                       _buildOwnershipBadge(context, isOwner, isDark),
                     ],
                   ),
@@ -619,8 +609,6 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
                 ],
               ),
             ),
-
-            // Selected Checkmark
             if (isSelected)
               Icon(
                 isIOS
@@ -698,6 +686,9 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
     }
   }
 
+  // ========================================
+  // ✅ KOMPLETT NEU: QR Scanner mit neuem Flow
+  // ========================================
   Future<void> _openQrScanner(BuildContext context) async {
     HapticFeedback.mediumImpact();
 
@@ -709,29 +700,180 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
       return;
     }
 
+    // Scanner öffnen
     final result = await Navigator.of(context).push<QrScanResult>(
       Platform.isIOS
           ? CupertinoPageRoute(builder: (context) => const QrScannerScreen())
           : MaterialPageRoute(builder: (context) => const QrScannerScreen()),
     );
 
+    if (!mounted || result == null) return;
+
+    // Ergebnis verarbeiten basierend auf Typ
+    switch (result.type) {
+      case QrScanResultType.unclaimed:
+        // QR-Code ist frei → Claiming-Flow starten
+        debugPrint('📱 QR-Code unclaimed: ${result.qrCodeId}');
+        _handleUnclaimedQrCode(context, result.qrCodeId!, currentUserId);
+        break;
+
+      case QrScanResultType.active:
+        // QR-Code ist bereits aktiviert → Memorial laden/anzeigen
+        debugPrint('📱 QR-Code active, Memorial: ${result.memorialId}');
+        _handleActiveQrCode(context, result.memorialId!, currentUserId);
+        break;
+    }
+  }
+
+  /// Handhabt unclaimed QR-Code → Claiming-Dialog anzeigen
+  void _handleUnclaimedQrCode(
+    BuildContext context,
+    String qrCodeId,
+    String currentUserId,
+  ) {
+    // QrClaimingHandler übernimmt den kompletten Flow
+    // (Dialog anzeigen, Memorial erstellen, etc.)
+    qrClaimingHandler.startClaimingFlow(
+      context: context,
+      qrCodeId: qrCodeId,
+      userId: currentUserId,
+    );
+  }
+
+  /// Handhabt active QR-Code → Prüfen ob User Zugang hat
+  Future<void> _handleActiveQrCode(
+    BuildContext context,
+    String memorialId,
+    String currentUserId,
+  ) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Prüfen ob User bereits Zugang hat
+    final memorialRepository = context.read<MemorialRepository>();
+    final hasAccess = await memorialRepository.hasAccess(
+      memorialId: memorialId,
+      userId: currentUserId,
+    );
+
     if (!mounted) return;
 
-    if (result != null && result.success && result.memorialId != null) {
-      final grantResult = await _validationService.grantAccess(
+    if (hasAccess) {
+      // User hat bereits Zugang → Memorial laden und anzeigen
+      final memorial = await memorialRepository.getMemorialById(memorialId);
+
+      if (memorial != null && mounted) {
+        // Zum Memorial wechseln
+        context.read<MemorialBloc>().add(MemorialSelected(memorial: memorial));
+        _showSuccessSnackBar(context, 'Gedenkseite "${memorial.name}" geladen');
+      }
+    } else {
+      // User hat keinen Zugang → Fragen ob Zugang gewährt werden soll
+      _showAccessRequestDialog(context, memorialId, currentUserId);
+    }
+  }
+
+  /// Dialog: Zugang zu fremdem Memorial anfragen
+  void _showAccessRequestDialog(
+    BuildContext context,
+    String memorialId,
+    String currentUserId,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (Platform.isIOS) {
+      showCupertinoDialog(
+        context: context,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: const Text('Gedenkseite gefunden'),
+          content: const Padding(
+            padding: EdgeInsets.only(top: 12),
+            child: Text(
+              'Diese Gedenkseite gehört jemand anderem. '
+              'Möchtest du Zugang anfragen?\n\n'
+              '(In der aktuellen Version wird der Zugang direkt gewährt)',
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Abbrechen'),
+            ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                await _grantAccessAndReload(context, memorialId, currentUserId);
+              },
+              child: const Text('Zugang erhalten'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Gedenkseite gefunden'),
+          content: const Text(
+            'Diese Gedenkseite gehört jemand anderem. '
+            'Möchtest du Zugang anfragen?\n\n'
+            '(In der aktuellen Version wird der Zugang direkt gewährt)',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Abbrechen'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                await _grantAccessAndReload(context, memorialId, currentUserId);
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: isDark ? AppColors.accent : AppColors.primary,
+              ),
+              child: const Text('Zugang erhalten'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  /// Gewährt Zugang und lädt Memorials neu
+  Future<void> _grantAccessAndReload(
+    BuildContext context,
+    String memorialId,
+    String currentUserId,
+  ) async {
+    try {
+      final memorialRepository = context.read<MemorialRepository>();
+
+      // Zugang gewähren (als "Viewer" via QR-Code)
+      await memorialRepository.addMemberAccess(
+        memorialId: memorialId,
         userId: currentUserId,
-        memorialId: result.memorialId!,
+        invitedById: currentUserId, // Self-invite via QR
       );
 
       if (!mounted) return;
 
-      if (grantResult) {
-        context
-            .read<MemorialBloc>()
-            .add(MemorialLoadRequested(userId: currentUserId));
-        _showAccessGrantedDialog(context, result.memorialName ?? 'Gedenkseite');
-      } else {
-        _showErrorSnackBar(context, 'Zugang konnte nicht gewährt werden.');
+      // Memorials neu laden
+      context.read<MemorialBloc>().add(
+            MemorialLoadRequested(userId: currentUserId),
+          );
+
+      // Memorial laden für Anzeige
+      final memorial = await memorialRepository.getMemorialById(memorialId);
+
+      if (memorial != null && mounted) {
+        _showAccessGrantedDialog(context, memorial.name);
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar(context, 'Zugang konnte nicht gewährt werden: $e');
       }
     }
   }
