@@ -63,7 +63,7 @@ class MemorialCreateRequested extends MemorialEvent {
   final File? profileImage;
   final bool isPublic;
   final String templateId;
-  final String? qrCodeId; // NEU: QR-Code ID für Claiming
+  final String? qrCodeId;
 
   const MemorialCreateRequested({
     required this.ownerId,
@@ -74,7 +74,7 @@ class MemorialCreateRequested extends MemorialEvent {
     this.profileImage,
     this.isPublic = false,
     this.templateId = 'default',
-    this.qrCodeId, // NEU
+    this.qrCodeId,
   });
 
   @override
@@ -87,7 +87,7 @@ class MemorialCreateRequested extends MemorialEvent {
         profileImage,
         isPublic,
         templateId,
-        qrCodeId, // NEU
+        qrCodeId,
       ];
 }
 

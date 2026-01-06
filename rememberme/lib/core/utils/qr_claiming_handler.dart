@@ -2,15 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rememberme/data/services/qr_code_services/claiming_service.dart';
+import 'package:rememberme/presentation/screens/memorial/memorial_screen.dart';
+import 'package:rememberme/presentation/screens/preview/webview_preview_screen.dart';
 import 'dart:io';
 
 import '../../data/repositories/qr_code_repository.dart';
 import '../../data/repositories/memorial_repository.dart';
+import '../../data/repositories/auth_repository.dart';
+import '../../data/models/memorial_model.dart';
 import '../../business_logic/memorial/memorial_bloc.dart';
 import '../../business_logic/memorial/memorial_event.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
 import 'deep_link_handler.dart';
+
+import '../../presentation/screens/memorial/memorial_private_screen.dart';
 
 /// Handler für QR-Code Claiming Flow
 class QrClaimingHandler {
@@ -19,6 +25,8 @@ class QrClaimingHandler {
   QrClaimingHandler._internal();
 
   late ClaimingService _claimingService;
+  late MemorialRepository _memorialRepository;
+  late AuthRepository _authRepository;
   BuildContext? _context;
   String? _currentUserId;
   bool _isInitialized = false;
@@ -31,10 +39,13 @@ class QrClaimingHandler {
     required BuildContext context,
     required QrCodeRepository qrCodeRepository,
     required MemorialRepository memorialRepository,
+    required AuthRepository authRepository,
     String? userId,
   }) {
     _context = context;
     _currentUserId = userId;
+    _memorialRepository = memorialRepository;
+    _authRepository = authRepository;
     _claimingService = ClaimingService(
       qrCodeRepository: qrCodeRepository,
       memorialRepository: memorialRepository,
@@ -317,7 +328,7 @@ class QrClaimingHandler {
 
     if (!checkResult.canBeClaimed) {
       if (checkResult.memorialId != null) {
-        _showAlreadyClaimedDialog(checkResult.memorialId!);
+        await _handleExistingMemorial(checkResult.memorialId!);
       } else {
         _showErrorDialog(checkResult.message);
       }
@@ -327,6 +338,187 @@ class QrClaimingHandler {
     // ✅ QR-Code kann geclaimed werden → Zur MemorialCreateScreen navigieren!
     _navigateToCreateScreen(qrCodeId);
   }
+
+  /// Prüft Access-Rechte und navigiert zum richtigen Screen
+  Future<void> _handleExistingMemorial(String memorialId) async {
+    if (_context == null || _currentUserId == null) return;
+
+    debugPrint('🔐 Prüfe Access für Memorial: $memorialId');
+
+    // Loading anzeigen
+    _showLoadingDialog();
+
+    try {
+      // Access prüfen
+      final access = await _memorialRepository.checkViewAccess(
+        memorialId: memorialId,
+        userId: _currentUserId!,
+      );
+
+      // Loading schließen
+      if (_context != null && Navigator.of(_context!).canPop()) {
+        Navigator.of(_context!).pop();
+      }
+
+      if (!_context!.mounted) return;
+
+      // Je nach Access-Typ navigieren
+      switch (access.type) {
+        case MemorialViewAccessType.fullAccess:
+          // User ist Owner/Member → MemorialDetailScreen mit Edit-Rechten
+          debugPrint('✅ Full Access → MemorialDetailScreen');
+          _navigateToDetailScreen(access.memorial!);
+          break;
+
+        case MemorialViewAccessType.publicReadOnly:
+          // Öffentliches Memorial → WebView Preview (read-only)
+          debugPrint('👁️ Public Read-Only → WebViewPreviewScreen');
+          _navigateToPreviewScreen(access.memorial!);
+          break;
+
+        case MemorialViewAccessType.privateNoAccess:
+          // Privates Memorial, kein Zugang → Private Screen
+          debugPrint('🔒 Private No Access → MemorialPrivateScreen');
+          _navigateToPrivateScreen(access.memorial!);
+          break;
+
+        case MemorialViewAccessType.notFound:
+          // Memorial nicht gefunden
+          _showErrorDialog('Gedenkseite nicht gefunden.');
+          break;
+      }
+    } catch (e) {
+      // Loading schließen bei Fehler
+      if (_context != null && Navigator.of(_context!).canPop()) {
+        Navigator.of(_context!).pop();
+      }
+      debugPrint('❌ Fehler bei Access-Check: $e');
+      _showErrorDialog('Fehler beim Laden der Gedenkseite.');
+    }
+  }
+
+  /// Zeigt Loading Dialog
+  void _showLoadingDialog() {
+    if (_context == null) return;
+
+    final isDark = Theme.of(_context!).brightness == Brightness.dark;
+
+    showDialog(
+      context: _context!,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.backgroundDarkElevated : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Platform.isIOS
+                    ? CupertinoActivityIndicator(
+                        radius: 16,
+                        color: isDark ? AppColors.accent : null,
+                      )
+                    : CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          isDark ? AppColors.accent : AppColors.primary,
+                        ),
+                      ),
+                const SizedBox(height: 16),
+                Text(
+                  'Gedenkseite wird geladen...',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Navigiert zum Detail Screen (für Owner/Members)
+  void _navigateToDetailScreen(MemorialModel memorial) {
+    if (_context == null) return;
+
+    if (Platform.isIOS) {
+      Navigator.push(
+        _context!,
+        CupertinoPageRoute(
+          builder: (context) => MemorialDetailScreen(memorial: memorial),
+        ),
+      );
+    } else {
+      Navigator.push(
+        _context!,
+        MaterialPageRoute(
+          builder: (context) => MemorialDetailScreen(memorial: memorial),
+        ),
+      );
+    }
+  }
+
+  /// Navigiert zum Preview Screen (für öffentliche Memorials)
+  void _navigateToPreviewScreen(MemorialModel memorial) {
+    if (_context == null) return;
+
+    // Preview URL bauen - passe die URL an dein Vercel-Deployment an!
+    final previewUrl = 'https://${DeepLinkHandler.webDomain}/m/${memorial.id}';
+
+    if (Platform.isIOS) {
+      Navigator.push(
+        _context!,
+        CupertinoPageRoute(
+          builder: (context) => WebViewPreviewScreen(
+            previewUrl: previewUrl,
+            memorialName: memorial.name,
+          ),
+        ),
+      );
+    } else {
+      Navigator.push(
+        _context!,
+        MaterialPageRoute(
+          builder: (context) => WebViewPreviewScreen(
+            previewUrl: previewUrl,
+            memorialName: memorial.name,
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Navigiert zum Private Screen (für private Memorials ohne Zugang)
+  void _navigateToPrivateScreen(MemorialModel memorial) {
+    if (_context == null) return;
+
+    if (Platform.isIOS) {
+      Navigator.push(
+        _context!,
+        CupertinoPageRoute(
+          builder: (context) => MemorialPrivateScreen(memorial: memorial),
+        ),
+      );
+    } else {
+      Navigator.push(
+        _context!,
+        MaterialPageRoute(
+          builder: (context) => MemorialPrivateScreen(memorial: memorial),
+        ),
+      );
+    }
+  }
+
+  // ============================================================
+  // Bestehende Methoden (unverändert)
+  // ============================================================
 
   /// Navigiert zur MemorialCreateScreen mit QR-Code ID
   void _navigateToCreateScreen(String qrCodeId) {
@@ -365,39 +557,9 @@ class QrClaimingHandler {
     );
   }
 
-  void _showAlreadyClaimedDialog(String memorialId) {
-    if (_context == null) return;
-
-    final isDark = Theme.of(_context!).brightness == Brightness.dark;
-
-    showDialog(
-      context: _context!,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Bereits aktiviert'),
-        content: const Text(
-          'Dieser QR-Code wurde bereits aktiviert.\n\n'
-          'Möchtest du zur Gedenkseite navigieren?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Abbrechen'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              // TODO: Zum Memorial navigieren
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: isDark ? AppColors.accent : AppColors.primary,
-            ),
-            child: const Text('Zur Gedenkseite'),
-          ),
-        ],
-      ),
-    );
-  }
+  // ============================================================
+  // ENTFERNT: _showAlreadyClaimedDialog - ersetzt durch _handleExistingMemorial
+  // ============================================================
 
   void startClaimingFlow({
     required BuildContext context,

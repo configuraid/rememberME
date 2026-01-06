@@ -7,7 +7,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../data/models/memorial_model.dart';
 import '../../../data/services/share_service.dart';
 
-/// Shows a share bottom sheet for a memorial
 Future<void> showMemorialShareSheet({
   required BuildContext context,
   required MemorialModel memorial,
@@ -38,9 +37,6 @@ Future<void> showMemorialShareSheet({
   }
 }
 
-// ============================================================
-// iOS Bottom Sheet
-// ============================================================
 class _ShareBottomSheetIOS extends StatefulWidget {
   final MemorialModel memorial;
   final String currentUserId;

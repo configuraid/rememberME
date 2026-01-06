@@ -1128,11 +1128,6 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
     );
   }
 
-// ============================================================
-// SCHRITT 5: NEUE Methode _buildGallerySliderPreview() hinzufügen
-// ============================================================
-// Nach _buildGalleryGridPreview() einfügen:
-
   /// Slider/Carousel-Vorschau für Gallery
   Widget _buildGallerySliderPreview(List<String> images, bool isDark) {
     return Column(

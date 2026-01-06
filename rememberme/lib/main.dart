@@ -50,13 +50,12 @@ void main() async {
   final profileRepository = ProfileRepository();
   final pageBuilderRepository = PageBuilderRepository();
   final invitationRepository = InvitationRepository();
-  final qrCodeRepository = QrCodeRepository(); // NEU!
+  final qrCodeRepository = QrCodeRepository();
 
   // Services
   final storageService = FirebaseStorageService();
   final previewService = PreviewService();
   final claimingService = ClaimingService(
-    // NEU!
     qrCodeRepository: qrCodeRepository,
     memorialRepository: memorialRepository,
   );
@@ -69,10 +68,10 @@ void main() async {
         RepositoryProvider.value(value: profileRepository),
         RepositoryProvider.value(value: pageBuilderRepository),
         RepositoryProvider.value(value: invitationRepository),
-        RepositoryProvider.value(value: qrCodeRepository), // NEU!
+        RepositoryProvider.value(value: qrCodeRepository),
         RepositoryProvider.value(value: storageService),
         RepositoryProvider.value(value: previewService),
-        RepositoryProvider.value(value: claimingService), // NEU!
+        RepositoryProvider.value(value: claimingService),
       ],
       child: MultiBlocProvider(
         providers: [

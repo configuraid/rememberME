@@ -20,11 +20,14 @@ class ClaimResult {
     return ClaimResult._(success: true, qrCode: qrCode);
   }
 
-  factory ClaimResult.failure(String message, ClaimErrorType type) {
+  // ✅ GEÄNDERT: qrCode Parameter hinzugefügt
+  factory ClaimResult.failure(String message, ClaimErrorType type,
+      {QrCodeModel? qrCode}) {
     return ClaimResult._(
       success: false,
       errorMessage: message,
       errorType: type,
+      qrCode: qrCode,
     );
   }
 }
@@ -156,9 +159,11 @@ class QrCodeRepository {
           // 2. Prüfen ob Claiming möglich
           if (qrCode.isActive) {
             debugPrint('❌ QR-Code bereits aktiviert von: ${qrCode.ownerId}');
+            // ✅ GEÄNDERT: qrCode wird jetzt mitgegeben!
             return ClaimResult.failure(
               'Dieser QR-Code wurde bereits aktiviert.',
               ClaimErrorType.alreadyClaimed,
+              qrCode: qrCode,
             );
           }
 
@@ -171,10 +176,12 @@ class QrCodeRepository {
             }
 
             debugPrint('❌ Claiming bereits in Bearbeitung von anderem User');
+            // ✅ GEÄNDERT: qrCode wird jetzt mitgegeben!
             return ClaimResult.failure(
               'Die Aktivierung wird gerade von jemand anderem durchgeführt. '
               'Bitte versuche es in wenigen Minuten erneut.',
               ClaimErrorType.claimingInProgress,
+              qrCode: qrCode,
             );
           }
 

@@ -598,4 +598,153 @@ class MemorialRepository {
       rethrow;
     }
   }
+
+// ============================================================
+// FÜGE DIESE METHODE ZU MemorialRepository HINZU
+// ============================================================
+
+  /// Prüft welchen Zugang ein User zu einem Memorial hat
+  ///
+  /// Logik:
+  /// 1. Memorial laden
+  /// 2. Ist User Owner oder Member? → fullAccess (kann bearbeiten)
+  /// 3. Ist Memorial öffentlich? → publicReadOnly (kann nur ansehen)
+  /// 4. Sonst → privateNoAccess (sieht nur Basis-Infos)
+  Future<MemorialViewAccess> checkViewAccess({
+    required String memorialId,
+    required String userId,
+  }) async {
+    try {
+      print(
+          '🔐 MemorialRepository - Prüfe View-Access: $memorialId für User: $userId');
+
+      // 1. Memorial laden
+      final memorial = await getMemorialById(memorialId);
+      if (memorial == null) {
+        print('❌ MemorialRepository - Memorial nicht gefunden');
+        return MemorialViewAccess.notFound();
+      }
+
+      // 2. Prüfen ob User Owner ist
+      if (memorial.ownerId == userId) {
+        print('✅ MemorialRepository - User ist Owner → fullAccess');
+        return MemorialViewAccess.fullAccess(memorial);
+      }
+
+      // 3. Prüfen ob User eingeladener Member ist
+      final isMember = await hasAccess(memorialId: memorialId, userId: userId);
+      if (isMember) {
+        print('✅ MemorialRepository - User ist Member → fullAccess');
+        return MemorialViewAccess.fullAccess(memorial);
+      }
+
+      // 4. User ist weder Owner noch Member
+      if (memorial.isPublic) {
+        // Öffentlich → kann ansehen, aber nicht bearbeiten
+        print(
+            '👁️ MemorialRepository - Memorial ist öffentlich → publicReadOnly');
+        return MemorialViewAccess.publicReadOnly(memorial);
+      } else {
+        // Privat → kein Zugang zu Inhalten
+        print('🔒 MemorialRepository - Memorial ist privat → privateNoAccess');
+        return MemorialViewAccess.privateNoAccess(memorial);
+      }
+    } catch (e) {
+      print('❌ MemorialRepository - checkViewAccess Fehler: $e');
+      return MemorialViewAccess.notFound();
+    }
+  }
+
+  /// Schnelle Prüfung ob User Inhalte sehen darf
+  /// (für Guards in der UI)
+  Future<bool> canViewContent({
+    required String memorialId,
+    required String userId,
+  }) async {
+    final access =
+        await checkViewAccess(memorialId: memorialId, userId: userId);
+    return access.canViewContent;
+  }
+
+  /// Schnelle Prüfung ob User bearbeiten darf
+  Future<bool> canEdit({
+    required String memorialId,
+    required String userId,
+  }) async {
+    final access =
+        await checkViewAccess(memorialId: memorialId, userId: userId);
+    return access.canEdit;
+  }
+}
+
+// ============================================================
+// FÜGE DIESE METHODEN ZU deiner memorial_repository.dart HINZU
+// ============================================================
+
+/// Ergebnis der View-Access-Prüfung
+enum MemorialViewAccessType {
+  /// User ist Owner oder eingeladener Member → voller Zugriff, kann bearbeiten
+  fullAccess,
+
+  /// Memorial ist öffentlich, User hat aber keinen Edit-Zugriff → nur ansehen
+  publicReadOnly,
+
+  /// Memorial ist privat und User hat keinen Zugriff → nur Basis-Infos
+  privateNoAccess,
+
+  /// Memorial nicht gefunden
+  notFound,
+}
+
+class MemorialViewAccess {
+  final MemorialViewAccessType type;
+  final MemorialModel? memorial;
+  final bool canEdit;
+  final bool canViewContent;
+
+  const MemorialViewAccess._({
+    required this.type,
+    this.memorial,
+    this.canEdit = false,
+    this.canViewContent = false,
+  });
+
+  factory MemorialViewAccess.fullAccess(MemorialModel memorial) {
+    return MemorialViewAccess._(
+      type: MemorialViewAccessType.fullAccess,
+      memorial: memorial,
+      canEdit: true,
+      canViewContent: true,
+    );
+  }
+
+  factory MemorialViewAccess.publicReadOnly(MemorialModel memorial) {
+    return MemorialViewAccess._(
+      type: MemorialViewAccessType.publicReadOnly,
+      memorial: memorial,
+      canEdit: false,
+      canViewContent: true,
+    );
+  }
+
+  factory MemorialViewAccess.privateNoAccess(MemorialModel memorial) {
+    return MemorialViewAccess._(
+      type: MemorialViewAccessType.privateNoAccess,
+      memorial: memorial,
+      canEdit: false,
+      canViewContent: false,
+    );
+  }
+
+  factory MemorialViewAccess.notFound() {
+    return const MemorialViewAccess._(
+      type: MemorialViewAccessType.notFound,
+    );
+  }
+
+  /// Für schnelle Checks
+  bool get hasFullAccess => type == MemorialViewAccessType.fullAccess;
+  bool get isPublicReadOnly => type == MemorialViewAccessType.publicReadOnly;
+  bool get isPrivateNoAccess => type == MemorialViewAccessType.privateNoAccess;
+  bool get isNotFound => type == MemorialViewAccessType.notFound;
 }

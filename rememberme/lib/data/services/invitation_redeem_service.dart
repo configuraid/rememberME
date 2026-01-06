@@ -12,7 +12,6 @@ class InvitationRedeemService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final ShareService _shareService = ShareService();
 
-  // ✅ FIX: Consistent collection name (must match MemorialRepository!)
   static const String _memorialAccessCollection = 'memorialAccess';
 
   /// Redeems an invitation for a user

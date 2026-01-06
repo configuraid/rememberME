@@ -8,8 +8,6 @@ enum QrCodeStatus {
   suspended, // Temporär deaktiviert
 }
 
-/// QR-Code Model - GETRENNT vom Memorial!
-///
 /// Repräsentiert den physischen QR-Code auf dem Produkt.
 /// Ein QR-Code verweist auf ein Memorial nach Aktivierung.
 class QrCodeModel extends Equatable {

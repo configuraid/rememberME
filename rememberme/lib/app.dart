@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rememberme/business_logic/auth/auth_state.dart';
 import 'package:rememberme/core/utils/invitation_handler.dart';
 import 'package:rememberme/core/utils/qr_claiming_handler.dart';
+import 'package:rememberme/data/repositories/auth_repository.dart';
 import 'package:rememberme/data/repositories/memorial_repository.dart';
 import 'package:rememberme/data/repositories/qr_code_repository.dart';
 import 'package:rememberme/presentation/screens/home_screen.dart';
@@ -56,6 +57,7 @@ class _RememberMeAppState extends State<RememberMeApp> {
               context: _navigatorKey.currentContext!,
               qrCodeRepository: context.read<QrCodeRepository>(),
               memorialRepository: context.read<MemorialRepository>(),
+              authRepository: context.read<AuthRepository>(),
               userId: state.user?.id,
             );
           }

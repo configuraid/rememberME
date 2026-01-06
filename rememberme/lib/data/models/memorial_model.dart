@@ -10,14 +10,12 @@ enum MemorialStatus {
 
 class MemorialModel extends Equatable {
   final String id;
-  final String ownerId; // Wer hat das Memorial erstellt?
+  final String ownerId;
 
-  // Basis-Infos (immer sichtbar, auch bei Private)
   final String name;
   final DateTime? birthDate;
   final DateTime? deathDate;
 
-  // Erweiterte Infos (nur für Members bei Private)
   final String? subtitle;
   final String? biography;
   final String? profileImageUrl;
@@ -52,10 +50,6 @@ class MemorialModel extends Equatable {
     required this.createdAt,
     required this.updatedAt,
   });
-
-  // ========================================
-  // COMPUTED PROPERTIES
-  // ========================================
 
   /// Lebensspanne formatiert
   String get lifespan {

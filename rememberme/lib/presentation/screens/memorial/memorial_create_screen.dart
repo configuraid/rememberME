@@ -6,6 +6,10 @@ import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:rememberme/data/repositories/memorial_repository.dart';
+import 'package:rememberme/presentation/screens/memorial/memorial_private_screen.dart';
+import 'package:rememberme/presentation/screens/memorial/memorial_screen.dart';
+import 'package:rememberme/presentation/screens/preview/webview_preview_screen.dart';
 import 'package:rememberme/presentation/widgets/memorial/lifespan_picker_card.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -44,7 +48,10 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
   // QR-Code State
   String? _qrCodeId;
   bool _isValidatingQrCode = false;
-  bool _hasScannedOnce = false; // Verhindert mehrfaches Scannen
+  bool _hasScannedOnce = false;
+  String? _lastScannedQrCode;
+  DateTime? _lastScanTime;
+  static const Duration _scanCooldown = Duration(seconds: 3);
 
   // Scanner Controller
   MobileScannerController? _scannerController;
@@ -92,6 +99,48 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
     );
   }
 
+  /// Startet den Scanner sicher (ignoriert Fehler wenn bereits am Laufen)
+  Future<void> _safeStartScanner() async {
+    try {
+      // Kurze Verzögerung damit der Controller sich stabilisieren kann
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      if (!mounted) return;
+
+      if (_scannerController != null) {
+        await _scannerController?.start();
+        debugPrint('✅ Scanner gestartet');
+      }
+    } catch (e) {
+      // MobileScannerException ignorieren - Controller läuft bereits oder initialisiert noch
+      debugPrint('ℹ️ Scanner Info: $e');
+    }
+  }
+
+  bool _isRecentlyScanned(String qrCodeId) {
+    if (_lastScannedQrCode == qrCodeId && _lastScanTime != null) {
+      final elapsed = DateTime.now().difference(_lastScanTime!);
+      if (elapsed < _scanCooldown) {
+        debugPrint(
+            '⏳ QR-Code kürzlich gescannt, ignoriere für ${_scanCooldown.inSeconds - elapsed.inSeconds}s');
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Stoppt den Scanner sicher
+  Future<void> _safeStopScanner() async {
+    try {
+      if (_scannerController != null) {
+        await _scannerController?.stop();
+        debugPrint('✅ Scanner gestoppt');
+      }
+    } catch (e) {
+      debugPrint('ℹ️ Scanner Stop Info: $e');
+    }
+  }
+
   Future<void> _onQrCodeDetected(BarcodeCapture capture) async {
     if (_hasScannedOnce || _isValidatingQrCode) return;
 
@@ -99,28 +148,29 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
     if (barcode == null || barcode.rawValue == null) return;
 
     final scannedValue = barcode.rawValue!;
+
+    // Extrahiere QR-Code ID früh, um Cooldown prüfen zu können
+    final qrCodeId = _extractQrCodeId(scannedValue);
+
+    if (qrCodeId == null) {
+      debugPrint('⚠️ Ungültiger QR-Code Format: $scannedValue');
+      return; // Ignoriere ungültige Codes still
+    }
+
+    // Prüfe ob dieser Code kürzlich gescannt wurde (verhindert Loop)
+    if (_isRecentlyScanned(qrCodeId)) return;
+
     debugPrint('📱 QR-Code gescannt: $scannedValue');
 
     setState(() {
       _hasScannedOnce = true;
       _isValidatingQrCode = true;
+      _lastScannedQrCode = qrCodeId;
+      _lastScanTime = DateTime.now();
     });
 
-    // Stoppe Scanner
-    await _scannerController?.stop();
-
-    // Extrahiere QR-Code ID aus URL oder direktem Wert
-    final qrCodeId = _extractQrCodeId(scannedValue);
-
-    if (qrCodeId == null) {
-      _showError('Ungültiger QR-Code. Bitte scanne einen RememberMe QR-Code.');
-      setState(() {
-        _hasScannedOnce = false;
-        _isValidatingQrCode = false;
-      });
-      await _scannerController?.start();
-      return;
-    }
+    // Stoppe Scanner sicher
+    await _safeStopScanner();
 
     // Validiere QR-Code in Firestore
     await _validateAndSetQrCode(qrCodeId);
@@ -172,7 +222,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
           _hasScannedOnce = false;
           _isValidatingQrCode = false;
         });
-        await _scannerController?.start();
+        await _safeStartScanner();
         return;
       }
 
@@ -193,7 +243,15 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
             _showError('QR-Code nicht gefunden. Bitte prüfe den Code.');
             break;
           case ClaimErrorType.alreadyClaimed:
-            _showAlreadyClaimedDialog(result.qrCode?.memorialId ?? '');
+            final memorialId = result.qrCode?.memorialId;
+            if (memorialId != null && memorialId.isNotEmpty) {
+              // Navigation zur existierenden Gedenkseite
+              // WICHTIG: Hier KEIN Reset - das macht _handleExistingMemorial selbst
+              await _handleExistingMemorial(memorialId);
+              return; // ✅ WICHTIG: Return hier, da _handleExistingMemorial alles handhabt
+            } else {
+              _showError('Dieser QR-Code ist bereits aktiviert.');
+            }
             break;
           case ClaimErrorType.claimingInProgress:
             _showError(
@@ -207,7 +265,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
           _hasScannedOnce = false;
           _isValidatingQrCode = false;
         });
-        await _scannerController?.start();
+        await _safeStartScanner();
         return;
       }
 
@@ -227,7 +285,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
         _hasScannedOnce = false;
         _isValidatingQrCode = false;
       });
-      await _scannerController?.start();
+      await _safeStartScanner();
     }
   }
 
@@ -606,6 +664,159 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
         ),
       );
     }
+  }
+
+  /// Prüft Access-Rechte und navigiert zum richtigen Screen
+  Future<void> _handleExistingMemorial(String memorialId) async {
+    final authState = context.read<AuthBloc>().state;
+    final userId = authState.user?.id;
+
+    if (userId == null) {
+      _showError('Bitte melde dich an.');
+      await _resetScannerAfterNavigation();
+      return;
+    }
+
+    // Loading anzeigen
+    _showLoadingDialog();
+
+    try {
+      final memorialRepository = context.read<MemorialRepository>();
+      final access = await memorialRepository.checkViewAccess(
+        memorialId: memorialId,
+        userId: userId,
+      );
+
+      // Loading schließen
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+
+      if (!mounted) return;
+
+      // Je nach Access-Typ navigieren
+      switch (access.type) {
+        case MemorialViewAccessType.fullAccess:
+          debugPrint('✅ Full Access → MemorialDetailScreen');
+          await Navigator.of(context).push(
+            Platform.isIOS
+                ? CupertinoPageRoute(
+                    builder: (_) =>
+                        MemorialDetailScreen(memorial: access.memorial!))
+                : MaterialPageRoute(
+                    builder: (_) =>
+                        MemorialDetailScreen(memorial: access.memorial!)),
+          );
+          // Nach Rückkehr: Scanner zurücksetzen
+          await _resetScannerAfterNavigation();
+          break;
+
+        case MemorialViewAccessType.publicReadOnly:
+          debugPrint('👁️ Public Read-Only → WebViewPreviewScreen');
+          final previewUrl =
+              'https://remember-me-slug.vercel.app/preview/${access.memorial!.id}';
+          await Navigator.of(context).push(
+            Platform.isIOS
+                ? CupertinoPageRoute(
+                    builder: (_) => WebViewPreviewScreen(
+                          previewUrl: previewUrl,
+                          memorialName: access.memorial!.name,
+                        ))
+                : MaterialPageRoute(
+                    builder: (_) => WebViewPreviewScreen(
+                          previewUrl: previewUrl,
+                          memorialName: access.memorial!.name,
+                        )),
+          );
+          // Nach Rückkehr: Scanner zurücksetzen
+          await _resetScannerAfterNavigation();
+          break;
+
+        case MemorialViewAccessType.privateNoAccess:
+          debugPrint('🔒 Private No Access → MemorialPrivateScreen');
+          await Navigator.of(context).push(
+            Platform.isIOS
+                ? CupertinoPageRoute(
+                    builder: (_) =>
+                        MemorialPrivateScreen(memorial: access.memorial!))
+                : MaterialPageRoute(
+                    builder: (_) =>
+                        MemorialPrivateScreen(memorial: access.memorial!)),
+          );
+          // Nach Rückkehr: Scanner zurücksetzen
+          await _resetScannerAfterNavigation();
+          break;
+
+        case MemorialViewAccessType.notFound:
+          _showError('Gedenkseite nicht gefunden.');
+          await _resetScannerAfterNavigation();
+          break;
+      }
+    } catch (e) {
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      debugPrint('❌ Fehler bei Access-Check: $e');
+      _showError('Fehler beim Laden der Gedenkseite.');
+      await _resetScannerAfterNavigation();
+    }
+  }
+
+  /// Setzt den Scanner nach Navigation zurück
+  Future<void> _resetScannerAfterNavigation() async {
+    if (!mounted) return;
+
+    debugPrint('🔄 Setze Scanner zurück...');
+
+    setState(() {
+      _hasScannedOnce = false;
+      _isValidatingQrCode = false;
+    });
+
+    // Scanner sicher neu starten
+    await _safeStartScanner();
+  }
+
+  void _showLoadingDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.backgroundDarkElevated : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Platform.isIOS
+                    ? CupertinoActivityIndicator(
+                        radius: 16, color: isDark ? AppColors.accent : null)
+                    : CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          isDark ? AppColors.accent : AppColors.primary,
+                        ),
+                      ),
+                const SizedBox(height: 16),
+                Text(
+                  'Gedenkseite wird geladen...',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   // ============================================================

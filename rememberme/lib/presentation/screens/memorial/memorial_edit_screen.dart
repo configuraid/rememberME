@@ -487,7 +487,6 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
               const SizedBox(height: 20),
               _buildAndroidBiographyField(isDark),
               const SizedBox(height: 20),
-              // NEU: LifespanPickerCard statt zwei separate Felder
               LifespanPickerCard(
                 birthDate: _birthDate,
                 deathDate: _deathDate,
@@ -583,7 +582,6 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
                   const SizedBox(height: 20),
                   _buildIOSBiographyField(isDark),
                   const SizedBox(height: 20),
-                  // NEU: LifespanPickerCard statt zwei separate Felder
                   LifespanPickerCard(
                     birthDate: _birthDate,
                     deathDate: _deathDate,

@@ -8,8 +8,8 @@ class AppStrings {
   static const String logout = 'Abmelden';
   static const String or = 'oder';
 
-  // Navigation (NEU für HomeScreen)
-  static const String memorial = 'Gedenkseite'; // ← NEU!
+  // Navigation
+  static const String memorial = 'Gedenkseite';
 
   // Memorial
   static const String myMemorialPage = 'Meine Gedenkseite';
