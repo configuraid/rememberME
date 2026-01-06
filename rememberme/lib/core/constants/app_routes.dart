@@ -6,7 +6,7 @@ class AppRoutes {
   static const String forgotPassword = '/forgot-password';
 
   // Main Route (Tab Navigation)
-  static const String home = '/home'; // ← NEU! Hauptroute mit BottomNav
+  static const String home = '/home';
 
   // Memorial Routes
   static const String memorialDetail = '/memorial-detail';

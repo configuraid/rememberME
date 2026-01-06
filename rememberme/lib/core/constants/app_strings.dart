@@ -109,17 +109,6 @@ class AppStrings {
   static const String templateNature = 'Natur';
   static const String templateNatureDescription = 'Mit natürlichen Elementen';
 
-  // Template Features
-  static const String featureTimeless = 'Zeitlos';
-  static const String featureElegant = 'Elegant';
-  static const String featureTraditional = 'Traditionell';
-  static const String featureModern = 'Modern';
-  static const String featureMinimalist = 'Minimalistisch';
-  static const String featureInteractive = 'Interaktiv';
-  static const String featureNatural = 'Natürlich';
-  static const String featureCalming = 'Beruhigend';
-  static const String featureHarmonious = 'Harmonisch';
-
   // Page Builder
   static const String addContent = 'Inhalt hinzufügen';
   static const String addBlock = 'Block hinzufügen';

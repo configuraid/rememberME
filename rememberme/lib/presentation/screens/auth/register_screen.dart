@@ -12,31 +12,57 @@ import '../../../business_logic/memorial/memorial_event.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  final _nameFocusNode = FocusNode();
   final _emailFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
+  final _confirmPasswordFocusNode = FocusNode();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
+  String? _nameError;
   String? _emailError;
   String? _passwordError;
+  String? _confirmPasswordError;
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _nameFocusNode.dispose();
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
+    _confirmPasswordFocusNode.dispose();
     super.dispose();
+  }
+
+  bool _validateName(String name) {
+    if (name.isEmpty) {
+      setState(() => _nameError = 'Name eingeben');
+      return false;
+    }
+    if (name.length < 2) {
+      setState(() => _nameError = 'Mindestens 2 Zeichen');
+      return false;
+    }
+    setState(() => _nameError = null);
+    return true;
   }
 
   bool _validateEmail(String email) {
@@ -66,13 +92,30 @@ class _LoginScreenState extends State<LoginScreen> {
     return true;
   }
 
-  void _login() {
+  bool _validateConfirmPassword(String confirmPassword) {
+    if (confirmPassword.isEmpty) {
+      setState(() => _confirmPasswordError = 'Passwort bestätigen');
+      return false;
+    }
+    if (confirmPassword != _passwordController.text) {
+      setState(
+          () => _confirmPasswordError = 'Passwörter stimmen nicht überein');
+      return false;
+    }
+    setState(() => _confirmPasswordError = null);
+    return true;
+  }
+
+  void _register() {
     FocusScope.of(context).unfocus();
 
+    final nameValid = _validateName(_nameController.text.trim());
     final emailValid = _validateEmail(_emailController.text.trim());
     final passwordValid = _validatePassword(_passwordController.text);
+    final confirmValid =
+        _validateConfirmPassword(_confirmPasswordController.text);
 
-    if (!emailValid || !passwordValid) {
+    if (!nameValid || !emailValid || !passwordValid || !confirmValid) {
       HapticFeedback.heavyImpact();
       return;
     }
@@ -81,9 +124,10 @@ class _LoginScreenState extends State<LoginScreen> {
     HapticFeedback.mediumImpact();
 
     context.read<AuthBloc>().add(
-          AuthLoginRequested(
+          AuthRegisterRequested(
             email: _emailController.text.trim(),
             password: _passwordController.text,
+            displayName: _nameController.text.trim(),
           ),
         );
   }
@@ -131,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         // NUR bei Erfolg oder Fehler isLoading zurücksetzen
-        // NICHT bei loading state - sonst Race Condition!
+        // NICHT bei loading state!
         if (!state.isLoading) {
           setState(() => _isLoading = false);
         }
@@ -147,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
           Navigator.of(context).pushReplacementNamed(AppRoutes.home);
         } else if (state.hasError) {
-          _showError(state.errorMessage ?? 'Login fehlgeschlagen');
+          _showError(state.errorMessage ?? 'Registrierung fehlgeschlagen');
         }
       },
       child: Platform.isIOS
@@ -159,6 +203,17 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildAndroidScaffold(bool isDark) {
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -172,6 +227,18 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildIOSScaffold(bool isDark) {
     return CupertinoPageScaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
+      navigationBar: CupertinoNavigationBar(
+        backgroundColor: Colors.transparent,
+        border: null,
+        leading: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => Navigator.of(context).pop(),
+          child: Icon(
+            CupertinoIcons.back,
+            color: isDark ? AppColors.accent : AppColors.primary,
+          ),
+        ),
+      ),
       child: SafeArea(
         child: Material(
           type: MaterialType.transparency,
@@ -189,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 60),
+        const SizedBox(height: 20),
 
         // Logo
         Center(
@@ -213,7 +280,9 @@ class _LoginScreenState extends State<LoginScreen> {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              isIOS ? CupertinoIcons.heart_fill : Icons.favorite_rounded,
+              isIOS
+                  ? CupertinoIcons.person_add_solid
+                  : Icons.person_add_rounded,
               size: 48,
               color: isDark ? AppColors.accent : AppColors.primary,
             ),
@@ -225,7 +294,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // Title
         Center(
           child: Text(
-            'Willkommen zurück',
+            'Account erstellen',
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -239,15 +308,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
         Center(
           child: Text(
-            'Melde dich an, um fortzufahren',
+            'Registriere dich, um Gedenkseiten zu erstellen',
             style: TextStyle(
               fontSize: 16,
               color: AppColors.grey,
             ),
+            textAlign: TextAlign.center,
           ),
         ),
 
         const SizedBox(height: 40),
+
+        // Name Field
+        _buildNameField(isDark, isIOS),
+
+        const SizedBox(height: 16),
 
         // Email Field
         _buildEmailField(isDark, isIOS),
@@ -257,53 +332,25 @@ class _LoginScreenState extends State<LoginScreen> {
         // Password Field
         _buildPasswordField(isDark, isIOS),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
 
-        // Forgot Password
-        Align(
-          alignment: Alignment.centerRight,
-          child: isIOS
-              ? CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () =>
-                      Navigator.of(context).pushNamed(AppRoutes.forgotPassword),
-                  child: Text(
-                    'Passwort vergessen?',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isDark ? AppColors.accent : AppColors.primary,
-                    ),
-                  ),
-                )
-              : TextButton(
-                  onPressed: () =>
-                      Navigator.of(context).pushNamed(AppRoutes.forgotPassword),
-                  child: Text(
-                    'Passwort vergessen?',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isDark ? AppColors.accent : AppColors.primary,
-                    ),
-                  ),
-                ),
-        ),
+        // Confirm Password Field
+        _buildConfirmPasswordField(isDark, isIOS),
+
+        const SizedBox(height: 32),
+
+        // Register Button
+        _buildRegisterButton(isDark, isIOS),
 
         const SizedBox(height: 24),
 
-        // Login Button
-        _buildLoginButton(isDark, isIOS),
-
-        const SizedBox(height: 24),
-
-        // ========================================
-        // NEU: Register Link
-        // ========================================
+        // Login Link
         Center(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Noch kein Account? ',
+                'Bereits ein Account? ',
                 style: TextStyle(
                   fontSize: 14,
                   color: AppColors.grey,
@@ -312,10 +359,9 @@ class _LoginScreenState extends State<LoginScreen> {
               isIOS
                   ? CupertinoButton(
                       padding: EdgeInsets.zero,
-                      onPressed: () =>
-                          Navigator.of(context).pushNamed(AppRoutes.register),
+                      onPressed: () => Navigator.of(context).pop(),
                       child: Text(
-                        'Registrieren',
+                        'Anmelden',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -324,15 +370,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     )
                   : TextButton(
-                      onPressed: () =>
-                          Navigator.of(context).pushNamed(AppRoutes.register),
+                      onPressed: () => Navigator.of(context).pop(),
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       child: Text(
-                        'Registrieren',
+                        'Anmelden',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -346,6 +391,101 @@ class _LoginScreenState extends State<LoginScreen> {
 
         const SizedBox(height: 40),
       ],
+    );
+  }
+
+  Widget _buildNameField(bool isDark, bool isIOS) {
+    if (isIOS) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CupertinoTextField(
+            controller: _nameController,
+            focusNode: _nameFocusNode,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            onSubmitted: (_) => _emailFocusNode.requestFocus(),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            placeholder: 'Dein Name',
+            prefix: Padding(
+              padding: const EdgeInsets.only(left: 16),
+              child: Icon(
+                CupertinoIcons.person,
+                color: _nameError != null ? AppColors.error : AppColors.grey,
+                size: 20,
+              ),
+            ),
+            decoration: BoxDecoration(
+              color:
+                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _nameError != null
+                    ? AppColors.error
+                    : (isDark ? AppColors.borderDark : AppColors.greyLighter),
+              ),
+            ),
+            style: TextStyle(
+              fontSize: 16,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            ),
+            onChanged: (_) {
+              if (_nameError != null)
+                _validateName(_nameController.text.trim());
+            },
+          ),
+          if (_nameError != null) ...[
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Text(_nameError!,
+                  style: const TextStyle(fontSize: 12, color: AppColors.error)),
+            ),
+          ],
+        ],
+      );
+    }
+
+    return TextField(
+      controller: _nameController,
+      focusNode: _nameFocusNode,
+      textCapitalization: TextCapitalization.words,
+      textInputAction: TextInputAction.next,
+      onSubmitted: (_) => _emailFocusNode.requestFocus(),
+      style: TextStyle(
+        fontSize: 16,
+        color: isDark ? AppColors.textLight : AppColors.textPrimary,
+      ),
+      decoration: InputDecoration(
+        hintText: 'Dein Name',
+        errorText: _nameError,
+        prefixIcon: Icon(Icons.person_outline,
+            color: _nameError != null ? AppColors.error : AppColors.grey),
+        filled: true,
+        fillColor:
+            isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(
+              color: isDark ? AppColors.borderDark : AppColors.greyLighter),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(
+              color: isDark ? AppColors.accent : AppColors.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.error),
+        ),
+      ),
+      onChanged: (_) {
+        if (_nameError != null) _validateName(_nameController.text.trim());
+      },
     );
   }
 
@@ -455,8 +595,8 @@ class _LoginScreenState extends State<LoginScreen> {
             controller: _passwordController,
             focusNode: _passwordFocusNode,
             obscureText: _obscurePassword,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _login(),
+            textInputAction: TextInputAction.next,
+            onSubmitted: (_) => _confirmPasswordFocusNode.requestFocus(),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             placeholder: 'Passwort',
             prefix: Padding(
@@ -519,8 +659,8 @@ class _LoginScreenState extends State<LoginScreen> {
       controller: _passwordController,
       focusNode: _passwordFocusNode,
       obscureText: _obscurePassword,
-      textInputAction: TextInputAction.done,
-      onSubmitted: (_) => _login(),
+      textInputAction: TextInputAction.next,
+      onSubmitted: (_) => _confirmPasswordFocusNode.requestFocus(),
       style: TextStyle(
         fontSize: 16,
         color: isDark ? AppColors.textLight : AppColors.textPrimary,
@@ -567,7 +707,135 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildLoginButton(bool isDark, bool isIOS) {
+  Widget _buildConfirmPasswordField(bool isDark, bool isIOS) {
+    if (isIOS) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CupertinoTextField(
+            controller: _confirmPasswordController,
+            focusNode: _confirmPasswordFocusNode,
+            obscureText: _obscureConfirmPassword,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _register(),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            placeholder: 'Passwort bestätigen',
+            prefix: Padding(
+              padding: const EdgeInsets.only(left: 16),
+              child: Icon(
+                CupertinoIcons.lock_shield,
+                color: _confirmPasswordError != null
+                    ? AppColors.error
+                    : AppColors.grey,
+                size: 20,
+              ),
+            ),
+            suffix: Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: CupertinoButton(
+                padding: EdgeInsets.zero,
+                minSize: 0,
+                onPressed: () => setState(
+                    () => _obscureConfirmPassword = !_obscureConfirmPassword),
+                child: Icon(
+                  _obscureConfirmPassword
+                      ? CupertinoIcons.eye
+                      : CupertinoIcons.eye_slash,
+                  color: AppColors.grey,
+                  size: 20,
+                ),
+              ),
+            ),
+            decoration: BoxDecoration(
+              color:
+                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _confirmPasswordError != null
+                    ? AppColors.error
+                    : (isDark ? AppColors.borderDark : AppColors.greyLighter),
+              ),
+            ),
+            style: TextStyle(
+              fontSize: 16,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            ),
+            onChanged: (_) {
+              if (_confirmPasswordError != null) {
+                _validateConfirmPassword(_confirmPasswordController.text);
+              }
+            },
+          ),
+          if (_confirmPasswordError != null) ...[
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Text(_confirmPasswordError!,
+                  style: const TextStyle(fontSize: 12, color: AppColors.error)),
+            ),
+          ],
+        ],
+      );
+    }
+
+    return TextField(
+      controller: _confirmPasswordController,
+      focusNode: _confirmPasswordFocusNode,
+      obscureText: _obscureConfirmPassword,
+      textInputAction: TextInputAction.done,
+      onSubmitted: (_) => _register(),
+      style: TextStyle(
+        fontSize: 16,
+        color: isDark ? AppColors.textLight : AppColors.textPrimary,
+      ),
+      decoration: InputDecoration(
+        hintText: 'Passwort bestätigen',
+        errorText: _confirmPasswordError,
+        prefixIcon: Icon(Icons.lock_outline,
+            color: _confirmPasswordError != null
+                ? AppColors.error
+                : AppColors.grey),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _obscureConfirmPassword
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
+            color: AppColors.grey,
+          ),
+          onPressed: () => setState(
+              () => _obscureConfirmPassword = !_obscureConfirmPassword),
+        ),
+        filled: true,
+        fillColor:
+            isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(
+              color: isDark ? AppColors.borderDark : AppColors.greyLighter),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(
+              color: isDark ? AppColors.accent : AppColors.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.error),
+        ),
+      ),
+      onChanged: (_) {
+        if (_confirmPasswordError != null) {
+          _validateConfirmPassword(_confirmPasswordController.text);
+        }
+      },
+    );
+  }
+
+  Widget _buildRegisterButton(bool isDark, bool isIOS) {
     if (isIOS) {
       return SizedBox(
         width: double.infinity,
@@ -576,12 +844,12 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: EdgeInsets.zero,
           color: isDark ? AppColors.accent : AppColors.primary,
           borderRadius: BorderRadius.circular(14),
-          onPressed: _isLoading ? null : _login,
+          onPressed: _isLoading ? null : _register,
           child: _isLoading
               ? CupertinoActivityIndicator(
                   color: isDark ? AppColors.primary : AppColors.textLight)
               : Text(
-                  'Anmelden',
+                  'Registrieren',
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
@@ -596,7 +864,7 @@ class _LoginScreenState extends State<LoginScreen> {
       width: double.infinity,
       height: 54,
       child: FilledButton(
-        onPressed: _isLoading ? null : _login,
+        onPressed: _isLoading ? null : _register,
         style: FilledButton.styleFrom(
           backgroundColor: isDark ? AppColors.accent : AppColors.primary,
           foregroundColor: isDark ? AppColors.primary : AppColors.textLight,
@@ -613,7 +881,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       isDark ? AppColors.primary : AppColors.textLight),
                 ),
               )
-            : const Text('Anmelden',
+            : const Text('Registrieren',
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
       ),
     );

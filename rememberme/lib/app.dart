@@ -29,6 +29,7 @@ import 'presentation/screens/memorial/memorial_create_screen.dart';
 import 'presentation/screens/memorial/memorial_edit_screen.dart';
 import 'presentation/screens/profile/profile_screen.dart';
 import 'presentation/screens/profile/about_screen.dart';
+import 'presentation/screens/auth/register_screen.dart';
 
 class RememberMeApp extends StatefulWidget {
   const RememberMeApp({super.key});
@@ -119,6 +120,10 @@ class _RememberMeAppState extends State<RememberMeApp> {
 
       case AppRoutes.login:
         page = const LoginScreen();
+        break;
+
+      case AppRoutes.register:
+        page = const RegisterScreen();
         break;
 
       case AppRoutes.forgotPassword:

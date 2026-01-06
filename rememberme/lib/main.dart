@@ -86,6 +86,7 @@ void main() async {
               memorialRepository: context.read<MemorialRepository>(),
               invitationRepository: context.read<InvitationRepository>(),
               storageService: context.read<FirebaseStorageService>(),
+              qrCodeRepository: context.read<QrCodeRepository>(),
             ),
           ),
           BlocProvider(

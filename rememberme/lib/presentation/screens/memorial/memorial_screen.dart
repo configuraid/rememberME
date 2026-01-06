@@ -4,10 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rememberme/presentation/screens/auth/qr_scanner_screen.dart';
 import 'package:rememberme/presentation/widgets/show_memorial_share_sheet.dart';
-import 'package:rememberme/core/utils/qr_claiming_handler.dart'; // NEU!
-import 'package:rememberme/data/repositories/memorial_repository.dart'; // NEU!
 
 import '../../../business_logic/auth/auth_bloc.dart';
 import '../../../business_logic/memorial/memorial_bloc.dart';
@@ -31,8 +28,6 @@ class MemorialDetailScreen extends StatefulWidget {
 }
 
 class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
-  // ❌ ENTFERNT: final MemorialValidationService _validationService = MemorialValidationService();
-
   @override
   void initState() {
     super.initState();
@@ -197,12 +192,6 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
         foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
         actions: [
           IconButton(
-            onPressed: () => _openQrScanner(context),
-            icon: Icon(Icons.qr_code_scanner_rounded,
-                color: isDark ? AppColors.accent : AppColors.primary),
-            tooltip: 'QR-Code scannen',
-          ),
-          IconButton(
             onPressed: () => _showShareSheet(context, memorial),
             icon: Icon(Icons.share_rounded,
                 color: isDark ? AppColors.accent : AppColors.primary),
@@ -291,13 +280,6 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () => _openQrScanner(context),
-              child: Icon(CupertinoIcons.qrcode_viewfinder,
-                  color: isDark ? AppColors.accent : AppColors.primary,
-                  size: 24),
-            ),
             CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: () => _showShareSheet(context, memorial),
@@ -679,251 +661,6 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
                 fontWeight: FontWeight.w600,
                 color: AppColors.success,
               ),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
-  // ========================================
-  // ✅ KOMPLETT NEU: QR Scanner mit neuem Flow
-  // ========================================
-  Future<void> _openQrScanner(BuildContext context) async {
-    HapticFeedback.mediumImpact();
-
-    final authState = context.read<AuthBloc>().state;
-    final currentUserId = authState.user?.id;
-
-    if (currentUserId == null) {
-      _showErrorSnackBar(context, 'Bitte melde dich an.');
-      return;
-    }
-
-    // Scanner öffnen
-    final result = await Navigator.of(context).push<QrScanResult>(
-      Platform.isIOS
-          ? CupertinoPageRoute(builder: (context) => const QrScannerScreen())
-          : MaterialPageRoute(builder: (context) => const QrScannerScreen()),
-    );
-
-    if (!mounted || result == null) return;
-
-    // Ergebnis verarbeiten basierend auf Typ
-    switch (result.type) {
-      case QrScanResultType.unclaimed:
-        // QR-Code ist frei → Claiming-Flow starten
-        debugPrint('📱 QR-Code unclaimed: ${result.qrCodeId}');
-        _handleUnclaimedQrCode(context, result.qrCodeId!, currentUserId);
-        break;
-
-      case QrScanResultType.active:
-        // QR-Code ist bereits aktiviert → Memorial laden/anzeigen
-        debugPrint('📱 QR-Code active, Memorial: ${result.memorialId}');
-        _handleActiveQrCode(context, result.memorialId!, currentUserId);
-        break;
-    }
-  }
-
-  /// Handhabt unclaimed QR-Code → Claiming-Dialog anzeigen
-  void _handleUnclaimedQrCode(
-    BuildContext context,
-    String qrCodeId,
-    String currentUserId,
-  ) {
-    // QrClaimingHandler übernimmt den kompletten Flow
-    // (Dialog anzeigen, Memorial erstellen, etc.)
-    qrClaimingHandler.startClaimingFlow(
-      context: context,
-      qrCodeId: qrCodeId,
-      userId: currentUserId,
-    );
-  }
-
-  /// Handhabt active QR-Code → Prüfen ob User Zugang hat
-  Future<void> _handleActiveQrCode(
-    BuildContext context,
-    String memorialId,
-    String currentUserId,
-  ) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Prüfen ob User bereits Zugang hat
-    final memorialRepository = context.read<MemorialRepository>();
-    final hasAccess = await memorialRepository.hasAccess(
-      memorialId: memorialId,
-      userId: currentUserId,
-    );
-
-    if (!mounted) return;
-
-    if (hasAccess) {
-      // User hat bereits Zugang → Memorial laden und anzeigen
-      final memorial = await memorialRepository.getMemorialById(memorialId);
-
-      if (memorial != null && mounted) {
-        // Zum Memorial wechseln
-        context.read<MemorialBloc>().add(MemorialSelected(memorial: memorial));
-        _showSuccessSnackBar(context, 'Gedenkseite "${memorial.name}" geladen');
-      }
-    } else {
-      // User hat keinen Zugang → Fragen ob Zugang gewährt werden soll
-      _showAccessRequestDialog(context, memorialId, currentUserId);
-    }
-  }
-
-  /// Dialog: Zugang zu fremdem Memorial anfragen
-  void _showAccessRequestDialog(
-    BuildContext context,
-    String memorialId,
-    String currentUserId,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    if (Platform.isIOS) {
-      showCupertinoDialog(
-        context: context,
-        builder: (ctx) => CupertinoAlertDialog(
-          title: const Text('Gedenkseite gefunden'),
-          content: const Padding(
-            padding: EdgeInsets.only(top: 12),
-            child: Text(
-              'Diese Gedenkseite gehört jemand anderem. '
-              'Möchtest du Zugang anfragen?\n\n'
-              '(In der aktuellen Version wird der Zugang direkt gewährt)',
-            ),
-          ),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Abbrechen'),
-            ),
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                await _grantAccessAndReload(context, memorialId, currentUserId);
-              },
-              child: const Text('Zugang erhalten'),
-            ),
-          ],
-        ),
-      );
-    } else {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Gedenkseite gefunden'),
-          content: const Text(
-            'Diese Gedenkseite gehört jemand anderem. '
-            'Möchtest du Zugang anfragen?\n\n'
-            '(In der aktuellen Version wird der Zugang direkt gewährt)',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Abbrechen'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                await _grantAccessAndReload(context, memorialId, currentUserId);
-              },
-              style: FilledButton.styleFrom(
-                backgroundColor: isDark ? AppColors.accent : AppColors.primary,
-              ),
-              child: const Text('Zugang erhalten'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
-  /// Gewährt Zugang und lädt Memorials neu
-  Future<void> _grantAccessAndReload(
-    BuildContext context,
-    String memorialId,
-    String currentUserId,
-  ) async {
-    try {
-      final memorialRepository = context.read<MemorialRepository>();
-
-      // Zugang gewähren (als "Viewer" via QR-Code)
-      await memorialRepository.addMemberAccess(
-        memorialId: memorialId,
-        userId: currentUserId,
-        invitedById: currentUserId, // Self-invite via QR
-      );
-
-      if (!mounted) return;
-
-      // Memorials neu laden
-      context.read<MemorialBloc>().add(
-            MemorialLoadRequested(userId: currentUserId),
-          );
-
-      // Memorial laden für Anzeige
-      final memorial = await memorialRepository.getMemorialById(memorialId);
-
-      if (memorial != null && mounted) {
-        _showAccessGrantedDialog(context, memorial.name);
-      }
-    } catch (e) {
-      if (mounted) {
-        _showErrorSnackBar(context, 'Zugang konnte nicht gewährt werden: $e');
-      }
-    }
-  }
-
-  void _showAccessGrantedDialog(BuildContext context, String memorialName) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    HapticFeedback.heavyImpact();
-
-    if (Platform.isIOS) {
-      showCupertinoDialog(
-        context: context,
-        builder: (ctx) => CupertinoAlertDialog(
-          title: const Text('Zugang gewährt! 🎉'),
-          content: Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child:
-                Text('Du hast jetzt Zugang zur Gedenkseite "$memorialName".'),
-          ),
-          actions: [
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    } else {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Icon(Icons.check_circle,
-                  color: isDark ? AppColors.accent : AppColors.primary),
-              const SizedBox(width: 8),
-              const Text('Zugang gewährt!'),
-            ],
-          ),
-          content:
-              Text('Du hast jetzt Zugang zur Gedenkseite "$memorialName".'),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              style: FilledButton.styleFrom(
-                  backgroundColor:
-                      isDark ? AppColors.accent : AppColors.primary),
-              child: const Text('OK'),
             ),
           ],
         ),

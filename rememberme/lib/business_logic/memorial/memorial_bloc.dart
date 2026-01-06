@@ -1,8 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/repositories/memorial_repository.dart';
 import '../../data/repositories/invitation_repository.dart';
+import '../../data/repositories/qr_code_repository.dart';
 import '../../data/services/firebase_storage_service.dart';
 import 'memorial_event.dart';
 import 'memorial_state.dart';
@@ -11,11 +11,13 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
   final MemorialRepository memorialRepository;
   final InvitationRepository invitationRepository;
   final FirebaseStorageService storageService;
+  final QrCodeRepository qrCodeRepository;
 
   MemorialBloc({
     required this.memorialRepository,
     required this.invitationRepository,
     required this.storageService,
+    required this.qrCodeRepository,
   }) : super(MemorialState.initial()) {
     // Memorial CRUD
     on<MemorialLoadRequested>(_onLoadMemorials);
@@ -151,8 +153,11 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
         templateId: event.templateId,
       );
 
+      debugPrint('✅ Memorial erstellt mit ID: ${newMemorial.id}');
+
       // 2. Profilbild hochladen (falls vorhanden)
       if (event.profileImage != null) {
+        debugPrint('📸 Lade Profilbild hoch...');
         final profileImageUrl = await storageService.uploadMemorialProfileImage(
           memorialId: newMemorial.id,
           imageFile: event.profileImage!,
@@ -160,25 +165,25 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
 
         newMemorial = newMemorial.copyWith(profileImageUrl: profileImageUrl);
         await memorialRepository.updateMemorial(newMemorial);
+        debugPrint('✅ Profilbild hochgeladen');
       }
 
-      // 3. NEU: QR-Code aktivieren (falls vorhanden)
+      // 3. QR-Code finalisieren (status: claiming → active, memorialId setzen)
       if (event.qrCodeId != null) {
-        debugPrint('🔗 MemorialBloc - Aktiviere QR-Code: ${event.qrCodeId}');
-        try {
-          await FirebaseFirestore.instance
-              .collection('qrCodes')
-              .doc(event.qrCodeId)
-              .update({
-            'status': 'active',
-            'memorialId': newMemorial.id,
-            'ownerId': event.ownerId,
-            'activatedAt': FieldValue.serverTimestamp(),
-          });
+        debugPrint('🔗 MemorialBloc - Finalisiere QR-Code: ${event.qrCodeId}');
+
+        final success = await qrCodeRepository.finalizeClaim(
+          qrId: event.qrCodeId!,
+          userId: event.ownerId,
+          memorialId: newMemorial.id,
+        );
+
+        if (success) {
           debugPrint('✅ MemorialBloc - QR-Code aktiviert!');
-        } catch (qrError) {
-          debugPrint(
-              '⚠️ MemorialBloc - QR-Code Aktivierung fehlgeschlagen: $qrError');
+          debugPrint('   - status: active');
+          debugPrint('   - memorialId: ${newMemorial.id}');
+        } else {
+          debugPrint('⚠️ MemorialBloc - QR-Code Finalisierung fehlgeschlagen');
           // Wir werfen hier keinen Fehler, da das Memorial bereits erstellt wurde
         }
       }
@@ -187,13 +192,25 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
       final memorials =
           await memorialRepository.getMemorialsForUser(event.ownerId);
 
-      debugPrint('✅ MemorialBloc - Memorial erstellt: ${newMemorial.id}');
+      debugPrint(
+          '✅ MemorialBloc - Memorial komplett erstellt: ${newMemorial.id}');
       emit(MemorialState.success(
         'Gedenkseite erfolgreich erstellt',
         memorials: memorials,
       ).copyWith(selectedMemorial: newMemorial));
     } catch (e) {
       debugPrint('❌ MemorialBloc - Fehler: $e');
+
+      // Falls ein QR-Code geclaimed wurde, aber das Memorial-Erstellen fehlschlägt,
+      // sollten wir den Claim abbrechen
+      if (event.qrCodeId != null) {
+        debugPrint('🔄 Breche QR-Code Claim ab wegen Fehler...');
+        await qrCodeRepository.abortClaim(
+          qrId: event.qrCodeId!,
+          userId: event.ownerId,
+        );
+      }
+
       emit(MemorialState.error(
           'Fehler beim Erstellen der Gedenkseite: ${e.toString()}'));
     }
@@ -256,12 +273,24 @@ class MemorialBloc extends Bloc<MemorialEvent, MemorialState> {
     try {
       debugPrint('🗑️ MemorialBloc - Lösche Memorial: ${event.memorialId}');
 
-      // Profilbild löschen
+      // 1. QR-Code freigeben (memorialId entfernen, Owner bleibt)
+      debugPrint('🔓 MemorialBloc - Gebe QR-Code frei...');
+      final qrReleased = await qrCodeRepository.releaseQrCodeForMemorial(
+        event.memorialId,
+        event.requestingUserId,
+      );
+      if (qrReleased) {
+        debugPrint(
+            '✅ MemorialBloc - QR-Code freigegeben (memorialId entfernt)');
+      }
+
+      // 2. Profilbild löschen
       try {
         await storageService.deleteMemorialProfileImage(
             memorialId: event.memorialId);
       } catch (_) {}
 
+      // 3. Memorial löschen
       await memorialRepository.deleteMemorial(
         memorialId: event.memorialId,
         requestingUserId: event.requestingUserId,

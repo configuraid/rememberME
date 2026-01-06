@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:io';
@@ -10,6 +12,7 @@ import '../../../business_logic/memorial/memorial_state.dart';
 import '../../../data/models/memorial_model.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../widgets/memorial/lifespan_picker_card.dart';
 
 class MemorialEditScreen extends StatefulWidget {
   final MemorialModel memorial;
@@ -278,152 +281,8 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
     }
   }
 
-  void _selectBirthDate() async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    if (Platform.isIOS) {
-      _showIOSDatePicker(
-        initialDate: _birthDate ?? DateTime(1950),
-        onDateChanged: (date) {
-          setState(() {
-            _birthDate = date;
-            _hasChanges = _checkForChanges();
-          });
-        },
-      );
-    } else {
-      final picked = await showDatePicker(
-        context: context,
-        initialDate: _birthDate ?? DateTime(1950),
-        firstDate: DateTime(1900),
-        lastDate: DateTime.now(),
-        builder: (context, child) {
-          return Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme: Theme.of(context).colorScheme.copyWith(
-                    primary: isDark ? AppColors.accent : AppColors.primary,
-                    surface: isDark
-                        ? AppColors.backgroundDarkElevated
-                        : AppColors.surface,
-                  ),
-            ),
-            child: child!,
-          );
-        },
-      );
-      if (picked != null) {
-        setState(() {
-          _birthDate = picked;
-          _hasChanges = _checkForChanges();
-        });
-      }
-    }
-  }
-
-  void _selectDeathDate() async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    if (Platform.isIOS) {
-      _showIOSDatePicker(
-        initialDate: _deathDate ?? DateTime.now(),
-        onDateChanged: (date) {
-          setState(() {
-            _deathDate = date;
-            _hasChanges = _checkForChanges();
-          });
-        },
-      );
-    } else {
-      final picked = await showDatePicker(
-        context: context,
-        initialDate: _deathDate ?? DateTime.now(),
-        firstDate: DateTime(1900),
-        lastDate: DateTime.now(),
-        builder: (context, child) {
-          return Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme: Theme.of(context).colorScheme.copyWith(
-                    primary: isDark ? AppColors.accent : AppColors.primary,
-                    surface: isDark
-                        ? AppColors.backgroundDarkElevated
-                        : AppColors.surface,
-                  ),
-            ),
-            child: child!,
-          );
-        },
-      );
-      if (picked != null) {
-        setState(() {
-          _deathDate = picked;
-          _hasChanges = _checkForChanges();
-        });
-      }
-    }
-  }
-
-  void _showIOSDatePicker({
-    required DateTime initialDate,
-    required Function(DateTime) onDateChanged,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    DateTime tempDate = initialDate;
-
-    showCupertinoModalPopup(
-      context: context,
-      builder: (context) => Container(
-        height: 300,
-        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                CupertinoButton(
-                  child: Text(
-                    AppStrings.cancel,
-                    style: TextStyle(
-                      color:
-                          isDark ? AppColors.primaryLight : AppColors.primary,
-                    ),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                CupertinoButton(
-                  child: Text(
-                    AppStrings.done,
-                    style: TextStyle(
-                      color:
-                          isDark ? AppColors.primaryLight : AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  onPressed: () {
-                    onDateChanged(tempDate);
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-            Expanded(
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.date,
-                initialDateTime: initialDate,
-                minimumDate: DateTime(1900),
-                maximumDate: DateTime.now(),
-                onDateTimeChanged: (date) {
-                  tempDate = date;
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // ============================================================
-  // REFACTORED: Speichern mit MemorialModel
+  // Speichern
   // ============================================================
   void _saveChanges() {
     if (_formKey.currentState?.validate() ?? false) {
@@ -435,7 +294,6 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
         isPublic: _isPublic,
       );
 
-      // Event mit optionalem neuen Profilbild senden
       context.read<MemorialBloc>().add(
             MemorialUpdateRequested(
               memorial: updatedMemorial,
@@ -624,401 +482,34 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildAndroidProfileImagePicker(isDark),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               _buildAndroidNameField(isDark),
               const SizedBox(height: 20),
               _buildAndroidBiographyField(isDark),
               const SizedBox(height: 20),
-              _buildAndroidDateField(
-                label: 'Geburtsdatum',
-                date: _birthDate,
-                onTap: _selectBirthDate,
-                icon: Icons.cake_outlined,
-                isDark: isDark,
-              ),
-              const SizedBox(height: 16),
-              _buildAndroidDateField(
-                label: 'Sterbedatum',
-                date: _deathDate,
-                onTap: _selectDeathDate,
-                icon: Icons.event_outlined,
-                isDark: isDark,
+              // NEU: LifespanPickerCard statt zwei separate Felder
+              LifespanPickerCard(
+                birthDate: _birthDate,
+                deathDate: _deathDate,
+                onBirthDateChanged: (date) {
+                  setState(() {
+                    _birthDate = date;
+                    _hasChanges = _checkForChanges();
+                  });
+                },
+                onDeathDateChanged: (date) {
+                  setState(() {
+                    _deathDate = date;
+                    _hasChanges = _checkForChanges();
+                  });
+                },
+                isRequired: true,
               ),
               const SizedBox(height: 24),
               _buildAndroidVisibilityToggle(isDark),
               const SizedBox(height: 40),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAndroidProfileImagePicker(bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Foto',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.grey,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: _showImageSourceSheet,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            width: double.infinity,
-            height: 180,
-            decoration: BoxDecoration(
-              color:
-                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-              border: Border.all(
-                color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-                width: 1,
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (_newProfileImage != null)
-                    Image.file(_newProfileImage!, fit: BoxFit.cover)
-                  else if (_existingImageUrl != null &&
-                      _existingImageUrl!.isNotEmpty)
-                    Image.network(
-                      _existingImageUrl!,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              isDark ? AppColors.accent : AppColors.primary,
-                            ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildImagePlaceholder(isDark, false);
-                      },
-                    )
-                  else
-                    _buildImagePlaceholder(isDark, false),
-                  Positioned(
-                    bottom: 12,
-                    right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.camera_alt_rounded,
-                            size: 16,
-                            color: AppColors.textLight,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Ändern',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textLight,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildImagePlaceholder(bool isDark, bool isIOS) {
-    return Container(
-      color: isDark ? AppColors.backgroundDarkElevated : AppColors.greyLighter,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isIOS ? CupertinoIcons.camera : Icons.camera_alt_rounded,
-            size: 48,
-            color: AppColors.grey,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Foto hinzufügen',
-            style: TextStyle(
-              fontSize: 15,
-              color: AppColors.grey,
-              fontFamily: isIOS ? '.SF Pro Text' : null,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAndroidNameField(bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Name',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.grey,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color:
-                isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-            ),
-          ),
-          child: TextFormField(
-            controller: _nameController,
-            style: TextStyle(
-              fontSize: 17,
-              color: isDark ? AppColors.textLight : AppColors.textPrimary,
-            ),
-            decoration: InputDecoration(
-              hintText: 'Name der Person',
-              hintStyle: TextStyle(color: AppColors.grey),
-              prefixIcon: Icon(
-                Icons.person_outline_rounded,
-                color: isDark ? AppColors.accent : AppColors.primary,
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(12),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAndroidBiographyField(bool isDark) {
-    final currentLength = _biographyController.text.length;
-    final isOverLimit = currentLength > _maxBiographyLength;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'Gedenkspruch',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.grey,
-                  ),
-                ),
-              ],
-            ),
-            Text(
-              '$currentLength/$_maxBiographyLength',
-              style: TextStyle(
-                fontSize: 12,
-                color: isOverLimit ? AppColors.error : AppColors.grey,
-                fontWeight: isOverLimit ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color:
-                isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isOverLimit
-                  ? AppColors.error
-                  : (isDark ? AppColors.borderDark : AppColors.greyLighter),
-            ),
-          ),
-          child: TextFormField(
-            controller: _biographyController,
-            maxLines: 4,
-            maxLength: _maxBiographyLength,
-            style: TextStyle(
-              fontSize: 16,
-              color: isDark ? AppColors.textLight : AppColors.textPrimary,
-            ),
-            decoration: InputDecoration(
-              hintText: 'Erzählen Sie etwas über diese Person...',
-              hintStyle: TextStyle(color: AppColors.grey),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(12),
-              counterText: '',
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAndroidDateField({
-    required String label,
-    required DateTime? date,
-    required VoidCallback onTap,
-    required IconData icon,
-    required bool isDark,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-          border: Border.all(
-            color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-          ),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: AppColors.grey),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(fontSize: 12, color: AppColors.grey),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    date != null
-                        ? '${date.day}.${date.month}.${date.year}'
-                        : 'Datum auswählen',
-                    style: TextStyle(
-                      fontSize: 17,
-                      color: date != null
-                          ? (isDark
-                              ? AppColors.textLight
-                              : AppColors.textPrimary)
-                          : AppColors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios_rounded,
-                size: 20, color: AppColors.grey),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAndroidVisibilityToggle(bool isDark) {
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _isPublic = !_isPublic;
-          _hasChanges = _checkForChanges();
-        });
-      },
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            Icon(
-              _isPublic ? Icons.public_rounded : Icons.lock_rounded,
-              size: 20,
-              color: _isPublic
-                  ? AppColors.accent
-                  : (isDark ? AppColors.grey : AppColors.primary),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _isPublic ? 'Öffentlich' : 'Privat',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      color:
-                          isDark ? AppColors.textLight : AppColors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    _isPublic
-                        ? 'Jeder mit dem Link kann die Seite sehen'
-                        : 'Nur eingeladene Personen',
-                    style: TextStyle(fontSize: 13, color: AppColors.grey),
-                  ),
-                ],
-              ),
-            ),
-            Transform.scale(
-              scale: 0.85,
-              child: Switch(
-                value: _isPublic,
-                onChanged: (value) {
-                  setState(() {
-                    _isPublic = value;
-                    _hasChanges = _checkForChanges();
-                  });
-                },
-                activeColor: AppColors.accent,
-                activeTrackColor: AppColors.accent.withOpacity(0.3),
-                inactiveThumbColor:
-                    isDark ? AppColors.greyDark : AppColors.grey,
-                inactiveTrackColor: isDark
-                    ? AppColors.toastBackgroundDark
-                    : AppColors.greyLight,
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -1087,25 +578,28 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildIOSProfileImagePicker(isDark),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   _buildIOSNameField(isDark),
                   const SizedBox(height: 20),
                   _buildIOSBiographyField(isDark),
                   const SizedBox(height: 20),
-                  _buildIOSDateField(
-                    label: 'Geburtsdatum',
-                    date: _birthDate,
-                    onTap: _selectBirthDate,
-                    icon: CupertinoIcons.calendar,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildIOSDateField(
-                    label: 'Sterbedatum',
-                    date: _deathDate,
-                    onTap: _selectDeathDate,
-                    icon: CupertinoIcons.calendar_badge_minus,
-                    isDark: isDark,
+                  // NEU: LifespanPickerCard statt zwei separate Felder
+                  LifespanPickerCard(
+                    birthDate: _birthDate,
+                    deathDate: _deathDate,
+                    onBirthDateChanged: (date) {
+                      setState(() {
+                        _birthDate = date;
+                        _hasChanges = _checkForChanges();
+                      });
+                    },
+                    onDeathDateChanged: (date) {
+                      setState(() {
+                        _deathDate = date;
+                        _hasChanges = _checkForChanges();
+                      });
+                    },
+                    isRequired: true,
                   ),
                   const SizedBox(height: 24),
                   _buildIOSVisibilityToggle(isDark),
@@ -1119,6 +613,56 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
     );
   }
 
+  // ============================================================
+  // Profile Image Picker - Android (1:1 Quadratisch mit Blur)
+  // ============================================================
+  Widget _buildAndroidProfileImagePicker(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Foto',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.grey,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        AspectRatio(
+          aspectRatio: 1.0, // Quadratisch
+          child: InkWell(
+            onTap: _showImageSourceSheet,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.backgroundDarkElevated
+                    : AppColors.surface,
+                border: Border.all(
+                  color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: _buildImageContent(isDark, false),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // Profile Image Picker - iOS (1:1 Quadratisch mit Blur)
+  // ============================================================
   Widget _buildIOSProfileImagePicker(bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1137,79 +681,24 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
           ],
         ),
         const SizedBox(height: 8),
-        GestureDetector(
-          onTap: _showImageSourceSheet,
-          child: Container(
-            width: double.infinity,
-            height: 180,
-            decoration: BoxDecoration(
-              color:
-                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-              border: Border.all(
-                color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-                width: 1,
+        AspectRatio(
+          aspectRatio: 1.0, // Quadratisch
+          child: GestureDetector(
+            onTap: _showImageSourceSheet,
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.backgroundDarkElevated
+                    : AppColors.surface,
+                border: Border.all(
+                  color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(16),
               ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (_newProfileImage != null)
-                    Image.file(_newProfileImage!, fit: BoxFit.cover)
-                  else if (_existingImageUrl != null &&
-                      _existingImageUrl!.isNotEmpty)
-                    Image.network(
-                      _existingImageUrl!,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Center(
-                          child: CupertinoActivityIndicator(
-                            color: isDark ? AppColors.grey : null,
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildImagePlaceholder(isDark, true);
-                      },
-                    )
-                  else
-                    _buildImagePlaceholder(isDark, true),
-                  Positioned(
-                    bottom: 12,
-                    right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            CupertinoIcons.camera,
-                            size: 16,
-                            color: AppColors.textLight,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Ändern',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textLight,
-                              fontFamily: '.SF Pro Text',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: _buildImageContent(isDark, true),
               ),
             ),
           ),
@@ -1218,55 +707,356 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
     );
   }
 
+  // ============================================================
+  // Image Content - mit Blur-Effekt für neue Bilder
+  // ============================================================
+  Widget _buildImageContent(bool isDark, bool isIOS) {
+    // Neues Bild ausgewählt
+    if (_newProfileImage != null) {
+      return _buildImagePreviewWithBlur(_newProfileImage!, isDark, isIOS);
+    }
+
+    // Bestehendes Bild von URL
+    if (_existingImageUrl != null && _existingImageUrl!.isNotEmpty) {
+      return _buildNetworkImagePreview(isDark, isIOS);
+    }
+
+    // Kein Bild
+    return _buildImagePlaceholder(isDark, isIOS);
+  }
+
+  // ============================================================
+  // Image Preview mit Blur (für lokale Dateien)
+  // ============================================================
+  Widget _buildImagePreviewWithBlur(File imageFile, bool isDark, bool isIOS) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Verschwommener Hintergrund
+        ImageFiltered(
+          imageFilter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Image.file(
+            imageFile,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
+        ),
+
+        // Leichtes Overlay für besseren Kontrast
+        Container(
+          color: (isDark ? Colors.black : Colors.white).withOpacity(0.1),
+        ),
+
+        // Scharfes Bild darüber
+        Image.file(
+          imageFile,
+          fit: BoxFit.contain,
+          width: double.infinity,
+          height: double.infinity,
+        ),
+
+        // Ändern-Button
+        _buildChangeButton(isIOS),
+      ],
+    );
+  }
+
+  // ============================================================
+  // Network Image Preview (für bestehende Bilder)
+  // ============================================================
+  Widget _buildNetworkImagePreview(bool isDark, bool isIOS) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Verschwommener Hintergrund
+        ImageFiltered(
+          imageFilter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Image.network(
+            _existingImageUrl!,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                color: isDark
+                    ? AppColors.backgroundDarkElevated
+                    : AppColors.greyLighter,
+              );
+            },
+          ),
+        ),
+
+        // Leichtes Overlay
+        Container(
+          color: (isDark ? Colors.black : Colors.white).withOpacity(0.1),
+        ),
+
+        // Scharfes Bild
+        Image.network(
+          _existingImageUrl!,
+          fit: BoxFit.contain,
+          width: double.infinity,
+          height: double.infinity,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: isIOS
+                  ? CupertinoActivityIndicator(
+                      color: isDark ? AppColors.grey : null,
+                    )
+                  : CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isDark ? AppColors.accent : AppColors.primary,
+                      ),
+                    ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return _buildImagePlaceholder(isDark, isIOS);
+          },
+        ),
+
+        // Ändern-Button
+        _buildChangeButton(isIOS),
+      ],
+    );
+  }
+
+  // ============================================================
+  // Ändern-Button Overlay
+  // ============================================================
+  Widget _buildChangeButton(bool isIOS) {
+    return Positioned(
+      bottom: 12,
+      right: 12,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isIOS ? CupertinoIcons.camera : Icons.camera_alt_rounded,
+              size: 16,
+              color: AppColors.textLight,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Ändern',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textLight,
+                fontFamily: isIOS ? '.SF Pro Text' : null,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // Image Placeholder
+  // ============================================================
+  Widget _buildImagePlaceholder(bool isDark, bool isIOS) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark
+                ? AppColors.accent.withOpacity(0.2)
+                : AppColors.primary.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            isIOS ? CupertinoIcons.camera : Icons.camera_alt_rounded,
+            size: 32,
+            color: isDark ? AppColors.accent : AppColors.primary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Foto hinzufügen',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.accent : AppColors.primary,
+            fontFamily: isIOS ? '.SF Pro Text' : null,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Tippen zum Auswählen',
+          style: TextStyle(
+            fontSize: 13,
+            color: AppColors.grey,
+            fontFamily: isIOS ? '.SF Pro Text' : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // Name Field - Android
+  // ============================================================
+  Widget _buildAndroidNameField(bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+        ),
+      ),
+      child: TextFormField(
+        controller: _nameController,
+        style: TextStyle(
+          fontSize: 17,
+          color: isDark ? AppColors.textLight : AppColors.textPrimary,
+        ),
+        decoration: InputDecoration(
+          labelText: AppStrings.personName,
+          hintText: AppStrings.personNameHint,
+          labelStyle: TextStyle(color: AppColors.grey),
+          hintStyle: TextStyle(color: AppColors.grey),
+          prefixIcon: Icon(
+            Icons.person_outline_rounded,
+            color: isDark ? AppColors.accent : AppColors.primary,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.all(12),
+        ),
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) {
+            return AppStrings.enterPersonName;
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
+  // ============================================================
+  // Name Field - iOS
+  // ============================================================
   Widget _buildIOSNameField(bool isDark) {
+    return CupertinoTextField(
+      controller: _nameController,
+      placeholder: AppStrings.personName,
+      placeholderStyle: TextStyle(color: AppColors.grey),
+      style: TextStyle(
+        fontSize: 17,
+        color: isDark ? AppColors.textLight : AppColors.textPrimary,
+        fontFamily: '.SF Pro Text',
+      ),
+      prefix: Padding(
+        padding: const EdgeInsets.only(left: 8),
+        child: Icon(
+          CupertinoIcons.person,
+          size: 20,
+          color: isDark ? AppColors.accent : AppColors.primary,
+        ),
+      ),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+        ),
+        borderRadius: BorderRadius.circular(10),
+      ),
+    );
+  }
+
+  // ============================================================
+  // Biography Field - Android
+  // ============================================================
+  Widget _buildAndroidBiographyField(bool isDark) {
+    final currentLength = _biographyController.text.length;
+    final isOverLimit = currentLength > _maxBiographyLength;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            Row(
+              children: [
+                Text(
+                  'Gedenkspruch',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.grey,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '*',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.error,
+                  ),
+                ),
+              ],
+            ),
             Text(
-              'Name',
+              '$currentLength/$_maxBiographyLength',
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.grey,
-                fontFamily: '.SF Pro Text',
+                fontSize: 12,
+                color: isOverLimit ? AppColors.error : AppColors.grey,
+                fontWeight: isOverLimit ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        CupertinoTextField(
-          controller: _nameController,
-          placeholder: 'Name der Person',
-          placeholderStyle: TextStyle(color: AppColors.grey),
-          style: TextStyle(
-            fontSize: 17,
-            color: isDark ? AppColors.textLight : AppColors.textPrimary,
-            fontFamily: '.SF Pro Text',
-          ),
-          prefix: Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: Icon(
-              CupertinoIcons.person,
-              size: 20,
-              color: isDark ? AppColors.accent : AppColors.primary,
-            ),
-          ),
-          padding: const EdgeInsets.all(12),
+        Container(
           decoration: BoxDecoration(
             color:
                 isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-            border: Border.all(
-              color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-            ),
             borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isOverLimit
+                  ? AppColors.error
+                  : (isDark ? AppColors.borderDark : AppColors.greyLighter),
+            ),
+          ),
+          child: TextFormField(
+            controller: _biographyController,
+            maxLines: 4,
+            maxLength: _maxBiographyLength,
+            style: TextStyle(
+              fontSize: 16,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Erzählen Sie etwas über diese Person...',
+              hintStyle: TextStyle(color: AppColors.grey),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(12),
+              counterText: '',
+            ),
           ),
         ),
       ],
     );
   }
 
+  // ============================================================
+  // Biography Field - iOS
+  // ============================================================
   Widget _buildIOSBiographyField(bool isDark) {
     final currentLength = _biographyController.text.length;
     final isOverLimit = currentLength > _maxBiographyLength;
@@ -1286,6 +1076,15 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
                     fontWeight: FontWeight.w600,
                     color: AppColors.grey,
                     fontFamily: '.SF Pro Text',
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '*',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.error,
                   ),
                 ),
               ],
@@ -1329,65 +1128,82 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
     );
   }
 
-  Widget _buildIOSDateField({
-    required String label,
-    required DateTime? date,
-    required VoidCallback onTap,
-    required IconData icon,
-    required bool isDark,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
+  // ============================================================
+  // Visibility Toggle - Android
+  // ============================================================
+  Widget _buildAndroidVisibilityToggle(bool isDark) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _isPublic = !_isPublic;
+          _hasChanges = _checkForChanges();
+        });
+      },
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isDark ? AppColors.borderDark : AppColors.greyLighter,
           ),
-          borderRadius: BorderRadius.circular(10),
         ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: AppColors.grey),
-            const SizedBox(width: 8),
+            Icon(
+              _isPublic ? Icons.public_rounded : Icons.lock_rounded,
+              size: 20,
+              color: _isPublic
+                  ? AppColors.accent
+                  : (isDark ? AppColors.grey : AppColors.primary),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.grey,
-                      fontFamily: '.SF Pro Text',
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    date != null
-                        ? '${date.day}.${date.month}.${date.year}'
-                        : 'Datum auswählen',
+                    _isPublic ? 'Öffentlich' : 'Privat',
                     style: TextStyle(
                       fontSize: 17,
-                      color: date != null
-                          ? (isDark
-                              ? AppColors.textLight
-                              : AppColors.textPrimary)
-                          : AppColors.grey,
-                      fontFamily: '.SF Pro Text',
+                      fontWeight: FontWeight.w600,
+                      color:
+                          isDark ? AppColors.textLight : AppColors.textPrimary,
                     ),
+                  ),
+                  Text(
+                    _isPublic
+                        ? 'Jeder mit dem Link kann die Seite sehen'
+                        : 'Nur eingeladene Personen',
+                    style: TextStyle(fontSize: 13, color: AppColors.grey),
                   ),
                 ],
               ),
             ),
-            Icon(CupertinoIcons.chevron_right, size: 20, color: AppColors.grey),
+            Transform.scale(
+              scale: 0.85,
+              child: Switch(
+                value: _isPublic,
+                onChanged: (value) {
+                  setState(() {
+                    _isPublic = value;
+                    _hasChanges = _checkForChanges();
+                  });
+                },
+                activeColor: AppColors.accent,
+                activeTrackColor: AppColors.accent.withOpacity(0.3),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
+  // ============================================================
+  // Visibility Toggle - iOS
+  // ============================================================
   Widget _buildIOSVisibilityToggle(bool isDark) {
     return GestureDetector(
       onTap: () {

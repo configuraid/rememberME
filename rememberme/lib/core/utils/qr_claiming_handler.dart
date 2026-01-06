@@ -106,7 +106,7 @@ class QrClaimingHandler {
     }
   }
 
-  /// ❌ Dialog: Login erforderlich - NUR Dialog, KEINE Navigation!
+  /// ❌ Dialog: Login erforderlich - Mit Anmelden/Registrieren Buttons
   void _showLoginRequiredDialog() {
     if (_context == null || _isShowingDialog) return;
 
@@ -118,56 +118,179 @@ class QrClaimingHandler {
       context: _context!,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Column(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
+            // Icon mit Gradient-Hintergrund
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.1),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [
+                          AppColors.accent.withOpacity(0.2),
+                          AppColors.accent.withOpacity(0.05)
+                        ]
+                      : [
+                          AppColors.primary.withOpacity(0.15),
+                          AppColors.primary.withOpacity(0.05)
+                        ],
+                ),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 isIOS
-                    ? CupertinoIcons.exclamationmark_triangle_fill
-                    : Icons.warning_amber_rounded,
+                    ? CupertinoIcons.qrcode_viewfinder
+                    : Icons.qr_code_scanner_rounded,
                 size: 48,
-                color: AppColors.warning,
+                color: isDark ? AppColors.accent : AppColors.primary,
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Anmeldung erforderlich',
+            const SizedBox(height: 20),
+
+            // Titel
+            Text(
+              'QR-Code erkannt! 🎉',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 20),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              ),
             ),
-          ],
-        ),
-        content: Text(
-          'Um diesen QR-Code zu aktivieren und eine Gedenkseite zu erstellen, musst du dich zuerst mit deinem Account anmelden.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 15,
-            color: isDark ? Colors.white70 : Colors.black54,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
+            const SizedBox(height: 12),
+
+            // Beschreibung
+            Text(
+              'Du bist nur noch einen Schritt davon entfernt, '
+              'eine persönliche Gedenkseite für einen Geliebten zu erstellen.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                color: isDark ? AppColors.textDarkSecondary : AppColors.grey,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Hinweis
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.accent.withOpacity(0.1)
+                    : AppColors.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isIOS
+                        ? CupertinoIcons.checkmark_shield_fill
+                        : Icons.verified_user_rounded,
+                    size: 18,
+                    color: isDark ? AppColors.accent : AppColors.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      'Melde dich an, um fortzufahren',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.accent : AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Anmelden Button (Primary)
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: FilledButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  _isShowingDialog = false;
+                  // Zur Login-Seite navigieren
+                  Navigator.of(_context!).pushNamed(AppRoutes.login);
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor:
+                      isDark ? AppColors.accent : AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: Text(
+                  'Anmelden',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.primary : Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Registrieren Button (Secondary)
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  _isShowingDialog = false;
+                  // Zur Registrierungs-Seite navigieren
+                  Navigator.of(_context!).pushNamed(AppRoutes.register);
+                },
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: isDark ? AppColors.accent : AppColors.primary,
+                    width: 1.5,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: Text(
+                  'Neuen Account erstellen',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.accent : AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Abbrechen Link
+            TextButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
                 _isShowingDialog = false;
               },
-              style: FilledButton.styleFrom(
-                backgroundColor: isDark ? AppColors.accent : AppColors.primary,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                'Später',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.grey,
+                ),
               ),
-              child: const Text('Verstanden'),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ).then((_) {
       _isShowingDialog = false;

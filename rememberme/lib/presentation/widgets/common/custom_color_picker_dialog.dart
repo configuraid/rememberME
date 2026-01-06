@@ -101,6 +101,7 @@ Future<String?> _showIOSColorPicker({
                                 ? AppColors.textLight
                                 : AppColors.textPrimary,
                             fontFamily: '.SF Pro Display',
+                            decoration: TextDecoration.none,
                           ),
                         ),
                       ),
@@ -165,6 +166,7 @@ Future<String?> _showIOSColorPicker({
                             color: isDark
                                 ? AppColors.textLight
                                 : AppColors.textPrimary,
+                            decoration: TextDecoration.none,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -245,6 +247,7 @@ Future<String?> _showIOSColorPicker({
                                   ? AppColors.primary
                                   : AppColors.background,
                               fontFamily: '.SF Pro Text',
+                              decoration: TextDecoration.none,
                             ),
                           ),
                         ],
@@ -326,6 +329,7 @@ Future<String?> _showAndroidColorPicker({
                                 color: isDark
                                     ? AppColors.textLight
                                     : AppColors.textPrimary,
+                                decoration: TextDecoration.none,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -334,6 +338,7 @@ Future<String?> _showAndroidColorPicker({
                               style: TextStyle(
                                 fontSize: 13,
                                 color: AppColors.grey,
+                                decoration: TextDecoration.none,
                               ),
                             ),
                           ],
@@ -389,6 +394,7 @@ Future<String?> _showAndroidColorPicker({
                             color: isDark
                                 ? AppColors.textLight
                                 : AppColors.textPrimary,
+                            decoration: TextDecoration.none,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -478,6 +484,7 @@ Future<String?> _showAndroidColorPicker({
                                     color: isDark
                                         ? AppColors.textLight
                                         : AppColors.grey,
+                                    decoration: TextDecoration.none,
                                   ),
                                 ),
                               ),
@@ -546,6 +553,7 @@ Future<String?> _showAndroidColorPicker({
                                       color: isDark
                                           ? AppColors.primary
                                           : AppColors.background,
+                                      decoration: TextDecoration.none,
                                     ),
                                   ),
                                 ],

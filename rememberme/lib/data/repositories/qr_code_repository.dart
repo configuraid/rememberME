@@ -163,7 +163,14 @@ class QrCodeRepository {
           }
 
           if (qrCode.isClaiming && !qrCode.isClaimingExpired) {
-            debugPrint('❌ Claiming bereits in Bearbeitung');
+            // Prüfen ob der GLEICHE User bereits der Claimer ist
+            if (qrCode.ownerId == userId) {
+              debugPrint('✅ User ist bereits Owner, Claiming fortsetzen...');
+              // Der gleiche User - das ist OK, weitermachen!
+              return ClaimResult.success(qrCode);
+            }
+
+            debugPrint('❌ Claiming bereits in Bearbeitung von anderem User');
             return ClaimResult.failure(
               'Die Aktivierung wird gerade von jemand anderem durchgeführt. '
               'Bitte versuche es in wenigen Minuten erneut.',
@@ -292,6 +299,64 @@ class QrCodeRepository {
       });
     } catch (e) {
       debugPrint('❌ Fehler beim Abbrechen: $e');
+    }
+  }
+
+  // ========================================
+  // RELEASE QR CODE (Bei Memorial-Löschung)
+  // ========================================
+
+  /// Entfernt die Memorial-Verknüpfung wenn das Memorial gelöscht wird
+  /// Der QR-Code bleibt beim User (ownerId bleibt erhalten)
+  /// Status wird auf 'claiming' gesetzt, damit ein neues Memorial erstellt werden kann
+  Future<bool> releaseQrCodeForMemorial(
+      String memorialId, String userId) async {
+    try {
+      debugPrint('🔓 Suche QR-Code für Memorial: $memorialId');
+
+      // QR-Code mit dieser memorialId suchen
+      final query = await _firestore
+          .collection(_collection)
+          .where('memorialId', isEqualTo: memorialId)
+          .limit(1)
+          .get();
+
+      if (query.docs.isEmpty) {
+        debugPrint('ℹ️ Kein QR-Code für dieses Memorial gefunden');
+        return true; // Kein Fehler, einfach kein QR-Code vorhanden
+      }
+
+      final qrDoc = query.docs.first;
+      final data = qrDoc.data();
+      final currentOwnerId = data['ownerId'] as String?;
+
+      // Sicherheitsprüfung: Nur Owner darf QR-Code freigeben
+      if (currentOwnerId != userId) {
+        debugPrint(
+            '❌ User $userId ist nicht Owner des QR-Codes (Owner: $currentOwnerId)');
+        return false;
+      }
+
+      debugPrint(
+          '🔓 QR-Code gefunden: ${qrDoc.id}, entferne Memorial-Verknüpfung...');
+
+      // memorialId entfernen, ownerId bleibt!
+      // Status auf 'claiming' setzen, damit neues Memorial erstellt werden kann
+      // WICHTIG: ownerId muss explizit gesetzt werden für Firestore Rules!
+      await qrDoc.reference.update({
+        'status': QrCodeStatus.claiming.name,
+        'memorialId': FieldValue.delete(),
+        'claimedAt': FieldValue.delete(),
+        'claimingStartedAt': Timestamp.fromDate(DateTime.now()),
+        'ownerId': userId, // Muss explizit gesetzt werden für Security Rules!
+      });
+
+      debugPrint(
+          '✅ QR-Code ${qrDoc.id}: Memorial-Verknüpfung entfernt, Owner bleibt erhalten');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Fehler beim Freigeben des QR-Codes: $e');
+      return false;
     }
   }
 

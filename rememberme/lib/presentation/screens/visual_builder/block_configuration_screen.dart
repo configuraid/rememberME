@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:rememberme/presentation/widgets/page_builder/color_picker_card.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -819,7 +820,12 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
       const SizedBox(height: 20),
       _buildAlignmentPicker('align'),
       const SizedBox(height: 20),
-      _buildColorPicker('color', AppStrings.textColor),
+      ColorPickerCard(
+        label: 'Textfarbe',
+        currentColor: _getContent('color', '#333333'),
+        onColorChanged: (color) => _updateLocalValue('color', color),
+        showColorPickerDialog: showColorPickerDialog,
+      ),
     ];
   }
 
@@ -869,7 +875,12 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
       const SizedBox(height: 20),
       _buildAlignmentPicker('align'),
       const SizedBox(height: 20),
-      _buildColorPicker('color', AppStrings.textColor),
+      ColorPickerCard(
+        label: 'Textfarbe',
+        currentColor: _getContent('color', '#333333'),
+        onColorChanged: (color) => _updateLocalValue('color', color),
+        showColorPickerDialog: showColorPickerDialog,
+      ),
     ];
   }
 
@@ -1466,7 +1477,12 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
       _buildTextField(
           label: AppStrings.author, key: 'author', defaultValue: ''),
       const SizedBox(height: 20),
-      _buildColorPicker('color', AppStrings.color),
+      ColorPickerCard(
+        label: 'Textfarbe',
+        currentColor: _getContent('color', '#333333'),
+        onColorChanged: (color) => _updateLocalValue('color', color),
+        showColorPickerDialog: showColorPickerDialog,
+      ),
     ];
   }
 
@@ -2633,8 +2649,12 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
 
       const SizedBox(height: 24),
 
-      // Color Picker für Textfarbe
-      _buildColorPicker('color', 'Textfarbe'),
+      ColorPickerCard(
+        label: 'Textfarbe',
+        currentColor: _getContent('color', '#333333'),
+        onColorChanged: (color) => _updateLocalValue('color', color),
+        showColorPickerDialog: showColorPickerDialog,
+      ),
 
       const SizedBox(height: 24),
 
@@ -3900,126 +3920,6 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildColorPicker(String key, String label) {
-    final currentColor = _getContent(key, '#000000');
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: isDark ? AppColors.textLight : AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // Color Preview Button - öffnet den Color Picker
-        GestureDetector(
-          onTap: () async {
-            final selectedColor = await showColorPickerDialog(
-              context: context,
-              currentColor: currentColor,
-              title: label,
-            );
-
-            if (selectedColor != null) {
-              _updateLocalValue(key, selectedColor);
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color:
-                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              children: [
-                // Farbvorschau
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: _hexToColor(currentColor),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color:
-                          isDark ? AppColors.borderDark : AppColors.greyLight,
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _hexToColor(currentColor).withOpacity(0.4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-
-                // Hex Code
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Ausgewählte Farbe',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        currentColor.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: Platform.isIOS ? 'SF Mono' : 'monospace',
-                          letterSpacing: 1.5,
-                          color: isDark
-                              ? AppColors.textLight
-                              : AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Pfeil Icon
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.accent.withOpacity(0.2)
-                        : AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Platform.isIOS
-                        ? CupertinoIcons.color_filter
-                        : Icons.palette_rounded,
-                    size: 22,
-                    color: isDark ? AppColors.accent : AppColors.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 
