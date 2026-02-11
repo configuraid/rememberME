@@ -1,9 +1,102 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:rememberme/data/models/content_block_model.dart';
 import 'package:rememberme/core/constants/app_colors.dart';
-import 'package:rememberme/core/constants/app_strings.dart';
+
+/// Kategorien für Block-Typen
+enum _BlockCategory {
+  media,
+  textStructure,
+}
+
+/// Block-Typ mit Kategorie und emotionalen Texten
+class _BlockOption {
+  final ContentBlockType type;
+  final String label;
+  final IconData iosIcon;
+  final IconData androidIcon;
+  final _BlockCategory category;
+
+  const _BlockOption({
+    required this.type,
+    required this.label,
+    required this.iosIcon,
+    required this.androidIcon,
+    required this.category,
+  });
+}
+
+/// Alle verfügbaren Block-Optionen
+const List<_BlockOption> _blockOptions = [
+  // === MEDIEN ===
+  _BlockOption(
+    type: ContentBlockType.image,
+    label: 'Foto',
+    iosIcon: CupertinoIcons.photo,
+    androidIcon: Icons.image_outlined,
+    category: _BlockCategory.media,
+  ),
+  _BlockOption(
+    type: ContentBlockType.gallery,
+    label: 'Galerie',
+    iosIcon: CupertinoIcons.photo_on_rectangle,
+    androidIcon: Icons.photo_library_outlined,
+    category: _BlockCategory.media,
+  ),
+  _BlockOption(
+    type: ContentBlockType.video,
+    label: 'Video',
+    iosIcon: CupertinoIcons.videocam,
+    androidIcon: Icons.videocam_outlined,
+    category: _BlockCategory.media,
+  ),
+  _BlockOption(
+    type: ContentBlockType.audio,
+    label: 'Stimme',
+    iosIcon: CupertinoIcons.mic,
+    androidIcon: Icons.mic_outlined,
+    category: _BlockCategory.media,
+  ),
+
+  // === TEXT & STRUKTUR ===
+  _BlockOption(
+    type: ContentBlockType.header,
+    label: 'Überschrift',
+    iosIcon: CupertinoIcons.textformat_size,
+    androidIcon: Icons.title_rounded,
+    category: _BlockCategory.textStructure,
+  ),
+  _BlockOption(
+    type: ContentBlockType.text,
+    label: 'Geschichte',
+    iosIcon: CupertinoIcons.text_alignleft,
+    androidIcon: Icons.notes_rounded,
+    category: _BlockCategory.textStructure,
+  ),
+  _BlockOption(
+    type: ContentBlockType.quote,
+    label: 'Zitat',
+    iosIcon: CupertinoIcons.quote_bubble,
+    androidIcon: Icons.format_quote_rounded,
+    category: _BlockCategory.textStructure,
+  ),
+  _BlockOption(
+    type: ContentBlockType.imageText,
+    label: 'Foto & Text',
+    iosIcon: CupertinoIcons.doc_richtext,
+    androidIcon: Icons.article_outlined,
+    category: _BlockCategory.textStructure,
+  ),
+  _BlockOption(
+    type: ContentBlockType.timeline,
+    label: 'Lebensweg',
+    iosIcon: CupertinoIcons.time,
+    androidIcon: Icons.timeline_rounded,
+    category: _BlockCategory.textStructure,
+  ),
+];
 
 class AddBlockBottomSheet extends StatelessWidget {
   final Function(ContentBlockType) onBlockTypeSelected;
@@ -13,167 +106,87 @@ class AddBlockBottomSheet extends StatelessWidget {
     required this.onBlockTypeSelected,
   });
 
+  List<_BlockOption> _getByCategory(_BlockCategory category) {
+    return _blockOptions.where((o) => o.category == category).toList();
+  }
+
+  void _onSelect(BuildContext context, ContentBlockType type) {
+    HapticFeedback.selectionClick();
+    onBlockTypeSelected(type);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (Platform.isIOS) {
-      return _buildIOSSheet(context);
+      return _buildIOSSheet(context, isDark);
     } else {
-      return _buildAndroidSheet(context);
+      return _buildAndroidSheet(context, isDark);
     }
   }
 
-  // ========== iOS Native UI ==========
-  Widget _buildIOSSheet(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  // ========================================
+  // iOS Implementation
+  // ========================================
+  Widget _buildIOSSheet(BuildContext context, bool isDark) {
+    final mediaOptions = _getByCategory(_BlockCategory.media);
+    final textOptions = _getByCategory(_BlockCategory.textStructure);
 
     return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.88,
-      ),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.backgroundDarkElevated : AppColors.background,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
       ),
       child: SafeArea(
         top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Drag Handle
             Container(
-              margin: const EdgeInsets.only(top: 6),
+              margin: const EdgeInsets.only(top: 8, bottom: 12),
               width: 36,
               height: 5,
               decoration: BoxDecoration(
-                color: isDark ? AppColors.borderDark : AppColors.greyLight,
+                color: isDark ? Colors.white24 : Colors.black12,
                 borderRadius: BorderRadius.circular(2.5),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      AppStrings.addBlock,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: isDark
-                            ? AppColors.textLight
-                            : AppColors.textPrimary,
-                        fontFamily: '.SF Pro Display',
-                      ),
-                    ),
-                  ),
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    minSize: 0,
-                    onPressed: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.accent : AppColors.primary,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Fertig',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color:
-                              isDark ? AppColors.primary : AppColors.background,
-                          fontFamily: '.SF Pro Text',
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Flexible(
-              child: ListView.builder(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                itemCount: ContentBlockType.values.length,
-                itemBuilder: (context, index) {
-                  final type = ContentBlockType.values[index];
-                  return _buildWidgetTile(context, type, isDark);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildWidgetTile(
-    BuildContext context,
-    ContentBlockType type,
-    bool isDark,
-  ) {
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: () => onBlockTypeSelected(type),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.toastBackgroundDark : AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.backgroundDarkElevated
-                    : AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Icon(
-                  BlockTypeInfo.getIcon(type),
-                  size: 20,
-                  color: isDark ? AppColors.accent : AppColors.primary,
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: Text(
+                'Was möchtest du hinzufügen?',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : Colors.black,
+                  fontFamily: '.SF Pro Display',
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
+
+            // Content
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    BlockTypeInfo.getTitle(type),
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      color:
-                          isDark ? AppColors.textLight : AppColors.textPrimary,
-                      fontFamily: '.SF Pro Text',
-                    ),
-                  ),
-                  Text(
-                    BlockTypeInfo.getDescription(type),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.grey,
-                      fontFamily: '.SF Pro Text',
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  // Medien Section
+                  _buildIOSSectionHeader('Medien', isDark),
+                  const SizedBox(height: 12),
+                  _buildIOSRow(context, mediaOptions, isDark),
+
+                  const SizedBox(height: 28),
+
+                  // Text & Struktur Section
+                  _buildIOSSectionHeader('Text & Struktur', isDark),
+                  const SizedBox(height: 12),
+                  _buildIOSWrap(context, textOptions, isDark),
                 ],
               ),
-            ),
-            Icon(
-              CupertinoIcons.chevron_right,
-              size: 18,
-              color: AppColors.grey,
             ),
           ],
         ),
@@ -181,123 +194,156 @@ class AddBlockBottomSheet extends StatelessWidget {
     );
   }
 
-  // ========== Android Material UI ==========
-  Widget _buildAndroidSheet(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-          width: 1,
+  Widget _buildIOSSectionHeader(String title, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title.toUpperCase(),
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: isDark ? Colors.white38 : Colors.black38,
+          letterSpacing: 0.8,
         ),
       ),
+    );
+  }
+
+  Widget _buildIOSRow(
+    BuildContext context,
+    List<_BlockOption> options,
+    bool isDark,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: options.map((option) {
+        return _buildIOSTile(context, option, isDark);
+      }).toList(),
+    );
+  }
+
+  Widget _buildIOSWrap(
+    BuildContext context,
+    List<_BlockOption> options,
+    bool isDark,
+  ) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final tileWidth = (screenWidth - 32) / 4;
+
+    return Wrap(
+      spacing: 0,
+      runSpacing: 20,
+      children: options.map((option) {
+        return SizedBox(
+          width: tileWidth,
+          child: _buildIOSTile(context, option, isDark, fixedWidth: false),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildIOSTile(
+    BuildContext context,
+    _BlockOption option,
+    bool isDark, {
+    bool fixedWidth = true,
+  }) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      minSize: 0,
+      onPressed: () => _onSelect(context, option.type),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              option.iosIcon,
+              size: 26,
+              color: isDark ? AppColors.accent : AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            option.label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ========================================
+  // Android Implementation
+  // ========================================
+  Widget _buildAndroidSheet(BuildContext context, bool isDark) {
+    final mediaOptions = _getByCategory(_BlockCategory.media);
+    final textOptions = _getByCategory(_BlockCategory.textStructure);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
       child: SafeArea(
+        top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle
+            // Drag Handle
             Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              width: 40,
+              margin: const EdgeInsets.only(top: 12, bottom: 12),
+              width: 32,
               height: 4,
               decoration: BoxDecoration(
-                color: isDark ? AppColors.borderDark : AppColors.greyLight,
+                color: isDark ? Colors.white24 : Colors.black12,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
 
-            // Title
+            // Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 16, 16),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.toastBackgroundDark
-                          : AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isDark
-                            ? AppColors.borderDark
-                            : AppColors.primary.withOpacity(0.2),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.add_circle_outline_rounded,
-                      size: 24,
-                      color: isDark ? AppColors.accent : AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      AppStrings.addBlock,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: isDark
-                            ? AppColors.textLight
-                            : AppColors.textPrimary,
-                        letterSpacing: 0.15,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.toastBackgroundDark
-                          : AppColors.greyLighter,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: AppColors.grey,
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
-                ],
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+              child: Text(
+                'Was möchtest du hinzufügen?',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
               ),
             ),
 
-            Divider(
-              height: 1,
-              thickness: 1,
-              color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-            ),
+            // Content
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Medien Section
+                  _buildAndroidSectionHeader('Medien', isDark),
+                  const SizedBox(height: 16),
+                  _buildAndroidRow(context, mediaOptions, isDark),
 
-            // Scrollable Block Types Grid
-            Flexible(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 1,
-                    ),
-                    itemCount: ContentBlockType.values.length,
-                    itemBuilder: (context, index) {
-                      final type = ContentBlockType.values[index];
-                      return _buildAndroidBlockTypeCard(context, type, isDark);
-                    },
-                  ),
-                ),
+                  const SizedBox(height: 32),
+
+                  // Text & Struktur Section
+                  _buildAndroidSectionHeader('Text & Struktur', isDark),
+                  const SizedBox(height: 16),
+                  _buildAndroidWrap(context, textOptions, isDark),
+                ],
               ),
             ),
           ],
@@ -306,98 +352,96 @@ class AddBlockBottomSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildAndroidBlockTypeCard(
+  Widget _buildAndroidSectionHeader(String title, bool isDark) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: isDark ? Colors.white54 : Colors.black54,
+        letterSpacing: 0.25,
+      ),
+    );
+  }
+
+  Widget _buildAndroidRow(
     BuildContext context,
-    ContentBlockType type,
+    List<_BlockOption> options,
     bool isDark,
   ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? AppColors.shadowDark : AppColors.shadow,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => onBlockTypeSelected(type),
-          borderRadius: BorderRadius.circular(16),
-          splashColor: isDark
-              ? AppColors.accent.withOpacity(0.1)
-              : AppColors.primary.withOpacity(0.08),
-          highlightColor: isDark
-              ? AppColors.accent.withOpacity(0.05)
-              : AppColors.primary.withOpacity(0.04),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Icon Container
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.toastBackgroundDark
-                        : AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.borderDark
-                          : AppColors.primary.withOpacity(0.2),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Icon(
-                    BlockTypeInfo.getIcon(type),
-                    size: 28,
-                    color: isDark ? AppColors.accent : AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 8),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: options.map((option) {
+        return _buildAndroidTile(context, option, isDark);
+      }).toList(),
+    );
+  }
 
-                // Title
-                Text(
-                  BlockTypeInfo.getTitle(type),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
+  Widget _buildAndroidWrap(
+    BuildContext context,
+    List<_BlockOption> options,
+    bool isDark,
+  ) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final tileWidth = (screenWidth - 48) / 4;
 
-                // Description - jetzt flexibel
-                Flexible(
-                  child: Text(
-                    BlockTypeInfo.getDescription(type),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppColors.grey,
-                      height: 1.2,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+    return Wrap(
+      spacing: 0,
+      runSpacing: 20,
+      children: options.map((option) {
+        return SizedBox(
+          width: tileWidth,
+          child: _buildAndroidTile(context, option, isDark),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildAndroidTile(
+    BuildContext context,
+    _BlockOption option,
+    bool isDark,
+  ) {
+    return InkWell(
+      onTap: () => _onSelect(context, option.type),
+      borderRadius: BorderRadius.circular(16),
+      splashColor:
+          (isDark ? AppColors.accent : AppColors.primary).withOpacity(0.1),
+      highlightColor:
+          (isDark ? AppColors.accent : AppColors.primary).withOpacity(0.05),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.accent.withOpacity(0.12)
+                    : AppColors.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                option.androidIcon,
+                size: 26,
+                color: isDark ? AppColors.accent : AppColors.primary,
+              ),
             ),
-          ),
+            const SizedBox(height: 10),
+            Text(
+              option.label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );

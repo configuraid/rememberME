@@ -187,21 +187,21 @@ class BlockTypeInfo {
       case ContentBlockType.header:
         return 'Überschrift';
       case ContentBlockType.text:
-        return 'Text';
+        return 'Geschichte';
       case ContentBlockType.image:
-        return 'Bild';
+        return 'Foto';
       case ContentBlockType.gallery:
-        return 'Bildergalerie';
+        return 'Galerie';
       case ContentBlockType.quote:
         return 'Zitat';
       case ContentBlockType.video:
         return 'Video';
       case ContentBlockType.audio:
-        return 'Sprachmemo';
+        return 'Stimme';
       case ContentBlockType.imageText:
-        return 'Bild mit Text';
+        return 'Foto & Text';
       case ContentBlockType.timeline:
-        return 'Lebenslauf';
+        return 'Lebensweg';
     }
   }
 
@@ -257,23 +257,23 @@ class BlockTypeInfo {
   static String getDescription(ContentBlockType type) {
     switch (type) {
       case ContentBlockType.header:
-        return 'Große Überschrift';
+        return 'Setze einen Akzent';
       case ContentBlockType.text:
-        return 'Textabsatz';
+        return 'Erzähle von ihr/ihm';
       case ContentBlockType.image:
-        return 'Einzelnes Bild';
+        return 'Ein besonderer Moment';
       case ContentBlockType.gallery:
-        return 'Mehrere Bilder';
+        return 'Geteilte Erinnerungen';
       case ContentBlockType.quote:
-        return 'Bedeutsames Zitat';
+        return 'Worte, die bleiben';
       case ContentBlockType.video:
-        return 'Video einbetten';
+        return 'Bewegende Momente';
       case ContentBlockType.audio:
-        return 'Sprachnachricht aufnehmen';
+        return 'Lass sie/ihn sprechen';
       case ContentBlockType.imageText:
-        return 'Bild und Text kombiniert';
+        return 'Bild & Geschichte';
       case ContentBlockType.timeline:
-        return 'Lebensereignisse darstellen';
+        return 'Die wichtigen Stationen';
     }
   }
 }
