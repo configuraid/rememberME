@@ -8,13 +8,26 @@ class BottomActionButtons extends StatelessWidget {
   final VoidCallback onCancel;
   final VoidCallback onCreate;
   final bool isValid;
+  final String? confirmLabel;
 
   const BottomActionButtons({
     super.key,
     required this.onCancel,
     required this.onCreate,
     this.isValid = true,
+    this.confirmLabel,
   });
+
+  String get _label => confirmLabel ?? 'Block erstellen';
+
+  bool get _isEditMode =>
+      confirmLabel != null && confirmLabel != 'Block erstellen';
+
+  IconData get _iosIcon =>
+      _isEditMode ? CupertinoIcons.checkmark_alt : CupertinoIcons.checkmark_alt;
+
+  IconData get _androidIcon =>
+      _isEditMode ? Icons.check_rounded : Icons.add_rounded;
 
   @override
   Widget build(BuildContext context) {
@@ -69,20 +82,22 @@ class BottomActionButtons extends StatelessWidget {
               opacity: isValid ? 1.0 : 0.5,
               child: CupertinoButton(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                color: isDark ? AppColors.accent : AppColors.primary,
+                color: _isEditMode
+                    ? AppColors.success
+                    : (isDark ? AppColors.accent : AppColors.primary),
                 borderRadius: BorderRadius.circular(12),
                 onPressed: onCreate,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      CupertinoIcons.checkmark_alt,
+                      _iosIcon,
                       size: 20,
                       color: isDark ? AppColors.primary : AppColors.background,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Block erstellen',
+                      _label,
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         color:
@@ -100,6 +115,10 @@ class BottomActionButtons extends StatelessWidget {
   }
 
   Widget _buildAndroidButtons(BuildContext context, bool isDark) {
+    final Color buttonColor = _isEditMode
+        ? AppColors.success
+        : (isDark ? AppColors.accent : AppColors.primary);
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         20,
@@ -163,7 +182,7 @@ class BottomActionButtons extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          // Create Button
+          // Confirm Button
           Expanded(
             flex: 2,
             child: Container(
@@ -172,21 +191,15 @@ class BottomActionButtons extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          AppColors.accent,
-                          AppColors.accent.withOpacity(0.8),
-                        ]
-                      : [
-                          AppColors.primary,
-                          AppColors.primary.withOpacity(0.85),
-                        ],
+                  colors: [
+                    buttonColor,
+                    buttonColor.withOpacity(0.8),
+                  ],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: (isDark ? AppColors.accent : AppColors.primary)
-                        .withOpacity(0.4),
+                    color: buttonColor.withOpacity(0.4),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -209,7 +222,7 @@ class BottomActionButtons extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          Icons.add_rounded,
+                          _androidIcon,
                           size: 20,
                           color:
                               isDark ? AppColors.primary : AppColors.background,
@@ -217,7 +230,7 @@ class BottomActionButtons extends StatelessWidget {
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        'Block erstellen',
+                        _label,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

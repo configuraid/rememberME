@@ -60,7 +60,7 @@ class QrClaimingHandler {
       _checkPendingQrCode();
     }
 
-    debugPrint('✅ QrClaimingHandler: Initialized');
+    debugPrint('QrClaimingHandler: Initialized');
   }
 
   /// Update context (wichtig für Dialoge!)
@@ -81,21 +81,18 @@ class QrClaimingHandler {
 
   /// Callback wenn QR-Code Deep Link empfangen wird
   void _onQrCodeReceived(String qrCodeId) {
-    debugPrint('📱 QrClaimingHandler: QR-Code empfangen: $qrCodeId');
+    debugPrint('QrClaimingHandler: QR-Code empfangen: $qrCodeId');
 
-    // Verhindere doppelte Dialoge
     if (_isShowingDialog) {
-      debugPrint('⚠️ Dialog bereits sichtbar, ignoriere');
+      debugPrint('Dialog bereits sichtbar, ignoriere');
       return;
     }
 
     if (_currentUserId != null && _context != null) {
-      // ✅ User eingeloggt → Zum Claiming-Flow
-      debugPrint('✅ User authenticated, starting claim flow');
+      debugPrint('User authenticated, starting claim flow');
       _startClaimingFlow(qrCodeId);
     } else if (_context != null) {
-      // ❌ User NICHT eingeloggt → Fehler-Dialog anzeigen
-      debugPrint('❌ User not authenticated, showing login required dialog');
+      debugPrint('User not authenticated, showing login required dialog');
       _showLoginRequiredDialog();
     }
   }
@@ -106,9 +103,8 @@ class QrClaimingHandler {
 
     final qrCodeId = await deepLinkHandler.consumePendingQrCode();
     if (qrCodeId != null) {
-      debugPrint('📱 QrClaimingHandler: Pending QR-Code gefunden: $qrCodeId');
+      debugPrint('QrClaimingHandler: Pending QR-Code gefunden: $qrCodeId');
 
-      // Kurz warten bis UI fertig ist
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (_context != null && _currentUserId != null) {
@@ -117,206 +113,138 @@ class QrClaimingHandler {
     }
   }
 
-  /// ❌ Dialog: Login erforderlich - Mit Anmelden/Registrieren Buttons
+  /// Dialog: Login erforderlich
   void _showLoginRequiredDialog() {
     if (_context == null || _isShowingDialog) return;
 
     _isShowingDialog = true;
     final isDark = Theme.of(_context!).brightness == Brightness.dark;
-    final isIOS = Platform.isIOS;
 
-    showDialog(
-      context: _context!,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Icon mit Gradient-Hintergrund
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          AppColors.accent.withOpacity(0.2),
-                          AppColors.accent.withOpacity(0.05)
-                        ]
-                      : [
-                          AppColors.primary.withOpacity(0.15),
-                          AppColors.primary.withOpacity(0.05)
-                        ],
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                isIOS
-                    ? CupertinoIcons.qrcode_viewfinder
-                    : Icons.qr_code_scanner_rounded,
-                size: 48,
-                color: isDark ? AppColors.accent : AppColors.primary,
-              ),
+    if (Platform.isIOS) {
+      showCupertinoDialog(
+        context: _context!,
+        barrierDismissible: false,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: const Text('Anmeldung erforderlich'),
+          content: const Text(
+            'Bitte melde dich an oder erstelle einen Account, um die Gedenkseite einzurichten.',
+          ),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('Abbrechen'),
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _isShowingDialog = false;
+              },
             ),
-            const SizedBox(height: 20),
-
-            // Titel
-            Text(
-              'QR-Code erkannt! 🎉',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textLight : AppColors.textPrimary,
-              ),
+            CupertinoDialogAction(
+              child: const Text('Registrieren'),
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _isShowingDialog = false;
+                Navigator.of(_context!).pushNamed(AppRoutes.register);
+              },
             ),
-            const SizedBox(height: 12),
-
-            // Beschreibung
-            Text(
-              'Du bist nur noch einen Schritt davon entfernt, '
-              'eine persönliche Gedenkseite für einen Geliebten zu erstellen.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                color: isDark ? AppColors.textDarkSecondary : AppColors.grey,
-                height: 1.5,
-              ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              child: const Text('Anmelden'),
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _isShowingDialog = false;
+                Navigator.of(_context!).pushNamed(AppRoutes.login);
+              },
             ),
-            const SizedBox(height: 8),
-
-            // Hinweis
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.accent.withOpacity(0.1)
-                    : AppColors.primary.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isIOS
-                        ? CupertinoIcons.checkmark_shield_fill
-                        : Icons.verified_user_rounded,
-                    size: 18,
-                    color: isDark ? AppColors.accent : AppColors.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      'Melde dich an, um fortzufahren',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.accent : AppColors.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          ],
+        ),
+      ).then((_) => _isShowingDialog = false);
+    } else {
+      showDialog(
+        context: _context!,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Anmeldung erforderlich',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
             ),
-            const SizedBox(height: 24),
-
-            // Anmelden Button (Primary)
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: FilledButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  _isShowingDialog = false;
-                  // Zur Login-Seite navigieren
-                  Navigator.of(_context!).pushNamed(AppRoutes.login);
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor:
-                      isDark ? AppColors.accent : AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: Text(
-                  'Anmelden',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.primary : Colors.white,
-                  ),
-                ),
-              ),
+          ),
+          content: Text(
+            'Bitte melde dich an oder erstelle einen Account, um die Gedenkseite einzurichten.',
+            style: TextStyle(
+              color: isDark ? AppColors.textDarkSecondary : AppColors.grey,
+              height: 1.4,
             ),
-            const SizedBox(height: 12),
-
-            // Registrieren Button (Secondary)
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: OutlinedButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  _isShowingDialog = false;
-                  // Zur Registrierungs-Seite navigieren
-                  Navigator.of(_context!).pushNamed(AppRoutes.register);
-                },
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(
-                    color: isDark ? AppColors.accent : AppColors.primary,
-                    width: 1.5,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: Text(
-                  'Neuen Account erstellen',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.accent : AppColors.primary,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Abbrechen Link
+          ),
+          actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
                 _isShowingDialog = false;
               },
               child: Text(
-                'Später',
+                'Abbrechen',
+                style: TextStyle(color: AppColors.grey),
+              ),
+            ),
+            OutlinedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _isShowingDialog = false;
+                Navigator.of(_context!).pushNamed(AppRoutes.register);
+              },
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(
+                  color: isDark ? AppColors.accent : AppColors.primary,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: Text(
+                'Registrieren',
                 style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.grey,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.accent : AppColors.primary,
+                ),
+              ),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _isShowingDialog = false;
+                Navigator.of(_context!).pushNamed(AppRoutes.login);
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: isDark ? AppColors.accent : AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: Text(
+                'Anmelden',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.primary : Colors.white,
                 ),
               ),
             ),
           ],
         ),
-      ),
-    ).then((_) {
-      _isShowingDialog = false;
-    });
+      ).then((_) => _isShowingDialog = false);
+    }
   }
 
   /// Startet den Claiming-Flow
   Future<void> _startClaimingFlow(String qrCodeId) async {
     if (_context == null || !_isInitialized || _isShowingDialog) return;
 
-    debugPrint('🎯 Starte Claiming-Flow für: $qrCodeId');
+    debugPrint('Starte Claiming-Flow für: $qrCodeId');
 
     _isShowingDialog = true;
 
-    // Erst QR-Code Status prüfen
     final checkResult = await _claimingService.checkQrCode(qrCodeId);
 
     _isShowingDialog = false;
@@ -335,7 +263,6 @@ class QrClaimingHandler {
       return;
     }
 
-    // ✅ QR-Code kann geclaimed werden → Zur MemorialCreateScreen navigieren!
     _navigateToCreateScreen(qrCodeId);
   }
 
@@ -343,56 +270,47 @@ class QrClaimingHandler {
   Future<void> _handleExistingMemorial(String memorialId) async {
     if (_context == null || _currentUserId == null) return;
 
-    debugPrint('🔐 Prüfe Access für Memorial: $memorialId');
+    debugPrint('Prüfe Access für Memorial: $memorialId');
 
-    // Loading anzeigen
     _showLoadingDialog();
 
     try {
-      // Access prüfen
       final access = await _memorialRepository.checkViewAccess(
         memorialId: memorialId,
         userId: _currentUserId!,
       );
 
-      // Loading schließen
       if (_context != null && Navigator.of(_context!).canPop()) {
         Navigator.of(_context!).pop();
       }
 
       if (!_context!.mounted) return;
 
-      // Je nach Access-Typ navigieren
       switch (access.type) {
         case MemorialViewAccessType.fullAccess:
-          // User ist Owner/Member → MemorialDetailScreen mit Edit-Rechten
-          debugPrint('✅ Full Access → MemorialDetailScreen');
+          debugPrint('Full Access -> MemorialDetailScreen');
           _navigateToDetailScreen(access.memorial!);
           break;
 
         case MemorialViewAccessType.publicReadOnly:
-          // Öffentliches Memorial → WebView Preview (read-only)
-          debugPrint('👁️ Public Read-Only → WebViewPreviewScreen');
+          debugPrint('Public Read-Only -> WebViewPreviewScreen');
           _navigateToPreviewScreen(access.memorial!);
           break;
 
         case MemorialViewAccessType.privateNoAccess:
-          // Privates Memorial, kein Zugang → Private Screen
-          debugPrint('🔒 Private No Access → MemorialPrivateScreen');
+          debugPrint('Private No Access -> MemorialPrivateScreen');
           _navigateToPrivateScreen(access.memorial!);
           break;
 
         case MemorialViewAccessType.notFound:
-          // Memorial nicht gefunden
           _showErrorDialog('Gedenkseite nicht gefunden.');
           break;
       }
     } catch (e) {
-      // Loading schließen bei Fehler
       if (_context != null && Navigator.of(_context!).canPop()) {
         Navigator.of(_context!).pop();
       }
-      debugPrint('❌ Fehler bei Access-Check: $e');
+      debugPrint('Fehler bei Access-Check: $e');
       _showErrorDialog('Fehler beim Laden der Gedenkseite.');
     }
   }
@@ -469,7 +387,6 @@ class QrClaimingHandler {
   void _navigateToPreviewScreen(MemorialModel memorial) {
     if (_context == null) return;
 
-    // Preview URL bauen - passe die URL an dein Vercel-Deployment an!
     final previewUrl = 'https://${DeepLinkHandler.webDomain}/m/${memorial.id}';
 
     if (Platform.isIOS) {
@@ -516,15 +433,11 @@ class QrClaimingHandler {
     }
   }
 
-  // ============================================================
-  // Bestehende Methoden (unverändert)
-  // ============================================================
-
   /// Navigiert zur MemorialCreateScreen mit QR-Code ID
   void _navigateToCreateScreen(String qrCodeId) {
     if (_context == null) return;
 
-    debugPrint('🚀 Navigiere zu MemorialCreateScreen mit QR-Code: $qrCodeId');
+    debugPrint('Navigiere zu MemorialCreateScreen mit QR-Code: $qrCodeId');
 
     Navigator.of(_context!).pushNamed(
       AppRoutes.memorialCreate,
@@ -535,31 +448,46 @@ class QrClaimingHandler {
   void _showErrorDialog(String message) {
     if (_context == null) return;
 
-    showDialog(
-      context: _context!,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.error_outline, color: AppColors.error),
-            const SizedBox(width: 8),
-            const Text('Fehler'),
+    final isDark = Theme.of(_context!).brightness == Brightness.dark;
+
+    if (Platform.isIOS) {
+      showCupertinoDialog(
+        context: _context!,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: const Text('Fehler'),
+          content: Text(message),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.of(ctx).pop(),
+            ),
           ],
         ),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('OK'),
+      );
+    } else {
+      showDialog(
+        context: _context!,
+        builder: (ctx) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.error_outline, color: AppColors.error),
+              const SizedBox(width: 8),
+              const Text('Fehler'),
+            ],
           ),
-        ],
-      ),
-    );
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
-
-  // ============================================================
-  // ENTFERNT: _showAlreadyClaimedDialog - ersetzt durch _handleExistingMemorial
-  // ============================================================
 
   void startClaimingFlow({
     required BuildContext context,
@@ -568,7 +496,7 @@ class QrClaimingHandler {
   }) {
     _context = context;
     _currentUserId = userId;
-    debugPrint('🎯 QrClaimingHandler: Manueller Start für QR: $qrCodeId');
+    debugPrint('QrClaimingHandler: Manueller Start für QR: $qrCodeId');
     _startClaimingFlow(qrCodeId);
   }
 }

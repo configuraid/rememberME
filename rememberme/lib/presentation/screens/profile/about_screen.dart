@@ -87,17 +87,16 @@ class _AboutScreenState extends State<AboutScreen> {
         foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
         surfaceTintColor: Colors.transparent,
       ),
-      body: SafeArea(
-        child: _buildContent(isDark, isIOS: false),
-      ),
+      body: _buildContent(isDark, isIOS: false),
     );
   }
 
   Widget _buildContent(bool isDark, {required bool isIOS}) {
     final topPadding = isIOS ? MediaQuery.of(context).padding.top + 44 : 0.0;
+    final bottomPadding = MediaQuery.of(context).padding.bottom + 32;
 
     return ListView(
-      padding: EdgeInsets.only(top: topPadding, bottom: 32),
+      padding: EdgeInsets.only(top: topPadding, bottom: bottomPadding),
       children: [
         _buildHeader(isDark),
         const SizedBox(height: 24),
@@ -196,21 +195,6 @@ class _AboutScreenState extends State<AboutScreen> {
         ),
         child: Column(
           children: [
-            _buildListTile(
-              icon: Platform.isIOS
-                  ? CupertinoIcons.info_circle
-                  : Icons.info_outline_rounded,
-              title: AppStrings.whatIsRememberMe,
-              subtitle: AppStrings.dignifiedPlatform,
-              isDark: isDark,
-              onTap: () => _showInfoDialog(
-                context,
-                AppStrings.aboutRememberMe,
-                AppStrings.aboutRememberMeDescription,
-                isDark,
-              ),
-            ),
-            _buildDivider(isDark),
             _buildListTile(
               icon: Platform.isIOS
                   ? CupertinoIcons.doc_text

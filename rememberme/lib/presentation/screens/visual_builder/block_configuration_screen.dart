@@ -20,14 +20,21 @@ import 'package:rememberme/presentation/screens/visual_builder/settings/video_se
 import 'package:rememberme/presentation/screens/visual_builder/widgets/bottom_action_buttons.dart';
 
 class BlockConfigurationScreen extends StatefulWidget {
-  final ContentBlockType blockType;
+  final ContentBlockType? blockType;
+
+  final ContentBlock? existingBlock;
+
   final String memorialId;
 
   const BlockConfigurationScreen({
     super.key,
-    required this.blockType,
+    this.blockType,
+    this.existingBlock,
     required this.memorialId,
-  });
+  }) : assert(
+         blockType != null || existingBlock != null,
+         'Either blockType or existingBlock must be provided',
+       );
 
   @override
   State<BlockConfigurationScreen> createState() =>
@@ -40,23 +47,36 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
   late Map<String, dynamic> _localContent;
   bool _hasChanges = false;
 
+  bool get _isEditing => widget.existingBlock != null;
+
+  ContentBlockType get _blockType =>
+      widget.existingBlock?.type ?? widget.blockType!;
+
   @override
   void initState() {
     super.initState();
-    _block = ContentBlock(type: widget.blockType);
-    _localContent = Map.from(_block.content);
 
-    if (widget.blockType == ContentBlockType.audio) {
+    if (_isEditing) {
+      // Edit mode: use existing block and its content
+      _block = widget.existingBlock!;
+      _localContent = Map.from(_block.content);
+    } else {
+      // Create mode: fresh block with default content
+      _block = ContentBlock(type: _blockType);
+      _localContent = Map.from(_block.content);
+    }
+
+    if (_blockType == ContentBlockType.audio) {
       initAudioPlayer();
     }
   }
 
   @override
   void dispose() {
-    if (widget.blockType == ContentBlockType.audio) {
+    if (_blockType == ContentBlockType.audio) {
       disposeAudioResources();
     }
-    if (widget.blockType == ContentBlockType.video) {
+    if (_blockType == ContentBlockType.video) {
       disposeVideoPlayer();
     }
     super.dispose();
@@ -77,9 +97,8 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
     final parts = change.split(':');
     if (parts.length >= 2) {
       final key = parts[0];
-      final valueStr = parts.sublist(1).join(':'); // Handle values with colons
+      final valueStr = parts.sublist(1).join(':');
 
-      // Parse value based on expected type
       dynamic value;
 
       // 1. Boolean check
@@ -87,7 +106,6 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
         value = valueStr == 'true';
       }
       // 2. WICHTIG: int MUSS VOR double geprüft werden!
-      //    Sonst wird "1" zu 1.0 (double) statt 1 (int)
       else if (int.tryParse(valueStr) != null && !valueStr.contains('.')) {
         value = int.parse(valueStr);
       }
@@ -109,7 +127,7 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
   // ============================================
 
   bool _isBlockValid() {
-    switch (widget.blockType) {
+    switch (_blockType) {
       case ContentBlockType.imageText:
         return (_localContent['imageUrl'] ?? '').toString().isNotEmpty;
       case ContentBlockType.image:
@@ -130,7 +148,7 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
   }
 
   String _getValidationMessage() {
-    switch (widget.blockType) {
+    switch (_blockType) {
       case ContentBlockType.imageText:
       case ContentBlockType.image:
         return 'Bitte lade zuerst ein Bild hoch.';
@@ -149,7 +167,7 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
   // Actions
   // ============================================
 
-  void _confirmAndCreate() {
+  void _confirmAndSave() {
     if (!_isBlockValid()) {
       showValidationError(_getValidationMessage());
       return;
@@ -180,14 +198,16 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
   }
 
   Future<bool?> _showDiscardDialogWithResult() async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     if (Platform.isIOS) {
       return showCupertinoDialog<bool>(
         context: context,
         builder: (context) => CupertinoAlertDialog(
           title: Text(AppStrings.unsavedChanges),
-          content: const Text('Möchtest du die Konfiguration verwerfen?'),
+          content: Text(
+            _isEditing
+                ? 'Möchtest du die Änderungen verwerfen?'
+                : 'Möchtest du die Konfiguration verwerfen?',
+          ),
           actions: [
             CupertinoDialogAction(
               child: const Text('Weiter bearbeiten'),
@@ -206,7 +226,11 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(AppStrings.unsavedChanges),
-          content: const Text('Möchtest du die Konfiguration verwerfen?'),
+          content: Text(
+            _isEditing
+                ? 'Möchtest du die Änderungen verwerfen?'
+                : 'Möchtest du die Konfiguration verwerfen?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -283,26 +307,52 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
   }
 
   void _showUploadAudioDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Sprachmemo aufgenommen'),
-        content: const Text('Möchtest du das Sprachmemo jetzt hochladen?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Später'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _handleAudioUpload();
-            },
-            child: const Text('Hochladen'),
-          ),
-        ],
-      ),
-    );
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (Platform.isIOS) {
+      showCupertinoDialog(
+        context: context,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: const Text('Sprachmemo aufgenommen'),
+          content: const Text('Möchtest du das Sprachmemo jetzt hochladen?'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('Später'),
+              onPressed: () => Navigator.pop(ctx),
+            ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              child: const Text('Hochladen'),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _handleAudioUpload();
+              },
+            ),
+          ],
+        ),
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Sprachmemo aufgenommen'),
+          content: const Text('Möchtest du das Sprachmemo jetzt hochladen?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Später'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _handleAudioUpload();
+              },
+              child: const Text('Hochladen'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   Future<void> _handleAudioUpload() async {
@@ -314,6 +364,13 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
       _updateValue('url', url);
       showSuccessSnackBar('Sprachmemo erfolgreich hochgeladen!');
     }
+  }
+
+  String get _confirmButtonLabel => _isEditing ? AppStrings.apply : 'Erstellen';
+
+  String get _navBarTitle {
+    final typeName = BlockTypeInfo.getTitle(_blockType);
+    return _isEditing ? '$typeName bearbeiten' : typeName;
   }
 
   // ============================================
@@ -334,16 +391,30 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
     return WillPopScope(
       onWillPop: _onWillPop,
       child: CupertinoPageScaffold(
-        backgroundColor:
-            isDark ? AppColors.backgroundDark : AppColors.background,
+        backgroundColor: isDark
+            ? AppColors.backgroundDark
+            : AppColors.background,
         navigationBar: CupertinoNavigationBar(
           middle: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                BlockTypeInfo.getIcon(widget.blockType),
-                size: 30,
+                BlockTypeInfo.getIcon(_blockType),
+                size: 20,
                 color: isDark ? AppColors.accent : AppColors.primary,
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  _navBarTitle,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                    fontFamily: '.SF Pro Text',
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -354,14 +425,24 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
             padding: EdgeInsets.zero,
             minSize: 0,
             onPressed: _discardAndGoBack,
-            child: Text(AppStrings.cancel),
+            child: Text(
+              AppStrings.cancel,
+              style: TextStyle(
+                color: isDark ? AppColors.accent : AppColors.primary,
+              ),
+            ),
           ),
           trailing: CupertinoButton(
             padding: EdgeInsets.zero,
             minSize: 0,
-            onPressed: _confirmAndCreate,
-            child: const Text('Erstellen',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            onPressed: _confirmAndSave,
+            child: Text(
+              _confirmButtonLabel,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.accent : AppColors.primary,
+              ),
+            ),
           ),
         ),
         child: Material(
@@ -377,8 +458,9 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
                 ),
                 BottomActionButtons(
                   onCancel: _discardAndGoBack,
-                  onCreate: _confirmAndCreate,
+                  onCreate: _confirmAndSave,
                   isValid: _isBlockValid(),
+                  confirmLabel: _confirmButtonLabel,
                 ),
               ],
             ),
@@ -394,24 +476,39 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        backgroundColor:
-            isDark ? AppColors.backgroundDark : AppColors.background,
+        backgroundColor: isDark
+            ? AppColors.backgroundDark
+            : AppColors.background,
         appBar: AppBar(
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                BlockTypeInfo.getIcon(widget.blockType),
-                size: 30,
+                BlockTypeInfo.getIcon(_blockType),
+                size: 24,
                 color: isDark ? AppColors.accent : AppColors.primary,
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  _navBarTitle,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
           centerTitle: true,
           elevation: 0,
+          scrolledUnderElevation: 0,
           backgroundColor: isDark
               ? AppColors.backgroundDarkElevated.withOpacity(0.8)
               : AppColors.surface.withOpacity(0.94),
+          surfaceTintColor: Colors.transparent,
           leading: IconButton(
             icon: Icon(
               Icons.close_rounded,
@@ -430,8 +527,9 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
             ),
             BottomActionButtons(
               onCancel: _discardAndGoBack,
-              onCreate: _confirmAndCreate,
+              onCreate: _confirmAndSave,
               isValid: _isBlockValid(),
+              confirmLabel: _confirmButtonLabel,
             ),
           ],
         ),
@@ -440,7 +538,7 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
   }
 
   Widget _buildSettingsWidget() {
-    switch (widget.blockType) {
+    switch (_blockType) {
       case ContentBlockType.header:
         return HeaderSettings(
           content: _localContent,
@@ -476,8 +574,9 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
           onValueChanged: _handleValueChange,
           isUploading: isUploading,
           onUploadImages: () async {
-            final currentImages =
-                List<String>.from(_localContent['images'] ?? []);
+            final currentImages = List<String>.from(
+              _localContent['images'] ?? [],
+            );
             final urls = await uploadMultipleImages(
               memorialId: widget.memorialId,
               blockId: _block.id,

@@ -11,7 +11,6 @@ import 'package:rememberme/core/constants/app_colors.dart';
 import 'package:rememberme/core/constants/app_strings.dart';
 import '../../widgets/page_builder/content_block_widget.dart';
 import '../../widgets/page_builder/add_block_bottom_sheet.dart';
-import '../../widgets/page_builder/block_settings_bottom_sheet.dart';
 import '../../widgets/preview/web_preview_mixin.dart';
 import 'block_configuration_screen.dart';
 
@@ -1491,17 +1490,33 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
     });
   }
 
-  void _showBlockSettings(ContentBlock block) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => BlockSettingsBottomSheet(
-        block: block,
-        memorialId: widget.memorial.id,
-        onUpdate: (key, value) => _updateBlockContent(block.id, key, value),
-      ),
+  void _showBlockSettings(ContentBlock block) async {
+    final updated = await Navigator.push<ContentBlock>(
+      context,
+      Platform.isIOS
+          ? CupertinoPageRoute(
+              builder: (_) => BlockConfigurationScreen(
+                existingBlock: block,
+                memorialId: widget.memorial.id,
+              ),
+            )
+          : MaterialPageRoute(
+              builder: (_) => BlockConfigurationScreen(
+                existingBlock: block,
+                memorialId: widget.memorial.id,
+              ),
+            ),
     );
+
+    if (updated != null && mounted) {
+      final index = _blocks.indexWhere((b) => b.id == block.id);
+      if (index != -1) {
+        setState(() {
+          _blocks[index] = updated;
+          _markAsChanged();
+        });
+      }
+    }
   }
 
   void _showPreview() {

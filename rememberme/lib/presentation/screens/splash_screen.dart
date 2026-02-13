@@ -58,6 +58,15 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
+  void _navigateAndClearStack(String routeName, {Object? arguments}) {
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      routeName,
+      (route) => false,
+      arguments: arguments,
+    );
+  }
+
   /// Handle navigation after auth state is determined
   Future<void> _handleNavigation(BuildContext context, AuthState state) async {
     // Wait for animation
@@ -80,7 +89,7 @@ class _SplashScreenState extends State<SplashScreen>
         _showInvitationSuccess(context, redeemResult);
       } else {
         // Normal navigation to home
-        Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+        _navigateAndClearStack(AppRoutes.home);
       }
     } else {
       // ❌ User not logged in
@@ -93,13 +102,13 @@ class _SplashScreenState extends State<SplashScreen>
 
       if (hasPending) {
         // Show login with hint about pending invitation
-        Navigator.of(context).pushReplacementNamed(
+        _navigateAndClearStack(
           AppRoutes.login,
           arguments: {'hasPendingInvitation': true},
         );
       } else {
         // Normal login
-        Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+        _navigateAndClearStack(AppRoutes.login);
       }
     }
   }
@@ -141,8 +150,7 @@ class _SplashScreenState extends State<SplashScreen>
               isDefaultAction: true,
               onPressed: () {
                 Navigator.of(ctx).pop();
-                // Navigate to home (memorial will be in list)
-                Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+                _navigateAndClearStack(AppRoutes.home);
               },
               child: const Text('Gedenkseite öffnen'),
             ),
@@ -177,7 +185,7 @@ class _SplashScreenState extends State<SplashScreen>
             FilledButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
-                Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+                _navigateAndClearStack(AppRoutes.home);
               },
               style: FilledButton.styleFrom(
                 backgroundColor: isDark ? AppColors.accent : AppColors.primary,

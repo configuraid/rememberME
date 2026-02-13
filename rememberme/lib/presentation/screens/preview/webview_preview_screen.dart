@@ -18,17 +18,39 @@ class WebViewPreviewScreen extends StatefulWidget {
   State<WebViewPreviewScreen> createState() => _WebViewPreviewScreenState();
 }
 
-class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
+class _WebViewPreviewScreenState extends State<WebViewPreviewScreen>
+    with SingleTickerProviderStateMixin {
   late final WebViewController _controller;
   bool _isLoading = true;
   bool _hasError = false;
   String? _errorMessage;
   int _loadingProgress = 0;
 
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
   @override
   void initState() {
     super.initState();
+    _initPulseAnimation();
     _initWebView();
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  void _initPulseAnimation() {
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
   }
 
   void _initWebView() {
@@ -44,7 +66,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
-            debugPrint('🌐 Page started loading: $url');
+            debugPrint('Page started loading: $url');
             if (mounted) {
               setState(() {
                 _isLoading = true;
@@ -61,7 +83,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
             }
           },
           onPageFinished: (String url) {
-            debugPrint('✅ Page finished loading: $url');
+            debugPrint('Page finished loading: $url');
             if (mounted) {
               setState(() {
                 _isLoading = false;
@@ -69,8 +91,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
             }
           },
           onWebResourceError: (WebResourceError error) {
-            debugPrint('❌ WebView error: ${error.description}');
-            debugPrint('   isForMainFrame: ${error.isForMainFrame}');
+            debugPrint('WebView error: ${error.description}');
 
             if (error.isForMainFrame == true && mounted) {
               setState(() {
@@ -84,7 +105,7 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
             if (request.url.contains('remember-me-slug.vercel.app')) {
               return NavigationDecision.navigate;
             }
-            debugPrint('🚫 Blocked external navigation: ${request.url}');
+            debugPrint('Blocked external navigation: ${request.url}');
             return NavigationDecision.prevent;
           },
         ),
@@ -117,9 +138,6 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
     return _buildAndroidLayout(context);
   }
 
-  // ============================================================
-  // iOS Layout with CupertinoPageScaffold
-  // ============================================================
   Widget _buildIOSLayout(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -130,23 +148,23 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Vorschau',
+              widget.memorialName,
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
                 color: isDark ? AppColors.textLight : AppColors.textPrimary,
                 fontFamily: '.SF Pro Text',
               ),
+              overflow: TextOverflow.ellipsis,
             ),
-            if (_isLoading)
-              Text(
-                '${_loadingProgress}%',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.grey,
-                  fontFamily: '.SF Pro Text',
-                ),
+            Text(
+              'Vorschau',
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.grey,
+                fontFamily: '.SF Pro Text',
               ),
+            ),
           ],
         ),
         backgroundColor: isDark
@@ -173,52 +191,10 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
         child: Stack(
           children: [
             if (!_hasError) WebViewWidget(controller: _controller),
-            if (_isLoading && !_hasError) _buildIOSLoadingIndicator(isDark),
+            if (_isLoading && !_hasError) _buildLoadingState(isDark),
             if (_hasError) _buildIOSErrorState(isDark),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildIOSLoadingIndicator(bool isDark) {
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: Column(
-        children: [
-          LinearProgressIndicator(
-            value: _loadingProgress / 100,
-            backgroundColor:
-                isDark ? AppColors.borderDark : AppColors.greyLighter,
-            valueColor: AlwaysStoppedAnimation<Color>(
-              isDark ? AppColors.accent : AppColors.primary,
-            ),
-            minHeight: 2,
-          ),
-          if (_loadingProgress < 30)
-            Padding(
-              padding: const EdgeInsets.only(top: 100),
-              child: Column(
-                children: [
-                  CupertinoActivityIndicator(
-                    radius: 14,
-                    color: isDark ? AppColors.grey : null,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Vorschau wird geladen...',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: AppColors.grey,
-                      fontFamily: '.SF Pro Text',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
       ),
     );
   }
@@ -295,9 +271,6 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
     );
   }
 
-  // ============================================================
-  // Android Layout with Material Design
-  // ============================================================
   Widget _buildAndroidLayout(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -308,21 +281,21 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              'Vorschau',
+              widget.memorialName,
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
                 color: isDark ? AppColors.textLight : AppColors.textPrimary,
               ),
+              overflow: TextOverflow.ellipsis,
             ),
-            if (_isLoading)
-              Text(
-                '${_loadingProgress}%',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.grey,
-                ),
+            Text(
+              'Vorschau',
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.grey,
               ),
+            ),
           ],
         ),
         centerTitle: true,
@@ -344,52 +317,8 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
       body: Stack(
         children: [
           if (!_hasError) WebViewWidget(controller: _controller),
-          if (_isLoading && !_hasError) _buildAndroidLoadingIndicator(isDark),
+          if (_isLoading && !_hasError) _buildLoadingState(isDark),
           if (_hasError) _buildAndroidErrorState(isDark),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAndroidLoadingIndicator(bool isDark) {
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: Column(
-        children: [
-          LinearProgressIndicator(
-            value: _loadingProgress / 100,
-            backgroundColor:
-                isDark ? AppColors.borderDark : AppColors.greyLighter,
-            valueColor: AlwaysStoppedAnimation<Color>(
-              isDark ? AppColors.accent : AppColors.primary,
-            ),
-            minHeight: 2,
-          ),
-          if (_loadingProgress < 30)
-            Container(
-              width: double.infinity,
-              color: isDark ? AppColors.backgroundDark : AppColors.background,
-              padding: const EdgeInsets.only(top: 100),
-              child: Column(
-                children: [
-                  CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      isDark ? AppColors.accent : AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Vorschau wird geladen...',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: AppColors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
@@ -459,6 +388,115 @@ class _WebViewPreviewScreenState extends State<WebViewPreviewScreen> {
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState(bool isDark) {
+    final accentColor = isDark ? AppColors.accent : AppColors.primary;
+
+    return Positioned.fill(
+      child: Material(
+        color: isDark ? AppColors.backgroundDark : AppColors.background,
+        child: Column(
+          children: [
+            LinearProgressIndicator(
+              value: _loadingProgress / 100,
+              backgroundColor:
+                  isDark ? AppColors.borderDark : AppColors.greyLighter,
+              valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+              minHeight: 2.5,
+            ),
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 48),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ScaleTransition(
+                        scale: _pulseAnimation,
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                accentColor.withOpacity(0.15),
+                                accentColor.withOpacity(0.05),
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Platform.isIOS
+                                ? CupertinoIcons.heart_fill
+                                : Icons.favorite_rounded,
+                            size: 36,
+                            color: accentColor,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      Text(
+                        widget.memorialName,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? AppColors.textLight
+                              : AppColors.textPrimary,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Gedenkseite wird vorbereitet...',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: AppColors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      SizedBox(
+                        width: 180,
+                        child: Column(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: _loadingProgress / 100,
+                                backgroundColor: isDark
+                                    ? AppColors.borderDark
+                                    : AppColors.greyLighter,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(accentColor),
+                                minHeight: 6,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '$_loadingProgress%',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: accentColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

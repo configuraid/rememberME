@@ -1,4 +1,3 @@
-// presentation/screens/memorial/memorial_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -860,39 +859,6 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 12),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.toastBackgroundDark
-                      : AppColors.primary.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                      color: isDark
-                          ? AppColors.borderDarkSubtle
-                          : AppColors.primary.withOpacity(0.2),
-                      width: 1.5),
-                ),
-                child: Icon(
-                    isIOS ? CupertinoIcons.settings : Icons.settings_rounded,
-                    size: 18,
-                    color: isDark ? AppColors.grey : AppColors.primary),
-              ),
-              const SizedBox(width: 12),
-              Text(AppStrings.moreOptions,
-                  style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: isDark
-                          ? AppColors.textLight
-                          : AppColors.textPrimary)),
-            ],
-          ),
-        ),
         _buildActionTile(
           context,
           isIOS ? CupertinoIcons.trash : Icons.delete_outline_rounded,

@@ -33,7 +33,6 @@ class AppStrings {
   static const String addContentHint = 'Füge Texte, Bilder oder Videos hinzu';
   static const String contents = 'Inhalte';
   static const String block = 'Block';
-  static const String moreOptions = 'Weitere Optionen';
 
   // ============================================================
   // BLOCK-TYPEN - LABELS (für UI)
@@ -190,12 +189,6 @@ class AppStrings {
   // ABOUT SCREEN
   // ============================================================
   static const String version = 'Version ';
-  static const String whatIsRememberMe = 'Was ist rememberME?';
-  static const String dignifiedPlatform =
-      'Eine würdevolle Plattform für digitale Gedenkseiten';
-  static const String aboutRememberMe = 'Über rememberME';
-  static const String aboutRememberMeDescription =
-      'rememberME ermöglicht es Ihnen, würdevolle digitale Gedenkseiten für verstorbene Angehörige und Freunde zu erstellen und zu teilen. Bewahren Sie Erinnerungen, teilen Sie Geschichten und ermöglichen Sie anderen, Beileid auszudrücken.';
   static const String termsOfService = 'Nutzungsbedingungen';
   static const String privacyPolicy = 'Datenschutzerklärung';
   static const String website = 'Website';
