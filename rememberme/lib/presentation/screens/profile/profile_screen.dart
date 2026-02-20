@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rememberme/data/models/user_model.dart';
+import 'package:rememberme/data/services/biometric_service.dart';
 import 'package:rememberme/presentation/widgets/profile/delete_account_sheet.dart';
 import '../../../business_logic/auth/auth_bloc.dart';
 import '../../../business_logic/auth/auth_event.dart';
@@ -24,16 +25,130 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final _biometricService = BiometricService();
+  bool _biometricEnabled = false;
+  bool _biometricSupported = false;
+  String _biometricName = 'Biometrie';
+
   @override
   void initState() {
     super.initState();
     _loadProfile();
+    _loadBiometricStatus();
   }
 
   void _loadProfile() {
     final userId = context.read<AuthBloc>().state.user?.id;
     if (userId != null) {
       context.read<ProfileBloc>().add(ProfileLoadRequested(userId));
+    }
+  }
+
+  Future<void> _loadBiometricStatus() async {
+    final supported = await _biometricService.isDeviceSupported();
+    final enabled = await _biometricService.isBiometricLoginEnabled();
+    final name = await _biometricService.getBiometricTypeName();
+
+    if (mounted) {
+      setState(() {
+        _biometricSupported = supported;
+        _biometricEnabled = enabled;
+        _biometricName = name;
+      });
+    }
+  }
+
+  // ========== FIX: Komplett überarbeiteter Toggle ==========
+  Future<void> _toggleBiometricLogin(bool value) async {
+    if (value) {
+      // === AKTIVIEREN ===
+
+      // 1. Biometrie-Authentifizierung durchführen
+      final authenticated = await _biometricService.authenticate(
+        reason: 'Bestätige deine Identität',
+      );
+      if (!authenticated) return;
+
+      // 2. Prüfe ob Credentials im Keychain vorhanden sind
+      final hasCredentials = await _biometricService.hasStoredCredentials();
+
+      if (!hasCredentials) {
+        // Keine Credentials → User muss sich erst manuell einloggen
+        if (mounted) _showReLoginForBiometricDialog();
+        return;
+      }
+
+      // 3. Credentials vorhanden → einfach enabled-Flag setzen
+      await _biometricService.enableBiometricLogin();
+      debugPrint(
+          '✅ Biometric Login re-aktiviert (Credentials waren vorhanden)');
+    } else {
+      // === DEAKTIVIEREN ===
+      await _biometricService.disableBiometricLogin();
+    }
+
+    if (mounted) {
+      setState(() => _biometricEnabled = value);
+    }
+  }
+
+  void _showReLoginForBiometricDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (Platform.isIOS) {
+      showCupertinoDialog(
+        context: context,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: const Text('Erneut anmelden'),
+          content: const Text(
+            'Bitte logge dich einmal mit E-Mail und Passwort ein, um den biometrischen Login einzurichten.',
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(ctx).pop(),
+              isDefaultAction: true,
+              child: const Text('Verstanden'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor:
+              isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Erneut anmelden',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            ),
+          ),
+          content: Text(
+            'Bitte logge dich einmal mit E-Mail und Passwort ein, um den biometrischen Login einzurichten.',
+            style: TextStyle(fontSize: 15, color: AppColors.grey),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              style: FilledButton.styleFrom(
+                backgroundColor: isDark ? AppColors.accent : AppColors.primary,
+                foregroundColor:
+                    isDark ? AppColors.primary : AppColors.background,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text('Verstanden'),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -121,13 +236,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _handleAccountDeleted(BuildContext context) {
-    // 1. Auth-State zurücksetzen
+    // Biometric Credentials auch löschen bei Account-Löschung
+    _biometricService.clearCredentials();
+
     context.read<AuthBloc>().add(const AuthLogoutRequested());
 
-    // 2. Zum Login navigieren
     Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
       AppRoutes.login,
-      (route) => false, // Entfernt alle vorherigen Routes
+      (route) => false,
     );
   }
 
@@ -469,6 +585,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
+        if (_biometricSupported) ...[
+          _buildIOSMenuHeader('Sicherheit', isDark),
+          _buildIOSMenuCard(
+            context: context,
+            isDark: isDark,
+            children: [
+              _buildIOSBiometricToggle(isDark),
+            ],
+          ),
+        ],
         _buildIOSMenuHeader(AppStrings.support, isDark),
         _buildIOSMenuCard(
           context: context,
@@ -527,7 +653,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ===== iOS MENU HEADER =====
+  Widget _buildIOSBiometricToggle(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.toastBackgroundDark
+                  : AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              CupertinoIcons.person_crop_circle,
+              color: isDark ? AppColors.accent : AppColors.primary,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '$_biometricName Login',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w400,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                fontFamily: '.SF Pro Text',
+                decoration: TextDecoration.none,
+              ),
+            ),
+          ),
+          CupertinoSwitch(
+            value: _biometricEnabled,
+            activeTrackColor: isDark ? AppColors.accent : AppColors.primary,
+            onChanged: _toggleBiometricLogin,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildIOSMenuHeader(String title, bool isDark) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
@@ -548,7 +716,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ===== iOS MENU ITEM =====
   Widget _buildIOSMenuItem({
     required IconData icon,
     required String title,
@@ -664,6 +831,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
+        if (_biometricSupported) ...[
+          _buildAndroidMenuHeader('Sicherheit', isDark),
+          _buildAndroidMenuCard(
+            context: context,
+            isDark: isDark,
+            children: [
+              _buildAndroidBiometricToggle(isDark),
+            ],
+          ),
+        ],
         _buildAndroidMenuHeader(AppStrings.support, isDark),
         _buildAndroidMenuCard(
           context: context,
@@ -724,6 +901,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildAndroidBiometricToggle(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.toastBackgroundDark
+                  : AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.fingerprint_rounded,
+              color: isDark ? AppColors.accent : AppColors.primary,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '$_biometricName Login',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w400,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              ),
+            ),
+          ),
+          Switch.adaptive(
+            value: _biometricEnabled,
+            activeColor: isDark ? AppColors.accent : AppColors.primary,
+            onChanged: _toggleBiometricLogin,
+          ),
+        ],
+      ),
     );
   }
 
@@ -879,6 +1097,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             CupertinoDialogAction(
               isDestructiveAction: true,
               onPressed: () {
+                // ⚠️ KEIN clearCredentials() beim Logout!
                 context.read<AuthBloc>().add(const AuthLogoutRequested());
                 Navigator.of(ctx).pop();
                 Navigator.of(context, rootNavigator: true)
@@ -947,6 +1166,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             FilledButton(
               onPressed: () {
+                // ⚠️ KEIN clearCredentials() beim Logout!
                 context.read<AuthBloc>().add(const AuthLogoutRequested());
                 Navigator.of(ctx).pop();
                 Navigator.of(context, rootNavigator: true)
@@ -977,20 +1197,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ===== DELETE ACCOUNT DIALOG =====
   void _showDeleteAccountDialog(BuildContext context, bool isDark) {
     if (Platform.isIOS) {
-      // iOS: Schönes Bottom Sheet
       DeleteAccountConfirmationFlow.show(
         context,
         isDark: isDark,
         userId: context.read<AuthBloc>().state.user?.id,
         onDeleteAccount: (userId) {
-          // Nur Event dispatchen - Navigation erfolgt im BlocConsumer listener!
           context.read<ProfileBloc>().add(
                 ProfileDeleteAccountRequested(userId: userId, password: ''),
               );
         },
       );
     } else {
-      // Android: Standard Dialog
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rememberme/data/services/biometric_service.dart';
 import 'dart:io';
 
 import '../../../business_logic/auth/auth_bloc.dart';
@@ -24,11 +25,27 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _emailFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
+  final _biometricService = BiometricService();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _emailError;
   String? _passwordError;
+
+  // Biometric State
+  bool _biometricAvailable = false;
+  bool _biometricLoginAttempted = false;
+
+  // ========== NEU: Merken ob manueller Login ==========
+  bool _isManualLogin = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _attemptBiometricLogin();
+    });
+  }
 
   @override
   void dispose() {
@@ -38,6 +55,56 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordFocusNode.dispose();
     super.dispose();
   }
+
+  Future<void> _attemptBiometricLogin() async {
+    if (_biometricLoginAttempted) return;
+    _biometricLoginAttempted = true;
+
+    final isEnabled = await _biometricService.isBiometricLoginEnabled();
+    final isSupported = await _biometricService.isDeviceSupported();
+
+    if (mounted) {
+      setState(() => _biometricAvailable = isSupported && isEnabled);
+    }
+
+    if (!isEnabled || !isSupported) return;
+
+    final credentials = await _biometricService.attemptBiometricLogin();
+
+    if (credentials != null && mounted) {
+      setState(() => _isLoading = true);
+      _isManualLogin = false; // Biometric login, nicht manuell
+      HapticFeedback.mediumImpact();
+
+      context.read<AuthBloc>().add(
+            AuthLoginRequested(
+              email: credentials.email,
+              password: credentials.password,
+            ),
+          );
+    }
+  }
+
+  Future<void> _triggerBiometricLogin() async {
+    final credentials = await _biometricService.attemptBiometricLogin();
+
+    if (credentials != null && mounted) {
+      setState(() => _isLoading = true);
+      _isManualLogin = false; // Biometric login
+      HapticFeedback.mediumImpact();
+
+      context.read<AuthBloc>().add(
+            AuthLoginRequested(
+              email: credentials.email,
+              password: credentials.password,
+            ),
+          );
+    }
+  }
+
+  // ========================================
+  // VALIDATION
+  // ========================================
 
   bool _validateEmail(String email) {
     if (email.isEmpty) {
@@ -78,6 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _isLoading = true);
+    _isManualLogin = true; // ← Manueller Login mit E-Mail/Passwort
     HapticFeedback.mediumImpact();
 
     context.read<AuthBloc>().add(
@@ -130,8 +198,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        // NUR bei Erfolg oder Fehler isLoading zurücksetzen
-        // NICHT bei loading state - sonst Race Condition!
         if (!state.isLoading) {
           setState(() => _isLoading = false);
         }
@@ -139,7 +205,16 @@ class _LoginScreenState extends State<LoginScreen> {
         if (state.isAuthenticated && state.user != null) {
           HapticFeedback.heavyImpact();
 
-          // MemorialBloc zurücksetzen und neue Memorials laden
+          // ========== FIX: Credentials bei manuellem Login speichern ==========
+          if (_isManualLogin) {
+            _biometricService.storeCredentialsQuietly(
+              email: _emailController.text.trim(),
+              password: _passwordController.text,
+            );
+            debugPrint(
+                '🔑 Credentials im Keychain aktualisiert (manueller Login)');
+          }
+
           context.read<MemorialBloc>().add(const MemorialsClearRequested());
           context.read<MemorialBloc>().add(
                 MemorialLoadRequested(userId: state.user!.id),
@@ -222,7 +297,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
         const SizedBox(height: 32),
 
-        // Title
         Center(
           child: Text(
             'Willkommen zurück',
@@ -249,17 +323,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
         const SizedBox(height: 40),
 
-        // Email Field
         _buildEmailField(isDark, isIOS),
-
         const SizedBox(height: 16),
-
-        // Password Field
         _buildPasswordField(isDark, isIOS),
-
         const SizedBox(height: 12),
 
-        // Forgot Password
         Align(
           alignment: Alignment.centerRight,
           child: isIOS
@@ -290,8 +358,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
         const SizedBox(height: 24),
 
-        // Login Button
         _buildLoginButton(isDark, isIOS),
+
+        if (_biometricAvailable) ...[
+          const SizedBox(height: 16),
+          _buildBiometricLoginButton(isDark, isIOS),
+        ],
 
         const SizedBox(height: 24),
 
@@ -343,6 +415,72 @@ class _LoginScreenState extends State<LoginScreen> {
 
         const SizedBox(height: 40),
       ],
+    );
+  }
+
+  // ========================================
+  // Biometric Login Button
+  // ========================================
+
+  Widget _buildBiometricLoginButton(bool isDark, bool isIOS) {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: isIOS
+          ? CupertinoButton(
+              padding: EdgeInsets.zero,
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
+              onPressed: _isLoading ? null : _triggerBiometricLogin,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isDark ? AppColors.accent : AppColors.primary,
+                    width: 1.5,
+                  ),
+                ),
+                child: Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        CupertinoIcons.person_crop_circle,
+                        size: 22,
+                        color: isDark ? AppColors.accent : AppColors.primary,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Mit Face ID anmelden',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppColors.accent : AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          : OutlinedButton.icon(
+              onPressed: _isLoading ? null : _triggerBiometricLogin,
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(
+                  color: isDark ? AppColors.accent : AppColors.primary,
+                  width: 1.5,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                foregroundColor: isDark ? AppColors.accent : AppColors.primary,
+              ),
+              icon: Icon(Icons.fingerprint_rounded, size: 22),
+              label: const Text(
+                'Mit Biometrie anmelden',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+              ),
+            ),
     );
   }
 

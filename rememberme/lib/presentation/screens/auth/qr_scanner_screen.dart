@@ -21,11 +21,7 @@ class QrScannerScreen extends StatefulWidget {
 
 class _QrScannerScreenState extends State<QrScannerScreen>
     with SingleTickerProviderStateMixin {
-  final MobileScannerController _scannerController = MobileScannerController(
-    detectionSpeed: DetectionSpeed.normal,
-    facing: CameraFacing.back,
-    torchEnabled: false,
-  );
+  MobileScannerController? _scannerController;
 
   bool _isProcessing = false;
   bool _hasScanned = false;
@@ -47,12 +43,28 @@ class _QrScannerScreenState extends State<QrScannerScreen>
     _scanLineAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _scanLineController, curve: Curves.easeInOut),
     );
+
+    _initScanner();
+  }
+
+  /// Scanner sicher initialisieren
+  void _initScanner() {
+    if (_scannerController != null) return;
+
+    _scannerController = MobileScannerController(
+      detectionSpeed: DetectionSpeed.normal,
+      facing: CameraFacing.back,
+      torchEnabled: false,
+    );
   }
 
   @override
   void dispose() {
     _scanLineController.dispose();
-    _scannerController.dispose();
+    // FIX: Erst stoppen, dann disposen, dann null setzen
+    _scannerController?.stop().catchError((_) {});
+    _scannerController?.dispose();
+    _scannerController = null;
     super.dispose();
   }
 
@@ -217,8 +229,45 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   }
 
   void _toggleFlash() async {
-    await _scannerController.toggleTorch();
+    await _scannerController?.toggleTorch();
     HapticFeedback.lightImpact();
+  }
+
+  /// Baut den Scanner-Widget mit Error-Handling
+  Widget _buildScannerWidget() {
+    if (_scannerController == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return MobileScanner(
+      controller: _scannerController!,
+      onDetect: _onDetect,
+      errorBuilder: (context, error) {
+        debugPrint('📷 Scanner Error: ${error.errorCode}');
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Platform.isIOS
+                    ? CupertinoIcons.camera
+                    : Icons.camera_alt_rounded,
+                size: 48,
+                color: AppColors.grey,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Kamera wird geladen...',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -243,19 +292,20 @@ class _QrScannerScreenState extends State<QrScannerScreen>
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          ValueListenableBuilder<MobileScannerState>(
-            valueListenable: _scannerController,
-            builder: (context, state, child) {
-              final isOn = state.torchState == TorchState.on;
-              return IconButton(
-                icon: Icon(
-                  isOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
-                  color: isOn ? AppColors.accent : Colors.white,
-                ),
-                onPressed: _toggleFlash,
-              );
-            },
-          ),
+          if (_scannerController != null)
+            ValueListenableBuilder<MobileScannerState>(
+              valueListenable: _scannerController!,
+              builder: (context, state, child) {
+                final isOn = state.torchState == TorchState.on;
+                return IconButton(
+                  icon: Icon(
+                    isOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                    color: isOn ? AppColors.accent : Colors.white,
+                  ),
+                  onPressed: _toggleFlash,
+                );
+              },
+            ),
         ],
       ),
       body: _buildBody(),
@@ -277,20 +327,22 @@ class _QrScannerScreenState extends State<QrScannerScreen>
           onPressed: () => Navigator.of(context).pop(),
           child: const Icon(CupertinoIcons.back, color: Colors.white),
         ),
-        trailing: ValueListenableBuilder<MobileScannerState>(
-          valueListenable: _scannerController,
-          builder: (context, state, child) {
-            final isOn = state.torchState == TorchState.on;
-            return CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: _toggleFlash,
-              child: Icon(
-                isOn ? CupertinoIcons.bolt_fill : CupertinoIcons.bolt,
-                color: isOn ? AppColors.accent : Colors.white,
-              ),
-            );
-          },
-        ),
+        trailing: _scannerController != null
+            ? ValueListenableBuilder<MobileScannerState>(
+                valueListenable: _scannerController!,
+                builder: (context, state, child) {
+                  final isOn = state.torchState == TorchState.on;
+                  return CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: _toggleFlash,
+                    child: Icon(
+                      isOn ? CupertinoIcons.bolt_fill : CupertinoIcons.bolt,
+                      color: isOn ? AppColors.accent : Colors.white,
+                    ),
+                  );
+                },
+              )
+            : null,
       ),
       child: Material(
         type: MaterialType.transparency,
@@ -308,10 +360,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
     return Stack(
       children: [
         // Camera
-        MobileScanner(
-          controller: _scannerController,
-          onDetect: _onDetect,
-        ),
+        _buildScannerWidget(),
 
         // Overlay
         CustomPaint(
@@ -438,7 +487,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   }
 }
 
-// Overlay Painter (gleich wie vorher)
+// Overlay Painter
 class _OverlayPainter extends CustomPainter {
   final Rect scanRect;
   final Color borderColor;

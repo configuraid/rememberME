@@ -10,7 +10,6 @@ import 'package:rememberme/data/repositories/memorial_repository.dart';
 import 'package:rememberme/presentation/screens/memorial/memorial_private_screen.dart';
 import 'package:rememberme/presentation/screens/memorial/memorial_screen.dart';
 import 'package:rememberme/presentation/screens/preview/webview_preview_screen.dart';
-import 'package:rememberme/presentation/widgets/memorial/lifespan_picker_card.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../business_logic/auth/auth_bloc.dart';
@@ -33,17 +32,13 @@ class MemorialCreateScreen extends StatefulWidget {
   State<MemorialCreateScreen> createState() => _MemorialCreateScreenState();
 }
 
-class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
+class _MemorialCreateScreenState extends State<MemorialCreateScreen>
+    with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _biographyController = TextEditingController();
 
   final ImagePicker _imagePicker = ImagePicker();
   File? _profileImage;
-
-  DateTime? _birthDate;
-  DateTime? _deathDate;
-  bool _isPublic = false;
 
   // QR-Code State
   String? _qrCodeId;
@@ -55,12 +50,12 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
 
   // Scanner Controller
   MobileScannerController? _scannerController;
-
-  static const int _maxBiographyLength = 200;
+  bool _isScannerDisposed = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     // Prüfe ob QR-Code ID via Deep Link übergeben wurde
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -78,42 +73,91 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
     });
 
     _nameController.addListener(() => setState(() {}));
-    _biographyController.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _nameController.dispose();
-    _biographyController.dispose();
-    _scannerController?.dispose();
+    _disposeScanner();
     super.dispose();
   }
 
+  /// App-Lifecycle beobachten
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_scannerController == null || _qrCodeId != null) return;
+
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+        _safeStopScanner();
+        break;
+      case AppLifecycleState.resumed:
+        if (!_hasScannedOnce && !_isValidatingQrCode) {
+          _safeStartScanner();
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
   // ============================================================
-  // QR-Code Scanner
+  // Scanner Lifecycle Management
   // ============================================================
+
   void _initScanner() {
-    _scannerController ??= MobileScannerController(
+    if (_scannerController != null || _isScannerDisposed) return;
+
+    debugPrint('📷 Scanner wird initialisiert...');
+    _scannerController = MobileScannerController(
       detectionSpeed: DetectionSpeed.normal,
       facing: CameraFacing.back,
     );
   }
 
-  /// Startet den Scanner sicher (ignoriert Fehler wenn bereits am Laufen)
+  void _disposeScanner() {
+    if (_scannerController == null) return;
+
+    debugPrint('📷 Scanner wird disposed...');
+    _isScannerDisposed = true;
+
+    try {
+      _scannerController?.stop().catchError((e) {
+        debugPrint('ℹ️ Scanner stop bei dispose: $e');
+      });
+    } catch (e) {
+      debugPrint('ℹ️ Scanner stop error: $e');
+    }
+
+    try {
+      _scannerController?.dispose();
+    } catch (e) {
+      debugPrint('ℹ️ Scanner dispose error: $e');
+    }
+
+    _scannerController = null;
+  }
+
   Future<void> _safeStartScanner() async {
     try {
-      // Kurze Verzögerung damit der Controller sich stabilisieren kann
       await Future.delayed(const Duration(milliseconds: 300));
-
-      if (!mounted) return;
-
-      if (_scannerController != null) {
-        await _scannerController?.start();
-        debugPrint('✅ Scanner gestartet');
-      }
+      if (!mounted || _scannerController == null) return;
+      await _scannerController?.start();
+      debugPrint('✅ Scanner gestartet');
     } catch (e) {
-      // MobileScannerException ignorieren - Controller läuft bereits oder initialisiert noch
-      debugPrint('ℹ️ Scanner Info: $e');
+      debugPrint('ℹ️ Scanner Start Info: $e');
+    }
+  }
+
+  Future<void> _safeStopScanner() async {
+    try {
+      if (_scannerController == null) return;
+      await _scannerController?.stop();
+      debugPrint('✅ Scanner gestoppt');
+    } catch (e) {
+      debugPrint('ℹ️ Scanner Stop Info: $e');
     }
   }
 
@@ -129,17 +173,58 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
     return false;
   }
 
-  /// Stoppt den Scanner sicher
-  Future<void> _safeStopScanner() async {
-    try {
-      if (_scannerController != null) {
-        await _scannerController?.stop();
-        debugPrint('✅ Scanner gestoppt');
-      }
-    } catch (e) {
-      debugPrint('ℹ️ Scanner Stop Info: $e');
+  Widget _buildScannerWidget() {
+    if (_scannerController == null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Platform.isIOS ? CupertinoIcons.camera : Icons.camera_alt_rounded,
+              size: 48,
+              color: AppColors.grey,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Kamera wird geladen...',
+              style: TextStyle(color: AppColors.grey, fontSize: 15),
+            ),
+          ],
+        ),
+      );
     }
+
+    return MobileScanner(
+      controller: _scannerController!,
+      onDetect: _onQrCodeDetected,
+      errorBuilder: (context, error) {
+        debugPrint('📷 Scanner Error: ${error.errorCode}');
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Platform.isIOS
+                    ? CupertinoIcons.camera
+                    : Icons.camera_alt_rounded,
+                size: 48,
+                color: AppColors.grey,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Kamera wird geladen...',
+                style: TextStyle(color: AppColors.grey, fontSize: 15),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
+
+  // ============================================================
+  // QR-Code Detection & Validation
+  // ============================================================
 
   Future<void> _onQrCodeDetected(BarcodeCapture capture) async {
     if (_hasScannedOnce || _isValidatingQrCode) return;
@@ -148,16 +233,13 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
     if (barcode == null || barcode.rawValue == null) return;
 
     final scannedValue = barcode.rawValue!;
-
-    // Extrahiere QR-Code ID früh, um Cooldown prüfen zu können
     final qrCodeId = _extractQrCodeId(scannedValue);
 
     if (qrCodeId == null) {
       debugPrint('⚠️ Ungültiger QR-Code Format: $scannedValue');
-      return; // Ignoriere ungültige Codes still
+      return;
     }
 
-    // Prüfe ob dieser Code kürzlich gescannt wurde (verhindert Loop)
     if (_isRecentlyScanned(qrCodeId)) return;
 
     debugPrint('📱 QR-Code gescannt: $scannedValue');
@@ -169,15 +251,11 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
       _lastScanTime = DateTime.now();
     });
 
-    // Stoppe Scanner sicher
     await _safeStopScanner();
-
-    // Validiere QR-Code in Firestore
     await _validateAndSetQrCode(qrCodeId);
   }
 
   String? _extractQrCodeId(String value) {
-    // Format: https://domain.com/memorial/{qrCodeId}
     if (value.contains('/memorial/')) {
       final uri = Uri.tryParse(value);
       if (uri != null && uri.pathSegments.contains('memorial')) {
@@ -188,7 +266,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
       }
     }
 
-    // Format: https://domain.com/m/{qrCodeId}
     if (value.contains('/m/')) {
       final uri = Uri.tryParse(value);
       if (uri != null && uri.pathSegments.contains('m')) {
@@ -199,7 +276,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
       }
     }
 
-    // Direkter QR-Code ID Wert (alphanumerisch)
     if (RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(value) && value.length >= 8) {
       return value;
     }
@@ -226,7 +302,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
         return;
       }
 
-      // Claim den QR-Code (setzt ownerId + status='claiming')
       final result = await qrCodeRepository.claimQrCode(
         qrId: qrCodeId,
         userId: userId,
@@ -237,7 +312,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
       debugPrint('   - errorMessage: ${result.errorMessage}');
 
       if (!result.success) {
-        // Fehlerbehandlung basierend auf Fehlertyp
         switch (result.errorType) {
           case ClaimErrorType.notFound:
             _showError('QR-Code nicht gefunden. Bitte prüfe den Code.');
@@ -245,10 +319,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
           case ClaimErrorType.alreadyClaimed:
             final memorialId = result.qrCode?.memorialId;
             if (memorialId != null && memorialId.isNotEmpty) {
-              // Navigation zur existierenden Gedenkseite
-              // WICHTIG: Hier KEIN Reset - das macht _handleExistingMemorial selbst
               await _handleExistingMemorial(memorialId);
-              return; // ✅ WICHTIG: Return hier, da _handleExistingMemorial alles handhabt
+              return;
             } else {
               _showError('Dieser QR-Code ist bereits aktiviert.');
             }
@@ -269,10 +341,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
         return;
       }
 
-      // ✅ QR-Code ist jetzt geclaimed (reserviert für diesen User)!
       debugPrint('✅ QR-Code geclaimed: $qrCodeId für User $userId');
-      debugPrint('   - Status ist jetzt: claiming');
-      debugPrint('   - ownerId gesetzt auf: $userId');
 
       setState(() {
         _qrCodeId = qrCodeId;
@@ -289,40 +358,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
     }
   }
 
-  void _showAlreadyClaimedDialog(String memorialId) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Bereits aktiviert'),
-        content: const Text(
-          'Dieser QR-Code wurde bereits aktiviert und ist mit einer Gedenkseite verknüpft.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              Navigator.of(context).pop(); // Zurück zum vorherigen Screen
-            },
-            child: const Text('Zurück'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              // TODO: Zum Memorial navigieren
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: isDark ? AppColors.accent : AppColors.primary,
-            ),
-            child: const Text('Zur Gedenkseite'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _openShop() async {
     final uri = Uri.parse(_shopUrl);
     if (await canLaunchUrl(uri)) {
@@ -333,8 +368,9 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
   }
 
   // ============================================================
-  // Image Picker Methoden
+  // Image Picker
   // ============================================================
+
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? pickedFile = await _imagePicker.pickImage(
@@ -542,8 +578,9 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
   }
 
   // ============================================================
-  // Memorial erstellen
+  // Memorial erstellen — nur Name + Foto
   // ============================================================
+
   void _createMemorial() {
     debugPrint('🔘 _createMemorial() aufgerufen');
     debugPrint('   - _qrCodeId: $_qrCodeId');
@@ -581,12 +618,12 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
             MemorialCreateRequested(
               ownerId: user.id,
               name: _nameController.text.trim(),
-              templateId: 'classic', // Default Template
+              templateId: 'classic',
               profileImage: _profileImage!,
-              biography: _biographyController.text.trim(),
-              birthDate: _birthDate,
-              deathDate: _deathDate,
-              isPublic: _isPublic,
+              biography: null,
+              birthDate: null,
+              deathDate: null,
+              isPublic: false, // Default: Privat
               qrCodeId: _qrCodeId,
             ),
           );
@@ -597,16 +634,8 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
 
   bool _isFormValid() {
     final hasName = _nameController.text.trim().isNotEmpty;
-    final hasBirthDate = _birthDate != null;
-    final hasDeathDate = _deathDate != null;
     final hasProfileImage = _profileImage != null;
-    final hasBiography = _biographyController.text.trim().isNotEmpty;
-
-    return hasName &&
-        hasBirthDate &&
-        hasDeathDate &&
-        hasProfileImage &&
-        hasBiography;
+    return hasName && hasProfileImage;
   }
 
   void _showError(String message) {
@@ -666,7 +695,10 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
     }
   }
 
-  /// Prüft Access-Rechte und navigiert zum richtigen Screen
+  // ============================================================
+  // Existing Memorial Navigation
+  // ============================================================
+
   Future<void> _handleExistingMemorial(String memorialId) async {
     final authState = context.read<AuthBloc>().state;
     final userId = authState.user?.id;
@@ -677,7 +709,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
       return;
     }
 
-    // Loading anzeigen
     _showLoadingDialog();
 
     try {
@@ -687,14 +718,12 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
         userId: userId,
       );
 
-      // Loading schließen
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
 
       if (!mounted) return;
 
-      // Je nach Access-Typ navigieren
       switch (access.type) {
         case MemorialViewAccessType.fullAccess:
           debugPrint('✅ Full Access → MemorialDetailScreen');
@@ -707,7 +736,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
                     builder: (_) =>
                         MemorialDetailScreen(memorial: access.memorial!)),
           );
-          // Nach Rückkehr: Scanner zurücksetzen
           await _resetScannerAfterNavigation();
           break;
 
@@ -728,7 +756,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
                           memorialName: access.memorial!.name,
                         )),
           );
-          // Nach Rückkehr: Scanner zurücksetzen
           await _resetScannerAfterNavigation();
           break;
 
@@ -743,7 +770,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
                     builder: (_) =>
                         MemorialPrivateScreen(memorial: access.memorial!)),
           );
-          // Nach Rückkehr: Scanner zurücksetzen
           await _resetScannerAfterNavigation();
           break;
 
@@ -762,7 +788,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
     }
   }
 
-  /// Setzt den Scanner nach Navigation zurück
   Future<void> _resetScannerAfterNavigation() async {
     if (!mounted) return;
 
@@ -773,7 +798,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
       _isValidatingQrCode = false;
     });
 
-    // Scanner sicher neu starten
     await _safeStartScanner();
   }
 
@@ -822,6 +846,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
   // ============================================================
   // Build
   // ============================================================
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<MemorialBloc, MemorialState>(
@@ -832,7 +857,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
             state.memorials.isNotEmpty) {
           debugPrint('✅ Memorial erstellt! Navigiere zum HomeScreen...');
 
-          // WICHTIG: rootNavigator: true um aus dem TabView herauszunavigieren
           if (mounted) {
             Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
               AppRoutes.home,
@@ -853,6 +877,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
   // ============================================================
   // Android View
   // ============================================================
+
   Widget _buildAndroidView() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -874,7 +899,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
             : AppColors.surface.withOpacity(0.94),
         foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
         surfaceTintColor: Colors.transparent,
-        automaticallyImplyLeading: false, // Kein Back-Button
+        automaticallyImplyLeading: false,
       ),
       body: BlocBuilder<MemorialBloc, MemorialState>(
         builder: (context, state) {
@@ -891,22 +916,17 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
                   const SizedBox(height: 24),
                   Text(
                     AppStrings.creatingMemorial,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: AppColors.grey,
-                    ),
+                    style: TextStyle(fontSize: 15, color: AppColors.grey),
                   ),
                 ],
               ),
             );
           }
 
-          // Zeige Scanner wenn kein QR-Code
           if (_qrCodeId == null) {
             return _buildScannerView(isDark);
           }
 
-          // Zeige Formular wenn QR-Code vorhanden
           return _buildDetailsContent(isDark);
         },
       ),
@@ -917,6 +937,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
   // ============================================================
   // iOS View
   // ============================================================
+
   Widget _buildIOSView() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -935,7 +956,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
         backgroundColor: isDark
             ? AppColors.backgroundDarkElevated.withOpacity(0.8)
             : AppColors.surface.withOpacity(0.94),
-        automaticallyImplyLeading: false, // Kein Back-Button
+        automaticallyImplyLeading: false,
       ),
       child: Material(
         type: MaterialType.transparency,
@@ -951,12 +972,10 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
                 );
               }
 
-              // Zeige Scanner wenn kein QR-Code
               if (_qrCodeId == null) {
                 return _buildIOSScannerView(isDark);
               }
 
-              // Zeige Formular wenn QR-Code vorhanden
               return Column(
                 children: [
                   Expanded(child: _buildIOSDetailsContent(isDark)),
@@ -999,26 +1018,21 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
     );
   }
 
+  // ============================================================
+  // Scanner Views
+  // ============================================================
+
   Widget _buildScannerView(bool isDark) {
     _initScanner();
 
     return Column(
       children: [
-        // Scanner Area - KEINE runden Ecken unten
         Expanded(
           flex: 3,
           child: Stack(
             children: [
-              // Scanner - ohne runde Ecken
-              MobileScanner(
-                controller: _scannerController,
-                onDetect: _onQrCodeDetected,
-              ),
-
-              // Overlay mit Scan-Rahmen
+              _buildScannerWidget(),
               _buildScannerOverlay(isDark),
-
-              // Loading Indicator
               if (_isValidatingQrCode)
                 Container(
                   color: Colors.black54,
@@ -1046,8 +1060,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
             ],
           ),
         ),
-
-        // Bottom Area
         Expanded(
           flex: 2,
           child: Container(
@@ -1084,16 +1096,12 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  // Simpler Shop-Link
                   GestureDetector(
                     onTap: _openShop,
                     child: Text.rich(
                       TextSpan(
                         text: 'Noch keinen QR-Code? ',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.grey,
-                        ),
+                        style: TextStyle(fontSize: 14, color: AppColors.grey),
                         children: [
                           TextSpan(
                             text: 'Jetzt bestellen',
@@ -1120,29 +1128,17 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
     );
   }
 
-// ============================================================
-// Scanner View (iOS) - Keine runden Ecken unten
-// ============================================================
   Widget _buildIOSScannerView(bool isDark) {
     _initScanner();
 
     return Column(
       children: [
-        // Scanner Area - KEINE runden Ecken unten
         Expanded(
           flex: 3,
           child: Stack(
             children: [
-              // Scanner - ohne runde Ecken
-              MobileScanner(
-                controller: _scannerController,
-                onDetect: _onQrCodeDetected,
-              ),
-
-              // Overlay mit Scan-Rahmen
+              _buildScannerWidget(),
               _buildScannerOverlay(isDark),
-
-              // Loading Indicator
               if (_isValidatingQrCode)
                 Container(
                   color: Colors.black54,
@@ -1171,8 +1167,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
             ],
           ),
         ),
-
-        // Bottom Area
         Expanded(
           flex: 2,
           child: Container(
@@ -1211,7 +1205,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  // Simpler Shop-Link
                   GestureDetector(
                     onTap: _openShop,
                     child: Text.rich(
@@ -1291,8 +1284,9 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
   }
 
   // ============================================================
-  // Details Content (Android)
+  // Details Content — Vereinfacht: Nur Name + Foto
   // ============================================================
+
   Widget _buildDetailsContent(bool isDark) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -1301,33 +1295,17 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            _buildWelcomeHeader(isDark, false),
+            const SizedBox(height: 24),
             _buildAndroidProfileImagePicker(isDark),
             const SizedBox(height: 20),
             _buildAndroidNameField(isDark),
-            const SizedBox(height: 20),
-            _buildAndroidBiographyField(isDark),
-            const SizedBox(height: 20),
-            LifespanPickerCard(
-              birthDate: _birthDate,
-              deathDate: _deathDate,
-              onBirthDateChanged: (date) => setState(() => _birthDate = date),
-              onDeathDateChanged: (date) => setState(() => _deathDate = date),
-              isRequired: true,
-            ),
-            const SizedBox(height: 24),
-            _buildAndroidVisibilityToggle(isDark),
-            const SizedBox(height: 32),
-            _buildInfoBox(isDark),
-            const SizedBox(height: 80),
           ],
         ),
       ),
     );
   }
 
-  // ============================================================
-  // Details Content (iOS)
-  // ============================================================
   Widget _buildIOSDetailsContent(bool isDark) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -1336,29 +1314,55 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            _buildWelcomeHeader(isDark, true),
+            const SizedBox(height: 24),
             _buildIOSProfileImagePicker(isDark),
             const SizedBox(height: 20),
             _buildIOSNameField(isDark),
-            const SizedBox(height: 20),
-            _buildIOSBiographyField(isDark),
-            const SizedBox(height: 20),
-            LifespanPickerCard(
-              birthDate: _birthDate,
-              deathDate: _deathDate,
-              onBirthDateChanged: (date) => setState(() => _birthDate = date),
-              onDeathDateChanged: (date) => setState(() => _deathDate = date),
-              isRequired: true,
-            ),
-            const SizedBox(height: 24),
-            _buildIOSVisibilityToggle(isDark),
-            const SizedBox(height: 32),
-            _buildInfoBox(isDark),
-            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
+
+  /// Einladender Header statt kahlem Formular
+  Widget _buildWelcomeHeader(bool isDark, bool isIOS) {
+    return Column(
+      children: [
+        Icon(
+          isIOS ? CupertinoIcons.heart_fill : Icons.favorite_rounded,
+          size: 40,
+          color: isDark ? AppColors.accent : AppColors.primary,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Erstelle eine Gedenkseite',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+            fontFamily: isIOS ? '.SF Pro Display' : null,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Wähle ein Foto und einen Namen.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 15,
+            color: AppColors.grey,
+            height: 1.4,
+            fontFamily: isIOS ? '.SF Pro Text' : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // Form Fields
+  // ============================================================
 
   Widget _buildAndroidNameField(bool isDark) {
     return Container(
@@ -1426,99 +1430,58 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
     );
   }
 
+  // ============================================================
+  // Image Picker Widgets
+  // ============================================================
+
   Widget _buildAndroidProfileImagePicker(bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Text('Foto',
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.grey)),
-            const SizedBox(width: 4),
-            Text('*',
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.error)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        AspectRatio(
-          aspectRatio: 1.0, // Quadratisch
-          child: InkWell(
-            onTap: _showImageSourceSheet,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.backgroundDarkElevated
-                    : AppColors.surface,
-                border: Border.all(
-                  color: _profileImage != null
-                      ? (isDark ? AppColors.accent : AppColors.primary)
-                      : (isDark ? AppColors.borderDark : AppColors.greyLighter),
-                  width: _profileImage != null ? 2 : 1,
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: _profileImage != null
-                  ? _buildImagePreview(isDark)
-                  : _buildImagePlaceholder(isDark, false),
+    return AspectRatio(
+      aspectRatio: 1.0,
+      child: InkWell(
+        onTap: _showImageSourceSheet,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            color:
+                isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+            border: Border.all(
+              color: _profileImage != null
+                  ? (isDark ? AppColors.accent : AppColors.primary)
+                  : (isDark ? AppColors.borderDark : AppColors.greyLighter),
+              width: _profileImage != null ? 2 : 1,
             ),
+            borderRadius: BorderRadius.circular(16),
           ),
+          child: _profileImage != null
+              ? _buildImagePreview(isDark)
+              : _buildImagePlaceholder(isDark, false),
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildIOSProfileImagePicker(bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Text('Foto',
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.grey,
-                    fontFamily: '.SF Pro Text')),
-            const SizedBox(width: 4),
-            Text('*',
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.error)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        AspectRatio(
-          aspectRatio: 1.0, // Quadratisch
-          child: GestureDetector(
-            onTap: _showImageSourceSheet,
-            child: Container(
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.backgroundDarkElevated
-                    : AppColors.surface,
-                border: Border.all(
-                  color: _profileImage != null
-                      ? (isDark ? AppColors.accent : AppColors.primary)
-                      : (isDark ? AppColors.borderDark : AppColors.greyLighter),
-                  width: _profileImage != null ? 2 : 1,
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: _profileImage != null
-                  ? _buildImagePreview(isDark)
-                  : _buildImagePlaceholder(isDark, true),
+    return AspectRatio(
+      aspectRatio: 1.0,
+      child: GestureDetector(
+        onTap: _showImageSourceSheet,
+        child: Container(
+          decoration: BoxDecoration(
+            color:
+                isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+            border: Border.all(
+              color: _profileImage != null
+                  ? (isDark ? AppColors.accent : AppColors.primary)
+                  : (isDark ? AppColors.borderDark : AppColors.greyLighter),
+              width: _profileImage != null ? 2 : 1,
             ),
+            borderRadius: BorderRadius.circular(16),
           ),
+          child: _profileImage != null
+              ? _buildImagePreview(isDark)
+              : _buildImagePlaceholder(isDark, true),
         ),
-      ],
+      ),
     );
   }
 
@@ -1526,7 +1489,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Verschwommener Hintergrund
         ClipRRect(
           borderRadius: BorderRadius.circular(14),
           child: ImageFiltered(
@@ -1539,16 +1501,12 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
             ),
           ),
         ),
-
-        // Leichtes Overlay für besseren Kontrast
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             color: (isDark ? Colors.black : Colors.white).withOpacity(0.1),
           ),
         ),
-
-        // Scharfes Bild darüber
         ClipRRect(
           borderRadius: BorderRadius.circular(14),
           child: Image.file(
@@ -1558,8 +1516,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
             height: double.infinity,
           ),
         ),
-
-        // Löschen-Button
         Positioned(
           top: 8,
           right: 8,
@@ -1595,7 +1551,7 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: isDark
                 ? AppColors.accent.withOpacity(0.2)
@@ -1604,15 +1560,15 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
           ),
           child: Icon(
             isIOS ? CupertinoIcons.camera : Icons.camera_alt_rounded,
-            size: 32,
+            size: 40,
             color: isDark ? AppColors.accent : AppColors.primary,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Text(
           'Foto hinzufügen',
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 17,
             fontWeight: FontWeight.w600,
             color: isDark ? AppColors.accent : AppColors.primary,
             fontFamily: isIOS ? '.SF Pro Text' : null,
@@ -1622,281 +1578,12 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen> {
         Text(
           'Tippen zum Auswählen',
           style: TextStyle(
-              fontSize: 13,
-              color: AppColors.grey,
-              fontFamily: isIOS ? '.SF Pro Text' : null),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAndroidBiographyField(bool isDark) {
-    final currentLength = _biographyController.text.length;
-    final isOverLimit = currentLength > _maxBiographyLength;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Text('Gedenkspruch',
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.grey)),
-                const SizedBox(width: 4),
-                Text('*',
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.error)),
-              ],
-            ),
-            Text(
-              '$currentLength/$_maxBiographyLength',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: isOverLimit ? AppColors.error : AppColors.grey,
-                  fontWeight:
-                      isOverLimit ? FontWeight.w600 : FontWeight.normal),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color:
-                isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-                color: isOverLimit
-                    ? AppColors.error
-                    : (isDark ? AppColors.borderDark : AppColors.greyLighter)),
-          ),
-          child: TextFormField(
-            controller: _biographyController,
-            maxLines: 4,
-            maxLength: _maxBiographyLength,
-            style: TextStyle(
-                fontSize: 16,
-                color: isDark ? AppColors.textLight : AppColors.textPrimary),
-            decoration: InputDecoration(
-              hintText: 'Erzählen Sie etwas über diese Person...',
-              hintStyle: TextStyle(color: AppColors.grey),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(12),
-              counterText: '',
-            ),
+            fontSize: 14,
+            color: AppColors.grey,
+            fontFamily: isIOS ? '.SF Pro Text' : null,
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildIOSBiographyField(bool isDark) {
-    final currentLength = _biographyController.text.length;
-    final isOverLimit = currentLength > _maxBiographyLength;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Text('Gedenkspruch',
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.grey,
-                        fontFamily: '.SF Pro Text')),
-                const SizedBox(width: 4),
-                Text('*',
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.error)),
-              ],
-            ),
-            Text(
-              '$currentLength/$_maxBiographyLength',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: isOverLimit ? AppColors.error : AppColors.grey,
-                  fontWeight: isOverLimit ? FontWeight.w600 : FontWeight.normal,
-                  fontFamily: '.SF Pro Text'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        CupertinoTextField(
-          controller: _biographyController,
-          placeholder: 'Erzählen Sie etwas über diese Person...',
-          placeholderStyle: TextStyle(color: AppColors.grey),
-          maxLines: 4,
-          maxLength: _maxBiographyLength,
-          style: TextStyle(
-              fontSize: 16,
-              color: isDark ? AppColors.textLight : AppColors.textPrimary,
-              fontFamily: '.SF Pro Text'),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color:
-                isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-            border: Border.all(
-                color: isOverLimit
-                    ? AppColors.error
-                    : (isDark ? AppColors.borderDark : AppColors.greyLighter)),
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAndroidVisibilityToggle(bool isDark) {
-    return InkWell(
-      onTap: () => setState(() => _isPublic = !_isPublic),
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-              color: isDark ? AppColors.borderDark : AppColors.greyLighter),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            Icon(_isPublic ? Icons.public_rounded : Icons.lock_rounded,
-                size: 20,
-                color: _isPublic
-                    ? AppColors.accent
-                    : (isDark ? AppColors.grey : AppColors.primary)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_isPublic ? 'Öffentlich' : 'Privat',
-                      style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: isDark
-                              ? AppColors.textLight
-                              : AppColors.textPrimary)),
-                  Text(
-                      _isPublic
-                          ? 'Jeder mit dem Link kann die Seite sehen'
-                          : 'Nur eingeladene Personen',
-                      style: TextStyle(fontSize: 13, color: AppColors.grey)),
-                ],
-              ),
-            ),
-            Transform.scale(
-              scale: 0.85,
-              child: Switch(
-                value: _isPublic,
-                onChanged: (value) => setState(() => _isPublic = value),
-                activeColor: AppColors.accent,
-                activeTrackColor: AppColors.accent.withOpacity(0.3),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIOSVisibilityToggle(bool isDark) {
-    return GestureDetector(
-      onTap: () => setState(() => _isPublic = !_isPublic),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-              color: isDark ? AppColors.borderDark : AppColors.greyLighter),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            Icon(_isPublic ? CupertinoIcons.globe : CupertinoIcons.lock_fill,
-                size: 20,
-                color: _isPublic
-                    ? AppColors.accent
-                    : (isDark ? AppColors.grey : AppColors.primary)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_isPublic ? 'Öffentlich' : 'Privat',
-                      style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: isDark
-                              ? AppColors.textLight
-                              : AppColors.textPrimary,
-                          fontFamily: '.SF Pro Text')),
-                  Text(
-                      _isPublic
-                          ? 'Jeder mit dem Link kann die Seite sehen'
-                          : 'Nur eingeladene Personen',
-                      style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.grey,
-                          fontFamily: '.SF Pro Text')),
-                ],
-              ),
-            ),
-            Transform.scale(
-              scale: 0.85,
-              child: CupertinoSwitch(
-                  value: _isPublic,
-                  onChanged: (value) => setState(() => _isPublic = value),
-                  activeTrackColor: AppColors.accent),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoBox(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.info.withOpacity(isDark ? 0.15 : 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border:
-            Border.all(color: AppColors.info.withOpacity(isDark ? 0.4 : 0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-              Platform.isIOS
-                  ? CupertinoIcons.info_circle
-                  : Icons.info_outline_rounded,
-              color: isDark ? AppColors.info.withOpacity(0.9) : AppColors.info,
-              size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              AppStrings.fieldsCanBeEditedLater,
-              style: TextStyle(
-                  fontSize: 13,
-                  color:
-                      isDark ? AppColors.info.withOpacity(0.9) : AppColors.info,
-                  fontFamily: Platform.isIOS ? '.SF Pro Text' : null),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -1925,7 +1612,6 @@ class ScannerOverlayPainter extends CustomPainter {
     final scanRect = Rect.fromCenter(
         center: center, width: scanAreaSize, height: scanAreaSize);
 
-    // Dunkles Overlay
     final overlayPath = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
       ..addRRect(
@@ -1934,7 +1620,6 @@ class ScannerOverlayPainter extends CustomPainter {
 
     canvas.drawPath(overlayPath, Paint()..color = overlayColor);
 
-    // Rahmen
     final borderPaint = Paint()
       ..color = borderColor
       ..style = PaintingStyle.stroke
@@ -1945,7 +1630,6 @@ class ScannerOverlayPainter extends CustomPainter {
       borderPaint,
     );
 
-    // Ecken (optional: schönere Ecken)
     final cornerLength = 30.0;
     final cornerPaint = Paint()
       ..color = borderColor
@@ -1953,25 +1637,21 @@ class ScannerOverlayPainter extends CustomPainter {
       ..strokeWidth = borderWidth * 2
       ..strokeCap = StrokeCap.round;
 
-    // Top-Left
     canvas.drawLine(Offset(scanRect.left, scanRect.top + cornerLength),
         Offset(scanRect.left, scanRect.top + borderRadius), cornerPaint);
     canvas.drawLine(Offset(scanRect.left + cornerLength, scanRect.top),
         Offset(scanRect.left + borderRadius, scanRect.top), cornerPaint);
 
-    // Top-Right
     canvas.drawLine(Offset(scanRect.right, scanRect.top + cornerLength),
         Offset(scanRect.right, scanRect.top + borderRadius), cornerPaint);
     canvas.drawLine(Offset(scanRect.right - cornerLength, scanRect.top),
         Offset(scanRect.right - borderRadius, scanRect.top), cornerPaint);
 
-    // Bottom-Left
     canvas.drawLine(Offset(scanRect.left, scanRect.bottom - cornerLength),
         Offset(scanRect.left, scanRect.bottom - borderRadius), cornerPaint);
     canvas.drawLine(Offset(scanRect.left + cornerLength, scanRect.bottom),
         Offset(scanRect.left + borderRadius, scanRect.bottom), cornerPaint);
 
-    // Bottom-Right
     canvas.drawLine(Offset(scanRect.right, scanRect.bottom - cornerLength),
         Offset(scanRect.right, scanRect.bottom - borderRadius), cornerPaint);
     canvas.drawLine(Offset(scanRect.right - cornerLength, scanRect.bottom),
