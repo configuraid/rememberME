@@ -578,7 +578,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final color = isDestructive
         ? AppColors.error
         : (isDark ? AppColors.textLight : AppColors.textPrimary);
-    final iconColor = isDestructive ? AppColors.error : AppColors.grey;
+    final iconColor = isDestructive
+        ? AppColors.error
+        : (isDark ? AppColors.textLight : AppColors.textPrimary);
 
     if (Platform.isIOS) {
       return CupertinoButton(
@@ -604,8 +606,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               Icon(
                 CupertinoIcons.chevron_right,
-                size: 15,
-                color: AppColors.grey.withOpacity(0.5),
+                size: 20,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
               ),
             ],
           ),
@@ -636,8 +638,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               Icon(
                 Icons.arrow_forward_ios_rounded,
-                size: 15,
-                color: AppColors.grey.withOpacity(0.5),
+                size: 20,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
               ),
             ],
           ),
@@ -659,7 +661,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ? CupertinoIcons.lock_shield
                 : Icons.fingerprint_rounded,
             size: 22,
-            color: AppColors.grey,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
           ),
           const SizedBox(width: 16),
           Expanded(

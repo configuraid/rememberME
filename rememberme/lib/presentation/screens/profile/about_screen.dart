@@ -40,10 +40,13 @@ class _AboutScreenState extends State<AboutScreen> {
     return _buildAndroidView(isDark);
   }
 
-  // ==================== iOS VIEW ====================
+  // ============================================================
+  // iOS VIEW
+  // ============================================================
   Widget _buildIOSView(bool isDark) {
     return CupertinoPageScaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : const Color(0xFFF2F2F7),
       navigationBar: CupertinoNavigationBar(
         middle: Text(
           AppStrings.aboutTheApp,
@@ -65,10 +68,13 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
-  // ==================== ANDROID VIEW ====================
+  // ============================================================
+  // Android VIEW
+  // ============================================================
   Widget _buildAndroidView(bool isDark) {
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : const Color(0xFFF5F5F5),
       appBar: AppBar(
         title: Text(
           AppStrings.aboutTheApp,
@@ -91,6 +97,9 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
+  // ============================================================
+  // Content
+  // ============================================================
   Widget _buildContent(bool isDark, {required bool isIOS}) {
     final topPadding = isIOS ? MediaQuery.of(context).padding.top + 44 : 0.0;
     final bottomPadding = MediaQuery.of(context).padding.bottom + 32;
@@ -100,10 +109,12 @@ class _AboutScreenState extends State<AboutScreen> {
       children: [
         _buildHeader(isDark),
         const SizedBox(height: 24),
+        _buildSectionHeader('Rechtliches', isDark),
         _buildInfoSection(isDark),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
+        _buildSectionHeader('Kontakt', isDark),
         _buildContactSection(isDark),
-        const SizedBox(height: 40),
+        const SizedBox(height: 32),
         _buildSocialSection(isDark),
         const SizedBox(height: 32),
         _buildCopyright(isDark),
@@ -111,70 +122,54 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
+  // ============================================================
+  // Header (App-Icon + Name + Version)
+  // ============================================================
   Widget _buildHeader(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 32),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 32),
       child: Column(
         children: [
+          // App Icon – schlicht, rund
           Container(
-            padding: const EdgeInsets.all(24),
+            width: 96,
+            height: 96,
             decoration: BoxDecoration(
               color: isDark
-                  ? AppColors.accent
-                  : AppColors.primary.withOpacity(0.1),
+                  ? AppColors.accent.withOpacity(0.15)
+                  : AppColors.primary.withOpacity(0.08),
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: isDark
-                      ? AppColors.accent.withOpacity(0.3)
-                      : AppColors.primary.withOpacity(0.2),
-                  blurRadius: 30,
-                  offset: const Offset(0, 8),
-                ),
-              ],
             ),
             child: Icon(
               Platform.isIOS
                   ? CupertinoIcons.heart_fill
                   : Icons.favorite_rounded,
-              size: 64,
-              color: isDark ? AppColors.background : AppColors.primary,
+              size: 48,
+              color: isDark ? AppColors.accent : AppColors.primary,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+
+          // App Name
           Text(
             AppStrings.appNameRememberMe,
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 26,
               fontWeight: FontWeight.bold,
               color: isDark ? AppColors.textLight : AppColors.textPrimary,
               fontFamily: Platform.isIOS ? '.SF Pro Display' : null,
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.toastBackgroundDark
-                  : AppColors.greyLighter,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-              ),
-            ),
-            child: Text(
-              '${AppStrings.version}$_version',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.grey,
-                fontWeight: FontWeight.w600,
-                fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
-              ),
+          const SizedBox(height: 8),
+
+          // Version – dezent
+          Text(
+            '${AppStrings.version}$_version',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.grey,
+              fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
             ),
           ),
         ],
@@ -182,85 +177,174 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
+  // ============================================================
+  // Section Header
+  // ============================================================
+  Widget _buildSectionHeader(String title, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: AppColors.grey,
+          fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // Card Container (WhatsApp-Style: kein Border)
+  // ============================================================
+  Widget _buildCard({
+    required bool isDark,
+    required List<Widget> children,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  // ============================================================
+  // Rechtliches (AGB, Datenschutz)
+  // ============================================================
   Widget _buildInfoSection(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-          ),
+    return _buildCard(
+      isDark: isDark,
+      children: [
+        _buildListTile(
+          icon:
+              Platform.isIOS ? CupertinoIcons.doc_text : Icons.article_outlined,
+          title: AppStrings.termsOfService,
+          isDark: isDark,
+          onTap: () => _launchUrl('https://example.com/terms'),
         ),
-        child: Column(
-          children: [
-            _buildListTile(
-              icon: Platform.isIOS
-                  ? CupertinoIcons.doc_text
-                  : Icons.article_outlined,
-              title: AppStrings.termsOfService,
-              showExternalIcon: true,
-              isDark: isDark,
-              onTap: () => _launchUrl('https://example.com/terms'),
-            ),
-            _buildDivider(isDark),
-            _buildListTile(
-              icon: Platform.isIOS
-                  ? CupertinoIcons.shield
-                  : Icons.privacy_tip_outlined,
-              title: AppStrings.privacyPolicy,
-              showExternalIcon: true,
-              isDark: isDark,
-              onTap: () => _launchUrl('https://example.com/privacy'),
-            ),
-          ],
+        _buildDivider(isDark),
+        _buildListTile(
+          icon: Platform.isIOS
+              ? CupertinoIcons.shield
+              : Icons.privacy_tip_outlined,
+          title: AppStrings.privacyPolicy,
+          isDark: isDark,
+          onTap: () => _launchUrl('https://example.com/privacy'),
         ),
-      ),
+      ],
     );
   }
 
+  // ============================================================
+  // Kontakt (Website, E-Mail)
+  // ============================================================
   Widget _buildContactSection(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isDark ? AppColors.borderDark : AppColors.greyLighter,
+    return _buildCard(
+      isDark: isDark,
+      children: [
+        _buildListTile(
+          icon: Platform.isIOS ? CupertinoIcons.globe : Icons.language_rounded,
+          title: AppStrings.website,
+          subtitle: AppStrings.websiteUrl,
+          isDark: isDark,
+          onTap: () => _launchUrl('https://www.digital-memorial.com'),
+        ),
+        _buildDivider(isDark),
+        _buildListTile(
+          icon: Platform.isIOS ? CupertinoIcons.mail : Icons.email_outlined,
+          title: AppStrings.contact,
+          subtitle: AppStrings.supportEmail,
+          isDark: isDark,
+          onTap: () => _launchUrl('mailto:${AppStrings.supportEmail}'),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // List Tile (WhatsApp-Style: flaches Icon, kein farbiger BG)
+  // ============================================================
+  Widget _buildListTile({
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final Widget tile = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      child: Row(
+        children: [
+          Icon(icon,
+              size: 22,
+              color: isDark ? AppColors.textLight : AppColors.textPrimary),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w400,
+                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                    fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.grey,
+                      fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
-        ),
-        child: Column(
-          children: [
-            _buildListTile(
-              icon: Platform.isIOS
-                  ? CupertinoIcons.globe
-                  : Icons.language_rounded,
-              title: AppStrings.website,
-              subtitle: AppStrings.websiteUrl,
-              showExternalIcon: true,
-              isDark: isDark,
-              onTap: () => _launchUrl('https://www.digital-memorial.com'),
-            ),
-            _buildDivider(isDark),
-            _buildListTile(
-              icon: Platform.isIOS ? CupertinoIcons.mail : Icons.email_outlined,
-              title: AppStrings.contact,
-              subtitle: AppStrings.supportEmail,
-              showExternalIcon: true,
-              isDark: isDark,
-              onTap: () => _launchUrl('mailto:${AppStrings.supportEmail}'),
-            ),
-          ],
-        ),
+          Icon(
+            Platform.isIOS
+                ? CupertinoIcons.chevron_right
+                : Icons.arrow_forward_ios_rounded,
+            size: 20,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
+          ),
+        ],
+      ),
+    );
+
+    if (Platform.isIOS) {
+      return CupertinoButton(
+        padding: EdgeInsets.zero,
+        onPressed: onTap,
+        child: tile,
+      );
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: tile,
       ),
     );
   }
 
+  // ============================================================
+  // Divider (eingerückt ab Icon-Ende)
+  // ============================================================
   Widget _buildDivider(bool isDark) {
     return Padding(
-      padding: const EdgeInsets.only(left: 64),
+      padding: const EdgeInsets.only(left: 54),
       child: Divider(
         height: 1,
         color: isDark ? AppColors.borderDark : AppColors.divider,
@@ -268,83 +352,9 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
-  Widget _buildListTile({
-    required IconData icon,
-    required String title,
-    String? subtitle,
-    bool showExternalIcon = false,
-    required bool isDark,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.toastBackgroundDark
-                      : AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  icon,
-                  color: isDark ? AppColors.accent : AppColors.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
-                        color: isDark
-                            ? AppColors.textLight
-                            : AppColors.textPrimary,
-                        fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
-                      ),
-                    ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.grey,
-                          fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (showExternalIcon)
-                Icon(
-                  Platform.isIOS
-                      ? CupertinoIcons.arrow_up_right
-                      : Icons.open_in_new_rounded,
-                  size: 18,
-                  color: AppColors.grey,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
+  // ============================================================
+  // Social Section
+  // ============================================================
   Widget _buildSocialSection(bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -353,13 +363,13 @@ class _AboutScreenState extends State<AboutScreen> {
           Text(
             AppStrings.followUs,
             style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: AppColors.grey,
               fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -398,25 +408,23 @@ class _AboutScreenState extends State<AboutScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isDark
-              ? AppColors.toastBackgroundDark
-              : AppColors.primary.withOpacity(0.1),
+          color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-          ),
         ),
         child: Icon(
           icon,
           color: isDark ? AppColors.accent : AppColors.primary,
-          size: 24,
+          size: 22,
         ),
       ),
     );
   }
 
+  // ============================================================
+  // Copyright
+  // ============================================================
   Widget _buildCopyright(bool isDark) {
     return Center(
       child: Column(
@@ -425,38 +433,37 @@ class _AboutScreenState extends State<AboutScreen> {
             AppStrings.copyright,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
-              color: AppColors.grey,
-              fontWeight: FontWeight.w500,
+              fontSize: 13,
+              color: AppColors.grey.withOpacity(0.7),
               fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 AppStrings.madeWith,
                 style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.grey,
+                  fontSize: 13,
+                  color: AppColors.grey.withOpacity(0.7),
                   fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               Icon(
                 Platform.isIOS
                     ? CupertinoIcons.heart_fill
                     : Icons.favorite_rounded,
-                size: 16,
-                color: AppColors.accent,
+                size: 14,
+                color: isDark ? AppColors.accent : AppColors.primary,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               Text(
                 AppStrings.inGermany,
                 style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.grey,
+                  fontSize: 13,
+                  color: AppColors.grey.withOpacity(0.7),
                   fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
                 ),
               ),
@@ -467,122 +474,9 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
-  void _showInfoDialog(
-    BuildContext context,
-    String title,
-    String content,
-    bool isDark,
-  ) {
-    if (Platform.isIOS) {
-      showCupertinoDialog(
-        context: context,
-        builder: (ctx) => CupertinoAlertDialog(
-          title: Text(
-            title,
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.textLight : AppColors.textPrimary,
-              fontFamily: '.SF Pro Text',
-            ),
-          ),
-          content: Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Text(
-              content,
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.grey,
-                fontFamily: '.SF Pro Text',
-                height: 1.5,
-              ),
-            ),
-          ),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(
-                AppStrings.close,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.primaryLight : AppColors.primary,
-                  fontFamily: '.SF Pro Text',
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    } else {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor:
-              isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          icon: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.toastBackgroundDark
-                  : AppColors.primary.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.info_outline_rounded,
-              size: 24,
-              color: isDark ? AppColors.accent : AppColors.primary,
-            ),
-          ),
-          title: Text(
-            title,
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.textLight : AppColors.textPrimary,
-            ),
-          ),
-          content: Text(
-            content,
-            style: TextStyle(
-              fontSize: 15,
-              color: AppColors.grey,
-              height: 1.5,
-            ),
-          ),
-          actions: [
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                style: FilledButton.styleFrom(
-                  backgroundColor:
-                      isDark ? AppColors.accent : AppColors.primary,
-                  foregroundColor:
-                      isDark ? AppColors.primary : AppColors.background,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: Text(
-                  AppStrings.close,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
+  // ============================================================
+  // URL Launcher
+  // ============================================================
   Future<void> _launchUrl(String urlString) async {
     final Uri url = Uri.parse(urlString);
 

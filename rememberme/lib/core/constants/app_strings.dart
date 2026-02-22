@@ -170,7 +170,7 @@ class AppStrings {
   static const String contact = 'Kontakt';
   static const String supportEmail = 'support@digital-memorial.com';
   static const String followUs = 'Folgen Sie uns';
-  static const String copyright = '© 2025 rememberME';
+  static const String copyright = '© 2026 rememberME';
   static const String madeWith = 'Made with';
   static const String inGermany = 'in Germany';
   static const String close = 'Schließen';
