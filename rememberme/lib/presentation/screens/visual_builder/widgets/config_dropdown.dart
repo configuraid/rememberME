@@ -116,7 +116,10 @@ class ConfigDropdown<T> extends StatelessWidget {
                     onPressed: () => Navigator.pop(context),
                     child: Text(
                       'Abbrechen',
-                      style: TextStyle(color: AppColors.grey),
+                      style: TextStyle(
+                        color: AppColors.grey,
+                        decoration: TextDecoration.none,
+                      ),
                     ),
                   ),
                   Text(
@@ -126,6 +129,7 @@ class ConfigDropdown<T> extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       color:
                           isDark ? AppColors.textLight : AppColors.textPrimary,
+                      decoration: TextDecoration.none,
                     ),
                   ),
                   CupertinoButton(
@@ -139,6 +143,7 @@ class ConfigDropdown<T> extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         color: isDark ? AppColors.accent : AppColors.primary,
+                        decoration: TextDecoration.none,
                       ),
                     ),
                   ),
@@ -169,6 +174,7 @@ class ConfigDropdown<T> extends StatelessWidget {
                         color: isDark
                             ? AppColors.textLight
                             : AppColors.textPrimary,
+                        decoration: TextDecoration.none,
                       ),
                     ),
                   );

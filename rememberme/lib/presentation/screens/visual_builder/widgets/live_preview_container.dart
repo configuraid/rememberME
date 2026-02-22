@@ -32,7 +32,7 @@ class LivePreviewContainer extends StatelessWidget {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
@@ -54,7 +54,10 @@ class LivePreviewContainer extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          child,
+          SizedBox(
+            width: double.infinity,
+            child: child,
+          ),
         ],
       ),
     );

@@ -40,6 +40,8 @@ class BottomActionButtons extends StatelessWidget {
   }
 
   Widget _buildIOSButtons(BuildContext context, bool isDark) {
+    final Color buttonColor = isDark ? AppColors.accent : AppColors.primary;
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -82,9 +84,7 @@ class BottomActionButtons extends StatelessWidget {
               opacity: isValid ? 1.0 : 0.5,
               child: CupertinoButton(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                color: _isEditMode
-                    ? AppColors.success
-                    : (isDark ? AppColors.accent : AppColors.primary),
+                color: buttonColor,
                 borderRadius: BorderRadius.circular(12),
                 onPressed: onCreate,
                 child: Row(
@@ -115,9 +115,7 @@ class BottomActionButtons extends StatelessWidget {
   }
 
   Widget _buildAndroidButtons(BuildContext context, bool isDark) {
-    final Color buttonColor = _isEditMode
-        ? AppColors.success
-        : (isDark ? AppColors.accent : AppColors.primary);
+    final Color buttonColor = isDark ? AppColors.accent : AppColors.primary;
 
     return Container(
       padding: EdgeInsets.fromLTRB(

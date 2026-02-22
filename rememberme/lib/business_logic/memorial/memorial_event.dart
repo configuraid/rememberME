@@ -171,7 +171,6 @@ class MemorialUnpublishRequested extends MemorialEvent {
 // CONTENT BLOCKS
 // ========================================
 
-/// ContentBlock hinzufügen
 class MemorialContentBlockAddRequested extends MemorialEvent {
   final String memorialId;
   final ContentBlock block;

@@ -471,7 +471,6 @@ class MemorialRepository {
   // CONTENT BLOCKS
   // ========================================
 
-  /// ContentBlock hinzufügen
   Future<MemorialModel> addContentBlock({
     required String memorialId,
     required ContentBlock block,

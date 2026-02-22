@@ -32,9 +32,9 @@ class BlockConfigurationScreen extends StatefulWidget {
     this.existingBlock,
     required this.memorialId,
   }) : assert(
-         blockType != null || existingBlock != null,
-         'Either blockType or existingBlock must be provided',
-       );
+          blockType != null || existingBlock != null,
+          'Either blockType or existingBlock must be provided',
+        );
 
   @override
   State<BlockConfigurationScreen> createState() =>
@@ -57,11 +57,9 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
     super.initState();
 
     if (_isEditing) {
-      // Edit mode: use existing block and its content
       _block = widget.existingBlock!;
       _localContent = Map.from(_block.content);
     } else {
-      // Create mode: fresh block with default content
       _block = ContentBlock(type: _blockType);
       _localContent = Map.from(_block.content);
     }
@@ -101,20 +99,13 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
 
       dynamic value;
 
-      // 1. Boolean check
       if (valueStr == 'true' || valueStr == 'false') {
         value = valueStr == 'true';
-      }
-      // 2. WICHTIG: int MUSS VOR double geprüft werden!
-      else if (int.tryParse(valueStr) != null && !valueStr.contains('.')) {
+      } else if (int.tryParse(valueStr) != null && !valueStr.contains('.')) {
         value = int.parse(valueStr);
-      }
-      // 3. Dann double (für Werte wie "0.5", "16.0")
-      else if (double.tryParse(valueStr) != null) {
+      } else if (double.tryParse(valueStr) != null) {
         value = double.parse(valueStr);
-      }
-      // 4. Fallback: String
-      else {
+      } else {
         value = valueStr;
       }
 
@@ -155,7 +146,7 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
       case ContentBlockType.video:
         return 'Bitte lade zuerst ein Video hoch.';
       case ContentBlockType.audio:
-        return 'Bitte nimm zuerst ein Sprachmemo auf.';
+        return 'Bitte wähle zuerst eine Audiodatei aus.';
       case ContentBlockType.gallery:
         return 'Bitte lade mindestens ein Bild hoch.';
       default:
@@ -263,7 +254,6 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
     _updateValue('duration', duration);
     _updateValue('waveformData', waveform);
     _hasChanges = true;
-    _showUploadAudioDialog();
   }
 
   @override
@@ -276,7 +266,7 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
     String errorMessage;
     if (error.contains('NO_VALID_SOURCE')) {
       errorMessage =
-          'Das Audio ist noch nicht verfügbar.\n\nBitte nimm ein neues Sprachmemo auf.';
+          'Das Audio ist noch nicht verfügbar.\n\nBitte wähle eine Audiodatei aus.';
     } else {
       errorMessage = 'Audio konnte nicht abgespielt werden.\n\nFehler: $error';
     }
@@ -289,7 +279,8 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
     _updateValue('waveformData', waveform);
     _updateValue('localPath', path);
     _hasChanges = true;
-    showSuccessSnackBar('Audiodatei geladen! Tippe auf Play zum Anhören.');
+    // Auto-Upload nach File Pick (wie bei Images)
+    _handleAudioUpload();
   }
 
   @override
@@ -306,55 +297,6 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
     showSuccessSnackBar('Video erfolgreich hochgeladen!');
   }
 
-  void _showUploadAudioDialog() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    if (Platform.isIOS) {
-      showCupertinoDialog(
-        context: context,
-        builder: (ctx) => CupertinoAlertDialog(
-          title: const Text('Sprachmemo aufgenommen'),
-          content: const Text('Möchtest du das Sprachmemo jetzt hochladen?'),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('Später'),
-              onPressed: () => Navigator.pop(ctx),
-            ),
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              child: const Text('Hochladen'),
-              onPressed: () {
-                Navigator.pop(ctx);
-                _handleAudioUpload();
-              },
-            ),
-          ],
-        ),
-      );
-    } else {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Sprachmemo aufgenommen'),
-          content: const Text('Möchtest du das Sprachmemo jetzt hochladen?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Später'),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                _handleAudioUpload();
-              },
-              child: const Text('Hochladen'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
   Future<void> _handleAudioUpload() async {
     final url = await uploadAudio(
       memorialId: widget.memorialId,
@@ -362,7 +304,7 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
     );
     if (url != null) {
       _updateValue('url', url);
-      showSuccessSnackBar('Sprachmemo erfolgreich hochgeladen!');
+      showSuccessSnackBar('Audiodatei erfolgreich hochgeladen!');
     }
   }
 
@@ -391,9 +333,8 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
     return WillPopScope(
       onWillPop: _onWillPop,
       child: CupertinoPageScaffold(
-        backgroundColor: isDark
-            ? AppColors.backgroundDark
-            : AppColors.background,
+        backgroundColor:
+            isDark ? AppColors.backgroundDark : AppColors.background,
         navigationBar: CupertinoNavigationBar(
           middle: Row(
             mainAxisSize: MainAxisSize.min,
@@ -448,21 +389,25 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
         child: Material(
           type: MaterialType.transparency,
           child: SafeArea(
-            child: Column(
-              children: [
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [_buildSettingsWidget()],
+            child: GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              behavior: HitTestBehavior.translucent,
+              child: Column(
+                children: [
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: _buildSettingsWidget(),
                   ),
-                ),
-                BottomActionButtons(
-                  onCancel: _discardAndGoBack,
-                  onCreate: _confirmAndSave,
-                  isValid: _isBlockValid(),
-                  confirmLabel: _confirmButtonLabel,
-                ),
-              ],
+                  // Buttons ausblenden wenn Tastatur offen
+                  if (MediaQuery.of(context).viewInsets.bottom == 0)
+                    BottomActionButtons(
+                      onCancel: _discardAndGoBack,
+                      onCreate: _confirmAndSave,
+                      isValid: _isBlockValid(),
+                      confirmLabel: _confirmButtonLabel,
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -476,9 +421,8 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        backgroundColor: isDark
-            ? AppColors.backgroundDark
-            : AppColors.background,
+        backgroundColor:
+            isDark ? AppColors.backgroundDark : AppColors.background,
         appBar: AppBar(
           title: Row(
             mainAxisSize: MainAxisSize.min,
@@ -517,21 +461,25 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
             onPressed: _discardAndGoBack,
           ),
         ),
-        body: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: [_buildSettingsWidget()],
+        body: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          behavior: HitTestBehavior.translucent,
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              Expanded(
+                child: _buildSettingsWidget(),
               ),
-            ),
-            BottomActionButtons(
-              onCancel: _discardAndGoBack,
-              onCreate: _confirmAndSave,
-              isValid: _isBlockValid(),
-              confirmLabel: _confirmButtonLabel,
-            ),
-          ],
+              // Buttons ausblenden wenn Tastatur offen
+              if (MediaQuery.of(context).viewInsets.bottom == 0)
+                BottomActionButtons(
+                  onCancel: _discardAndGoBack,
+                  onCreate: _confirmAndSave,
+                  isValid: _isBlockValid(),
+                  confirmLabel: _confirmButtonLabel,
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -632,15 +580,11 @@ class _BlockConfigurationScreenState extends State<BlockConfigurationScreen>
         return AudioSettings(
           content: _localContent,
           onValueChanged: _handleValueChange,
-          isRecording: isRecording,
           isPlaying: isPlaying,
           isUploading: isAudioUploading,
           uploadProgress: audioUploadProgress,
-          recordingDuration: recordingDuration,
           audioPosition: audioPosition,
           audioDuration: audioDuration,
-          recordedAudioPath: recordedAudioPath,
-          onToggleRecording: toggleRecording,
           onPickAudioFile: pickAudioFile,
           onTogglePlayback: toggleAudioPlayback,
         );

@@ -35,32 +35,6 @@ class AppStrings {
   static const String block = 'Block';
 
   // ============================================================
-  // BLOCK-TYPEN - LABELS (für UI)
-  // ============================================================
-  static const String blockTypeHeader = 'Überschrift';
-  static const String blockTypeText = 'Geschichte';
-  static const String blockTypeImage = 'Foto';
-  static const String blockTypeGallery = 'Galerie';
-  static const String blockTypeVideo = 'Video';
-  static const String blockTypeAudio = 'Stimme';
-  static const String blockTypeQuote = 'Zitat';
-  static const String blockTypeImageText = 'Foto & Text';
-  static const String blockTypeTimeline = 'Lebensweg';
-
-  // ============================================================
-  // BLOCK-TYPEN - BESCHREIBUNGEN (für Add-Block-Sheet)
-  // ============================================================
-  static const String blockTypeHeaderDesc = 'Gliedere deine Seite';
-  static const String blockTypeTextDesc = 'Erzähle von ihr/ihm';
-  static const String blockTypeImageDesc = 'Ein besonderer Moment';
-  static const String blockTypeGalleryDesc = 'Geteilte Erinnerungen';
-  static const String blockTypeVideoDesc = 'Bewegte Momente';
-  static const String blockTypeAudioDesc = 'Lass sie/ihn sprechen';
-  static const String blockTypeQuoteDesc = 'Worte, die bleiben';
-  static const String blockTypeImageTextDesc = 'Bild mit Geschichte';
-  static const String blockTypeTimelineDesc = 'Die wichtigen Stationen';
-
-  // ============================================================
   // MEMORIAL CREATE
   // ============================================================
   static const String createMemorialPage = 'Gedenkseite erstellen';

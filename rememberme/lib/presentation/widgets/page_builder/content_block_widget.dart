@@ -427,6 +427,7 @@ class _ContentBlockWidgetState extends State<ContentBlockWidget> {
 
     final url = widget.block.getContent('url', '');
     final caption = widget.block.getContent('caption', '');
+    final description = widget.block.getContent('description', '');
 
     if (url.isEmpty) {
       return Container(
@@ -497,13 +498,24 @@ class _ContentBlockWidgetState extends State<ContentBlockWidget> {
             textAlign: TextAlign.center,
           ),
         ],
+        if (description.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            description,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.grey.withOpacity(0.8),
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ],
     );
   }
 
-  // ============================================================
-  // GALLERY CONTENT - MIT DISPLAY MODE SUPPORT (Grid / Slider)
-  // ============================================================
   Widget _buildGalleryContent(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -893,11 +905,14 @@ class _ContentBlockWidgetState extends State<ContentBlockWidget> {
     );
   }
 
+// ===== REPLACE the entire _buildAudioContent method in content_block_widget.dart =====
+
   Widget _buildAudioContent(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final url = widget.block.getContent('url', '');
     final title = widget.block.getContent('title', '');
+    final description = widget.block.getContent('description', '');
     final duration = widget.block.getContent('duration', 0);
     final waveformData = widget.block.getContent<List>('waveformData', []);
 
@@ -907,6 +922,7 @@ class _ContentBlockWidgetState extends State<ContentBlockWidget> {
       return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
     }
 
+    // Empty State
     if (url.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
@@ -931,14 +947,16 @@ class _ContentBlockWidgetState extends State<ContentBlockWidget> {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Platform.isIOS ? CupertinoIcons.mic_fill : Icons.mic_rounded,
+                Platform.isIOS
+                    ? CupertinoIcons.music_note_2
+                    : Icons.audio_file_rounded,
                 size: 36,
                 color: isDark ? AppColors.accent : AppColors.primary,
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              'Sprachmemo aufnehmen',
+              'Audiodatei auswählen',
               style: TextStyle(
                 color: isDark ? AppColors.textLight : AppColors.textPrimary,
                 fontSize: 16,
@@ -958,6 +976,7 @@ class _ContentBlockWidgetState extends State<ContentBlockWidget> {
       );
     }
 
+    // Filled State
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -985,6 +1004,7 @@ class _ContentBlockWidgetState extends State<ContentBlockWidget> {
         children: [
           Row(
             children: [
+              // Icon
               Container(
                 width: 48,
                 height: 48,
@@ -1000,18 +1020,22 @@ class _ContentBlockWidgetState extends State<ContentBlockWidget> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  Platform.isIOS ? CupertinoIcons.mic_fill : Icons.mic_rounded,
+                  Platform.isIOS
+                      ? CupertinoIcons.music_note_2
+                      : Icons.audio_file_rounded,
                   color: isDark ? AppColors.primary : AppColors.background,
                   size: 24,
                 ),
               ),
               const SizedBox(width: 12),
+
+              // Titel + Beschreibung + Dauer
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title.isNotEmpty ? title : 'Sprachmemo',
+                      title.isNotEmpty ? title : 'Audiodatei',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -1022,6 +1046,19 @@ class _ContentBlockWidgetState extends State<ContentBlockWidget> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (description.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        description,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.grey,
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                     const SizedBox(height: 2),
                     Row(
                       children: [
@@ -1045,6 +1082,8 @@ class _ContentBlockWidgetState extends State<ContentBlockWidget> {
                   ],
                 ),
               ),
+
+              // Bereit Badge
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1077,6 +1116,8 @@ class _ContentBlockWidgetState extends State<ContentBlockWidget> {
             ],
           ),
           const SizedBox(height: 16),
+
+          // Waveform Player Bar
           Container(
             height: 48,
             decoration: BoxDecoration(
@@ -1134,7 +1175,7 @@ class _ContentBlockWidgetState extends State<ContentBlockWidget> {
                             0.9,
                             0.4,
                             0.7,
-                            0.5
+                            0.5,
                           ];
                           final heightFactor = waveformData.isNotEmpty &&
                                   index < waveformData.length

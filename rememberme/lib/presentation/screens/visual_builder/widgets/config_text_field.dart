@@ -3,7 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:rememberme/core/constants/app_colors.dart';
 
-class ConfigTextField extends StatelessWidget {
+class ConfigTextField extends StatefulWidget {
   final String label;
   final TextEditingController controller;
   final String? hint;
@@ -20,21 +20,70 @@ class ConfigTextField extends StatelessWidget {
   });
 
   @override
+  State<ConfigTextField> createState() => _ConfigTextFieldState();
+}
+
+class _ConfigTextFieldState extends State<ConfigTextField> {
+  final FocusNode _focusNode = FocusNode();
+  OverlayEntry? _overlayEntry;
+
+  bool get _isMultiline => widget.maxLines > 1;
+
+  @override
+  void initState() {
+    super.initState();
+    if (Platform.isIOS && _isMultiline) {
+      _focusNode.addListener(_onFocusChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    _removeOverlay();
+    _focusNode.removeListener(_onFocusChanged);
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _onFocusChanged() {
+    if (_focusNode.hasFocus) {
+      _showOverlay();
+    } else {
+      _removeOverlay();
+    }
+  }
+
+  void _showOverlay() {
+    _removeOverlay();
+    _overlayEntry = OverlayEntry(
+      builder: (context) => _KeyboardToolbar(
+        onDone: () => _focusNode.unfocus(),
+      ),
+    );
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (Platform.isIOS) {
-      return _buildIOSTextField(isDark);
+      return _buildIOSTextField(context, isDark);
     }
-    return _buildAndroidTextField(isDark);
+    return _buildAndroidTextField(context, isDark);
   }
 
-  Widget _buildIOSTextField(bool isDark) {
+  Widget _buildIOSTextField(BuildContext context, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label,
+          widget.label,
           style: TextStyle(
             fontSize: 13,
             color: AppColors.grey,
@@ -52,9 +101,12 @@ class ConfigTextField extends StatelessWidget {
             ),
           ),
           child: CupertinoTextField(
-            controller: controller,
-            placeholder: hint ?? label,
-            maxLines: maxLines,
+            controller: widget.controller,
+            focusNode: _focusNode,
+            placeholder: widget.hint ?? widget.label,
+            maxLines: widget.maxLines,
+            textInputAction:
+                _isMultiline ? TextInputAction.newline : TextInputAction.done,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             style: TextStyle(
               fontSize: 17,
@@ -62,19 +114,20 @@ class ConfigTextField extends StatelessWidget {
             ),
             placeholderStyle: TextStyle(fontSize: 17, color: AppColors.grey),
             decoration: const BoxDecoration(color: Colors.transparent),
-            onChanged: onChanged,
+            onChanged: widget.onChanged,
+            onTapOutside: (_) => FocusScope.of(context).unfocus(),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildAndroidTextField(bool isDark) {
+  Widget _buildAndroidTextField(BuildContext context, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label,
+          widget.label,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
@@ -83,13 +136,15 @@ class ConfigTextField extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         TextField(
-          controller: controller,
+          controller: widget.controller,
           style: TextStyle(
             color: isDark ? AppColors.textLight : AppColors.textPrimary,
             fontSize: 17,
           ),
+          textInputAction:
+              _isMultiline ? TextInputAction.newline : TextInputAction.done,
           decoration: InputDecoration(
-            hintText: hint,
+            hintText: widget.hint,
             hintStyle: TextStyle(color: AppColors.grey),
             filled: true,
             fillColor:
@@ -116,10 +171,66 @@ class ConfigTextField extends StatelessWidget {
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
-          maxLines: maxLines,
-          onChanged: onChanged,
+          maxLines: widget.maxLines,
+          onChanged: widget.onChanged,
+          onTapOutside: (_) => FocusScope.of(context).unfocus(),
         ),
       ],
+    );
+  }
+}
+
+// ============================================================
+// iOS Keyboard Toolbar — "Fertig" Button über der Tastatur
+// ============================================================
+class _KeyboardToolbar extends StatelessWidget {
+  final VoidCallback onDone;
+
+  const _KeyboardToolbar({required this.onDone});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
+    if (keyboardHeight == 0) return const SizedBox.shrink();
+
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: keyboardHeight,
+      child: Container(
+        height: 44,
+        decoration: BoxDecoration(
+          color: isDark
+              ? AppColors.backgroundDarkElevated
+              : const Color(0xFFD1D5DB),
+          border: Border(
+            top: BorderSide(
+              color: isDark ? AppColors.borderDark : const Color(0xFFB8BCC2),
+              width: 0.5,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              onPressed: onDone,
+              child: Text(
+                'Fertig',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.accent : AppColors.primary,
+                  fontFamily: '.SF Pro Text',
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

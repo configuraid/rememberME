@@ -305,13 +305,11 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
 
   bool _isFormValid() {
     final hasName = _nameController.text.trim().isNotEmpty;
-    final hasBirthDate = _birthDate != null;
-    final hasDeathDate = _deathDate != null;
-    final hasBiography = _biographyController.text.trim().isNotEmpty;
     final hasImage = _newProfileImage != null ||
         (_existingImageUrl != null && _existingImageUrl!.isNotEmpty);
 
-    return hasName && hasBirthDate && hasDeathDate && hasBiography && hasImage;
+    // Nur Name + Bild sind Pflicht — Rest ist optional
+    return hasName && hasImage;
   }
 
   void _showError(String message) {
@@ -502,7 +500,7 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
                     _hasChanges = _checkForChanges();
                   });
                 },
-                isRequired: true,
+                isRequired: false,
               ),
               const SizedBox(height: 24),
               _buildAndroidVisibilityToggle(isDark),
@@ -597,7 +595,7 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
                         _hasChanges = _checkForChanges();
                       });
                     },
-                    isRequired: true,
+                    isRequired: false,
                   ),
                   const SizedBox(height: 24),
                   _buildIOSVisibilityToggle(isDark),
@@ -988,26 +986,13 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Text(
-                  'Gedenkspruch',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.grey,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '*',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.error,
-                  ),
-                ),
-              ],
+            Text(
+              'Gedenkspruch',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.grey,
+              ),
             ),
             Text(
               '$currentLength/$_maxBiographyLength',
@@ -1040,7 +1025,7 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
               color: isDark ? AppColors.textLight : AppColors.textPrimary,
             ),
             decoration: InputDecoration(
-              hintText: 'Erzählen Sie etwas über diese Person...',
+              hintText: 'z. B. „Für immer in unseren Herzen"',
               hintStyle: TextStyle(color: AppColors.grey),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(12),
@@ -1065,27 +1050,14 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Text(
-                  'Gedenkspruch',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.grey,
-                    fontFamily: '.SF Pro Text',
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '*',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.error,
-                  ),
-                ),
-              ],
+            Text(
+              'Gedenkspruch',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.grey,
+                fontFamily: '.SF Pro Text',
+              ),
             ),
             Text(
               '$currentLength/$_maxBiographyLength',
@@ -1101,7 +1073,7 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
         const SizedBox(height: 8),
         CupertinoTextField(
           controller: _biographyController,
-          placeholder: 'Erzählen Sie etwas über diese Person...',
+          placeholder: 'z. B. „Für immer in unseren Herzen"',
           placeholderStyle: TextStyle(color: AppColors.grey),
           maxLines: 4,
           maxLength: _maxBiographyLength,
@@ -1127,18 +1099,74 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
   }
 
   // ============================================================
-  // Visibility Toggle - Android
+  // Visibility Toggle - Android  (Radio-Card Selection)
   // ============================================================
   Widget _buildAndroidVisibilityToggle(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Wer kann diese Gedenkseite sehen?',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.grey,
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // Option: Privat
+        _buildAndroidVisibilityOption(
+          isDark: isDark,
+          icon: Icons.lock_rounded,
+          title: 'Nur ich',
+          subtitle:
+              'Beim Scannen des QR-Codes sehen andere nur einen Hinweis, dass die Seite privat ist.',
+          isSelected: !_isPublic,
+          onTap: () {
+            setState(() {
+              _isPublic = false;
+              _hasChanges = _checkForChanges();
+            });
+          },
+        ),
+
+        const SizedBox(height: 10),
+
+        // Option: Öffentlich
+        _buildAndroidVisibilityOption(
+          isDark: isDark,
+          icon: Icons.qr_code_rounded,
+          title: 'Alle mit QR-Code',
+          subtitle:
+              'Jeder, der den QR-Code scannt, kann die Gedenkseite sehen.',
+          isSelected: _isPublic,
+          onTap: () {
+            setState(() {
+              _isPublic = true;
+              _hasChanges = _checkForChanges();
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAndroidVisibilityOption({
+    required bool isDark,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final accentColor = isDark ? AppColors.accent : AppColors.primary;
+
     return InkWell(
-      onTap: () {
-        setState(() {
-          _isPublic = !_isPublic;
-          _hasChanges = _checkForChanges();
-        });
-      },
+      onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Container(
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
           borderRadius: BorderRadius.circular(10),
@@ -1146,52 +1174,56 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
             color: isDark ? AppColors.borderDark : AppColors.greyLighter,
           ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            Icon(
-              _isPublic ? Icons.public_rounded : Icons.lock_rounded,
-              size: 20,
-              color: _isPublic
-                  ? AppColors.accent
-                  : (isDark ? AppColors.grey : AppColors.primary),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.toastBackgroundDark
+                    : AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: isSelected ? accentColor : AppColors.grey,
+              ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _isPublic ? 'Öffentlich' : 'Privat',
+                    title,
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color:
                           isDark ? AppColors.textLight : AppColors.textPrimary,
                     ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
-                    _isPublic
-                        ? 'Jeder mit dem Link kann die Seite sehen'
-                        : 'Nur eingeladene Personen',
-                    style: TextStyle(fontSize: 13, color: AppColors.grey),
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.grey,
+                      height: 1.3,
+                    ),
                   ),
                 ],
               ),
             ),
-            Transform.scale(
-              scale: 0.85,
-              child: Switch(
-                value: _isPublic,
-                onChanged: (value) {
-                  setState(() {
-                    _isPublic = value;
-                    _hasChanges = _checkForChanges();
-                  });
-                },
-                activeColor: AppColors.accent,
-                activeTrackColor: AppColors.accent.withOpacity(0.3),
-              ),
+            const SizedBox(width: 8),
+            Icon(
+              isSelected
+                  ? Icons.radio_button_checked_rounded
+                  : Icons.radio_button_off_rounded,
+              size: 22,
+              color: isSelected ? accentColor : AppColors.grey,
             ),
           ],
         ),
@@ -1200,17 +1232,74 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
   }
 
   // ============================================================
-  // Visibility Toggle - iOS
+  // Visibility Toggle - iOS  (Radio-Card Selection)
   // ============================================================
   Widget _buildIOSVisibilityToggle(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Wer kann diese Gedenkseite sehen?',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.grey,
+            fontFamily: '.SF Pro Text',
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // Option: Privat
+        _buildIOSVisibilityOption(
+          isDark: isDark,
+          icon: CupertinoIcons.lock_fill,
+          title: 'Nur ich',
+          subtitle:
+              'Beim Scannen des QR-Codes sehen andere nur einen Hinweis, dass die Seite privat ist.',
+          isSelected: !_isPublic,
+          onTap: () {
+            setState(() {
+              _isPublic = false;
+              _hasChanges = _checkForChanges();
+            });
+          },
+        ),
+
+        const SizedBox(height: 10),
+
+        // Option: Öffentlich
+        _buildIOSVisibilityOption(
+          isDark: isDark,
+          icon: CupertinoIcons.qrcode,
+          title: 'Alle mit QR-Code',
+          subtitle:
+              'Jeder, der den QR-Code scannt, kann die Gedenkseite sehen.',
+          isSelected: _isPublic,
+          onTap: () {
+            setState(() {
+              _isPublic = true;
+              _hasChanges = _checkForChanges();
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIOSVisibilityOption({
+    required bool isDark,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final accentColor = isDark ? AppColors.accent : AppColors.primary;
+
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isPublic = !_isPublic;
-          _hasChanges = _checkForChanges();
-        });
-      },
+      onTap: onTap,
       child: Container(
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
           borderRadius: BorderRadius.circular(10),
@@ -1218,56 +1307,58 @@ class _MemorialEditScreenState extends State<MemorialEditScreen> {
             color: isDark ? AppColors.borderDark : AppColors.greyLighter,
           ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            Icon(
-              _isPublic ? CupertinoIcons.globe : CupertinoIcons.lock_fill,
-              size: 20,
-              color: _isPublic
-                  ? AppColors.accent
-                  : (isDark ? AppColors.grey : AppColors.primary),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.toastBackgroundDark
+                    : AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: isSelected ? accentColor : AppColors.grey,
+              ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _isPublic ? 'Öffentlich' : 'Privat',
+                    title,
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color:
                           isDark ? AppColors.textLight : AppColors.textPrimary,
                       fontFamily: '.SF Pro Text',
                     ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
-                    _isPublic
-                        ? 'Jeder mit dem Link kann die Seite sehen'
-                        : 'Nur eingeladene Personen',
+                    subtitle,
                     style: TextStyle(
                       fontSize: 13,
                       color: AppColors.grey,
+                      height: 1.3,
                       fontFamily: '.SF Pro Text',
                     ),
                   ),
                 ],
               ),
             ),
-            Transform.scale(
-              scale: 0.85,
-              child: CupertinoSwitch(
-                value: _isPublic,
-                onChanged: (value) {
-                  setState(() {
-                    _isPublic = value;
-                    _hasChanges = _checkForChanges();
-                  });
-                },
-                activeTrackColor: AppColors.accent,
-              ),
+            const SizedBox(width: 8),
+            Icon(
+              isSelected
+                  ? CupertinoIcons.checkmark_circle_fill
+                  : CupertinoIcons.circle,
+              size: 22,
+              color: isSelected ? accentColor : AppColors.grey,
             ),
           ],
         ),

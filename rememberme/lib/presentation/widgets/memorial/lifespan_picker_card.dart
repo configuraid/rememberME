@@ -20,25 +20,18 @@ class LifespanPickerCard extends StatelessWidget {
     this.isRequired = true,
   });
 
-  /// Berechnet das Alter in Jahren
   String? _calculateAge() {
     if (birthDate == null || deathDate == null) return null;
-
     int years = deathDate!.year - birthDate!.year;
-
-    // Prüfe ob der Geburtstag im Todesjahr schon war
     if (deathDate!.month < birthDate!.month ||
         (deathDate!.month == birthDate!.month &&
             deathDate!.day < birthDate!.day)) {
       years--;
     }
-
-    if (years < 0) return null; // Ungültige Daten
-
+    if (years < 0) return null;
     return years == 1 ? '1 Jahr' : '$years Jahre';
   }
 
-  /// Formatiert ein Datum für die Anzeige
   String _formatDate(DateTime? date) {
     if (date == null) return '—';
     return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
@@ -46,7 +39,6 @@ class LifespanPickerCard extends StatelessWidget {
 
   void _showLifespanPicker(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     if (Platform.isIOS) {
       _showIOSLifespanPicker(context, isDark);
     } else {
@@ -54,9 +46,6 @@ class LifespanPickerCard extends StatelessWidget {
     }
   }
 
-  // ============================================================
-  // iOS Picker
-  // ============================================================
   void _showIOSLifespanPicker(BuildContext context, bool isDark) {
     showCupertinoModalPopup(
       context: context,
@@ -70,9 +59,6 @@ class LifespanPickerCard extends StatelessWidget {
     );
   }
 
-  // ============================================================
-  // Android Picker
-  // ============================================================
   void _showAndroidLifespanPicker(BuildContext context, bool isDark) {
     showModalBottomSheet(
       context: context,
@@ -93,13 +79,6 @@ class LifespanPickerCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final age = _calculateAge();
     final hasAnyDate = birthDate != null || deathDate != null;
-    final hasBothDates = birthDate != null && deathDate != null;
-
-    final primaryColor = isDark ? AppColors.accent : AppColors.primary;
-    final borderColor = hasBothDates
-        ? Color.fromRGBO(
-            primaryColor.red, primaryColor.green, primaryColor.blue, 0.5)
-        : (isDark ? AppColors.borderDark : AppColors.greyLighter);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,10 +119,9 @@ class LifespanPickerCard extends StatelessWidget {
             decoration: BoxDecoration(
               color:
                   isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: borderColor,
-                width: hasBothDates ? 1.5 : 1,
+                color: isDark ? AppColors.borderDark : AppColors.greyLighter,
               ),
             ),
             child: hasAnyDate
@@ -191,11 +169,9 @@ class LifespanPickerCard extends StatelessWidget {
 
     return Column(
       children: [
-        // Datum-Zeile
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Geburtsdatum
             Flexible(
               child: _DateDisplay(
                 label: 'geb.',
@@ -204,8 +180,6 @@ class LifespanPickerCard extends StatelessWidget {
                 isEmpty: birthDate == null,
               ),
             ),
-
-            // Verbindungslinie
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Container(
@@ -217,8 +191,6 @@ class LifespanPickerCard extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Sterbedatum
             Flexible(
               child: _DateDisplay(
                 label: 'gest.',
@@ -229,8 +201,6 @@ class LifespanPickerCard extends StatelessWidget {
             ),
           ],
         ),
-
-        // Alter (wenn beide Daten vorhanden)
         if (age != null) ...[
           const SizedBox(height: 6),
           Container(
@@ -255,7 +225,6 @@ class LifespanPickerCard extends StatelessWidget {
   }
 }
 
-/// Einzelne Datumsanzeige mit Label
 class _DateDisplay extends StatelessWidget {
   final String label;
   final String date;
@@ -328,7 +297,7 @@ class _IOSLifespanPickerSheet extends StatefulWidget {
 class _IOSLifespanPickerSheetState extends State<_IOSLifespanPickerSheet> {
   late DateTime _birthDate;
   late DateTime _deathDate;
-  int _selectedSegment = 0; // 0 = Geboren, 1 = Verstorben
+  int _selectedSegment = 0;
 
   @override
   void initState() {
@@ -394,7 +363,7 @@ class _IOSLifespanPickerSheetState extends State<_IOSLifespanPickerSheet> {
             ),
           ),
 
-          // Header mit Segmented Control
+          // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
@@ -406,9 +375,8 @@ class _IOSLifespanPickerSheetState extends State<_IOSLifespanPickerSheet> {
                   child: Text(
                     'Abbrechen',
                     style: TextStyle(
-                      color: widget.isDark
-                          ? AppColors.primaryLight
-                          : AppColors.primary,
+                      color:
+                          widget.isDark ? AppColors.accent : AppColors.primary,
                       fontFamily: '.SF Pro Text',
                     ),
                   ),
@@ -420,9 +388,8 @@ class _IOSLifespanPickerSheetState extends State<_IOSLifespanPickerSheet> {
                     'Fertig',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: widget.isDark
-                          ? AppColors.primaryLight
-                          : AppColors.primary,
+                      color:
+                          widget.isDark ? AppColors.accent : AppColors.primary,
                       fontFamily: '.SF Pro Text',
                     ),
                   ),
@@ -507,7 +474,7 @@ class _IOSLifespanPickerSheetState extends State<_IOSLifespanPickerSheet> {
 
           Expanded(
             child: CupertinoDatePicker(
-              key: ValueKey(_selectedSegment), // <-- Diese Zeile hinzufügen!
+              key: ValueKey(_selectedSegment),
               mode: CupertinoDatePickerMode.date,
               initialDateTime: _selectedSegment == 0 ? _birthDate : _deathDate,
               minimumDate: DateTime(1900),
@@ -565,7 +532,6 @@ class _AndroidLifespanPickerSheetState
     _tabController = TabController(length: 2, vsync: this);
     _birthDate = widget.initialBirthDate ?? DateTime(1950);
     _deathDate = widget.initialDeathDate ?? DateTime.now();
-
     _tabController.addListener(() => setState(() {}));
   }
 
@@ -693,9 +659,8 @@ class _AndroidLifespanPickerSheetState
                   child: Text(
                     'Abbrechen',
                     style: TextStyle(
-                      color: widget.isDark
-                          ? AppColors.primaryLight
-                          : AppColors.primary,
+                      color:
+                          widget.isDark ? AppColors.accent : AppColors.primary,
                     ),
                   ),
                 ),
@@ -715,9 +680,8 @@ class _AndroidLifespanPickerSheetState
                     'Fertig',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: widget.isDark
-                          ? AppColors.primaryLight
-                          : AppColors.primary,
+                      color:
+                          widget.isDark ? AppColors.accent : AppColors.primary,
                     ),
                   ),
                 ),

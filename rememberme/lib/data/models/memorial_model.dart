@@ -122,7 +122,6 @@ class MemorialModel extends Equatable {
     return contentBlocks.any((block) => block.type == type);
   }
 
-  /// ContentBlock hinzufügen
   MemorialModel addContentBlock(ContentBlock block) {
     return copyWith(
       contentBlocks: [...contentBlocks, block],

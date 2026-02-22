@@ -13,6 +13,7 @@ import '../../widgets/page_builder/content_block_widget.dart';
 import '../../widgets/page_builder/add_block_bottom_sheet.dart';
 import '../../widgets/preview/web_preview_mixin.dart';
 import 'block_configuration_screen.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 class IntuitivePageBuilderScreen extends StatefulWidget {
   final MemorialModel memorial;
@@ -404,6 +405,20 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
   }
 
   // ============================================================
+  // Slidable Actions (Swipe-Menü)
+  // ============================================================
+
+  void _slidableDeleteBlock(ContentBlock block) {
+    HapticFeedback.mediumImpact();
+    _deleteBlock(block.id);
+  }
+
+  void _slidableEditBlock(ContentBlock block) {
+    HapticFeedback.lightImpact();
+    _showBlockSettings(block);
+  }
+
+  // ============================================================
   // iOS Native Layout
   // ============================================================
   Widget _buildIOSLayout(BuildContext context) {
@@ -693,15 +708,50 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                       child: child,
                     );
                   },
-                  child: ContentBlockWidget(
-                    block: block,
-                    isSelected: isSelected,
-                    onTap: () => _selectBlock(block.id),
-                    onEdit: () => _showBlockSettings(block),
-                    onDuplicate: () => _duplicateBlock(block),
-                    onDelete: () => _deleteBlock(block.id),
-                    onContentChanged: (key, value) =>
-                        _updateBlockContent(block.id, key, value),
+                  child: Slidable(
+                    key: ValueKey('slide_${block.id}'),
+                    endActionPane: ActionPane(
+                      motion: const BehindMotion(),
+                      extentRatio: 0.3,
+                      children: [
+                        SlidableAction(
+                          onPressed: (_) => _slidableEditBlock(block),
+                          backgroundColor:
+                              isDark ? AppColors.accent : AppColors.primary,
+                          foregroundColor:
+                              isDark ? AppColors.primary : AppColors.textLight,
+                          icon: Platform.isIOS
+                              ? CupertinoIcons.pencil
+                              : Icons.edit_rounded,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(12),
+                            bottomLeft: Radius.circular(12),
+                          ),
+                        ),
+                        SlidableAction(
+                          onPressed: (_) => _slidableDeleteBlock(block),
+                          backgroundColor: AppColors.error,
+                          foregroundColor: AppColors.textLight,
+                          icon: Platform.isIOS
+                              ? CupertinoIcons.trash_fill
+                              : Icons.delete_rounded,
+                          borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(12),
+                            bottomRight: Radius.circular(12),
+                          ),
+                        ),
+                      ],
+                    ),
+                    child: ContentBlockWidget(
+                      block: block,
+                      isSelected: isSelected,
+                      onTap: () => _selectBlock(block.id),
+                      onEdit: () => _showBlockSettings(block),
+                      onDuplicate: () => _duplicateBlock(block),
+                      onDelete: () => _deleteBlock(block.id),
+                      onContentChanged: (key, value) =>
+                          _updateBlockContent(block.id, key, value),
+                    ),
                   ),
                 ),
               );
@@ -1017,15 +1067,50 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                       child: child,
                     );
                   },
-                  child: ContentBlockWidget(
-                    block: block,
-                    isSelected: isSelected,
-                    onTap: () => _selectBlock(block.id),
-                    onEdit: () => _showBlockSettings(block),
-                    onDuplicate: () => _duplicateBlock(block),
-                    onDelete: () => _deleteBlock(block.id),
-                    onContentChanged: (key, value) =>
-                        _updateBlockContent(block.id, key, value),
+                  child: Slidable(
+                    key: ValueKey('slide_${block.id}'),
+                    endActionPane: ActionPane(
+                      motion: const BehindMotion(),
+                      extentRatio: 0.3,
+                      children: [
+                        SlidableAction(
+                          onPressed: (_) => _slidableEditBlock(block),
+                          backgroundColor:
+                              isDark ? AppColors.accent : AppColors.primary,
+                          foregroundColor:
+                              isDark ? AppColors.primary : AppColors.textLight,
+                          icon: Platform.isIOS
+                              ? CupertinoIcons.pencil
+                              : Icons.edit_rounded,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(12),
+                            bottomLeft: Radius.circular(12),
+                          ),
+                        ),
+                        SlidableAction(
+                          onPressed: (_) => _slidableDeleteBlock(block),
+                          backgroundColor: AppColors.error,
+                          foregroundColor: AppColors.textLight,
+                          icon: Platform.isIOS
+                              ? CupertinoIcons.trash_fill
+                              : Icons.delete_rounded,
+                          borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(12),
+                            bottomRight: Radius.circular(12),
+                          ),
+                        ),
+                      ],
+                    ),
+                    child: ContentBlockWidget(
+                      block: block,
+                      isSelected: isSelected,
+                      onTap: () => _selectBlock(block.id),
+                      onEdit: () => _showBlockSettings(block),
+                      onDuplicate: () => _duplicateBlock(block),
+                      onDelete: () => _deleteBlock(block.id),
+                      onContentChanged: (key, value) =>
+                          _updateBlockContent(block.id, key, value),
+                    ),
                   ),
                 ),
               );

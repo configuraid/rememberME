@@ -6,6 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import 'package:rememberme/core/constants/app_colors.dart';
 import 'package:rememberme/data/services/firebase_storage_service.dart';
+import 'package:rememberme/presentation/screens/visual_builder/widgets/live_preview_container.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 class TimelineSettings extends StatefulWidget {
   final Map<String, dynamic> content;
@@ -46,209 +48,135 @@ class _TimelineSettingsState extends State<TimelineSettings> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Info hint
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isDark
-                ? AppColors.accent.withOpacity(0.1)
-                : AppColors.primary.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isDark
-                  ? AppColors.accent.withOpacity(0.3)
-                  : AppColors.primary.withOpacity(0.2),
+        // ===== STICKY: Live Preview oben fixiert =====
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+          child: LivePreviewContainer(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 180),
+              child: _entries.isEmpty
+                  ? _buildEmptyPreview(isDark)
+                  : SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: _buildTimelinePreview(isDark),
+                    ),
             ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.info_outline_rounded,
-                size: 20,
-                color: isDark ? AppColors.accent : AppColors.primary,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Geburts- und Sterbedatum werden automatisch aus den Profildaten übernommen.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
           ),
         ),
-        const SizedBox(height: 24),
 
-        // Preview
-        _buildTimelinePreview(isDark),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
 
-        // Entries List
-        if (_entries.isNotEmpty) ...[
-          _buildEntriesList(isDark),
-          const SizedBox(height: 16),
-        ],
-
-        // Add Entry Button
-        _buildAddEntryButton(isDark),
-
-        // Clear All Button
-        if (_entries.length > 1) ...[
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: () {
-              setState(() {
-                _entries.clear();
-              });
-              _notifyChange();
-            },
-            icon:
-                const Icon(Icons.delete_sweep_rounded, color: AppColors.error),
-            label: const Text(
-              'Alle Ereignisse entfernen',
-              style: TextStyle(color: AppColors.error),
-            ),
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: AppColors.error.withOpacity(0.5)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildTimelinePreview(bool isDark) {
-    if (_entries.isEmpty) {
-      return _buildEmptyState(isDark);
-    }
-
-    final previewEntries = _entries.take(3).toList();
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.backgroundDark : AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-          width: 1.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.visibility_rounded,
-                size: 14,
-                color: isDark ? AppColors.accent : AppColors.primary,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'Vorschau',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.accent : AppColors.primary,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '${_entries.length} Ereignis${_entries.length == 1 ? '' : 'se'}',
-                style: TextStyle(fontSize: 11, color: AppColors.grey),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...previewEntries.asMap().entries.map((entry) {
-            final index = entry.key;
-            final item = entry.value;
-            final isLast = index == previewEntries.length - 1;
-            return _buildPreviewEntry(item, isLast, isDark);
-          }),
-          if (_entries.length > 3)
-            Padding(
-              padding: const EdgeInsets.only(left: 24, top: 8),
-              child: Text(
-                '+ ${_entries.length - 3} weitere...',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                  color: AppColors.grey,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPreviewEntry(
-      Map<String, dynamic> entry, bool isLast, bool isDark) {
-    final date = entry['date'] as String? ?? '';
-    final label = entry['label'] as String? ?? '';
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
-          children: [
-            Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.accent : AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-            ),
-            if (!isLast)
-              Container(
-                width: 2,
-                height: 32,
-                color: isDark
-                    ? AppColors.accent.withOpacity(0.3)
-                    : AppColors.primary.withOpacity(0.3),
-              ),
-          ],
-        ),
-        const SizedBox(width: 12),
+        // ===== SCROLLBAR: Einstellungen scrollen darunter =====
         Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  date,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.accent : AppColors.primary,
+                // Add Entry Button
+                _buildAddEntryButton(isDark),
+
+                // Clear All Button
+                if (_entries.length > 1) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _entries.clear();
+                        });
+                        _notifyChange();
+                      },
+                      icon: const Icon(Icons.delete_sweep_rounded,
+                          color: AppColors.error),
+                      label: const Text(
+                        'Alle Ereignisse entfernen',
+                        style: TextStyle(color: AppColors.error),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side:
+                            BorderSide(color: AppColors.error.withOpacity(0.5)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
                   ),
-                ),
-                if (label.isNotEmpty) ...[
-                  const SizedBox(height: 2),
+                ],
+
+                // Entries List
+                if (_entries.isNotEmpty) ...[
+                  const SizedBox(height: 20),
                   Text(
-                    label,
+                    'Ereignisse (${_entries.length})',
                     style: TextStyle(
                       fontSize: 13,
+                      fontWeight: FontWeight.bold,
                       color:
                           isDark ? AppColors.textLight : AppColors.textPrimary,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
+                  const SizedBox(height: 12),
+                  ...List.generate(_entries.length, (index) {
+                    final entry = _entries[index];
+                    final entryId = entry['id'] ?? index.toString();
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Slidable(
+                        key: ValueKey('slide_$entryId'),
+                        endActionPane: ActionPane(
+                          motion: const BehindMotion(),
+                          extentRatio: 0.3,
+                          children: [
+                            SlidableAction(
+                              onPressed: (_) {
+                                HapticFeedback.lightImpact();
+                                _editEntry(index);
+                              },
+                              backgroundColor:
+                                  isDark ? AppColors.accent : AppColors.primary,
+                              foregroundColor: isDark
+                                  ? AppColors.primary
+                                  : AppColors.textLight,
+                              icon: Platform.isIOS
+                                  ? CupertinoIcons.pencil
+                                  : Icons.edit_rounded,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(12),
+                                bottomLeft: Radius.circular(12),
+                              ),
+                            ),
+                            SlidableAction(
+                              onPressed: (_) {
+                                HapticFeedback.mediumImpact();
+                                setState(() {
+                                  _entries.removeAt(index);
+                                });
+                                _notifyChange();
+                              },
+                              backgroundColor: AppColors.error,
+                              foregroundColor: AppColors.textLight,
+                              icon: Platform.isIOS
+                                  ? CupertinoIcons.trash_fill
+                                  : Icons.delete_rounded,
+                              borderRadius: const BorderRadius.only(
+                                topRight: Radius.circular(12),
+                                bottomRight: Radius.circular(12),
+                              ),
+                            ),
+                          ],
+                        ),
+                        child: _buildEntryCard(index, isDark),
+                      ),
+                    );
+                  }),
                 ],
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -257,67 +185,199 @@ class _TimelineSettingsState extends State<TimelineSettings> {
     );
   }
 
-  Widget _buildEmptyState(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.backgroundDarkElevated
-            : AppColors.greyLighter.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.greyLight,
+  // ============================================================
+  // Timeline Live-Preview
+  // ============================================================
+
+  Widget _buildEmptyPreview(bool isDark) {
+    return Column(
+      children: [
+        Icon(
+          Platform.isIOS ? CupertinoIcons.time : Icons.timeline_rounded,
+          size: 32,
+          color: AppColors.grey,
         ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Platform.isIOS ? CupertinoIcons.time : Icons.timeline_rounded,
-            size: 48,
-            color: AppColors.grey,
+        const SizedBox(height: 8),
+        Text(
+          'Noch keine Ereignisse',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.textLight : AppColors.textPrimary,
           ),
-          const SizedBox(height: 12),
-          Text(
-            'Noch keine Ereignisse',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.textLight : AppColors.textPrimary,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Füge wichtige Lebensereignisse hinzu',
+          style: TextStyle(fontSize: 12, color: AppColors.grey),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimelinePreview(bool isDark) {
+    final previewEntries = _entries;
+    final accentColor = isDark ? AppColors.accent : AppColors.primary;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Anzahl Badge
+        Row(
+          children: [
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '${_entries.length} Ereignis${_entries.length == 1 ? '' : 'se'}',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: accentColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+
+        // Timeline Einträge
+        ...previewEntries.asMap().entries.map((e) {
+          final index = e.key;
+          final item = e.value;
+          final isLast = index == previewEntries.length - 1;
+          return _buildPreviewEntry(item, isLast, isDark, accentColor);
+        }),
+      ],
+    );
+  }
+
+  Widget _buildPreviewEntry(
+    Map<String, dynamic> entry,
+    bool isLast,
+    bool isDark,
+    Color accentColor,
+  ) {
+    final date = entry['date'] as String? ?? '';
+    final label = entry['label'] as String? ?? '';
+    final imageUrl = entry['imageUrl'] as String? ?? '';
+    final hasImage = imageUrl.isNotEmpty;
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Timeline-Linie + Dot
+          SizedBox(
+            width: 12,
+            child: Column(
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: accentColor,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentColor.withOpacity(0.3),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      color: accentColor.withOpacity(0.2),
+                    ),
+                  ),
+              ],
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Füge wichtige Lebensereignisse hinzu',
-            style: TextStyle(fontSize: 13, color: AppColors.grey),
-            textAlign: TextAlign.center,
+          const SizedBox(width: 10),
+
+          // Content
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+              child: Row(
+                children: [
+                  // Thumbnail
+                  if (hasImage)
+                    Container(
+                      width: 32,
+                      height: 32,
+                      margin: const EdgeInsets.only(right: 10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: accentColor.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(5),
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: isDark
+                                ? AppColors.backgroundDarkElevated
+                                : AppColors.greyLighter,
+                            child: Icon(Icons.image,
+                                size: 14, color: AppColors.grey),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // Text
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          date,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: accentColor,
+                          ),
+                        ),
+                        if (label.isNotEmpty)
+                          Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark
+                                  ? AppColors.textLight
+                                  : AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEntriesList(bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Ereignisse (${_entries.length})',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: isDark ? AppColors.textLight : AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...List.generate(_entries.length, (index) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _buildEntryCard(index, isDark),
-          );
-        }),
-      ],
-    );
-  }
+  // ============================================================
+  // Entry Cards (Bearbeitungsliste)
+  // ============================================================
 
   Widget _buildEntryCard(int index, bool isDark) {
     final entry = _entries[index];
@@ -348,9 +408,6 @@ class _TimelineSettingsState extends State<TimelineSettings> {
               width: 40,
               height: 40,
               margin: const EdgeInsets.only(right: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-              ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
@@ -395,26 +452,6 @@ class _TimelineSettingsState extends State<TimelineSettings> {
                   ),
               ],
             ),
-          ),
-          IconButton(
-            onPressed: () => _editEntry(index),
-            icon: Icon(
-              Platform.isIOS ? CupertinoIcons.pencil : Icons.edit_rounded,
-              size: 20,
-            ),
-            color: isDark ? AppColors.accent : AppColors.primary,
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            padding: EdgeInsets.zero,
-          ),
-          IconButton(
-            onPressed: () => _deleteEntry(index),
-            icon: Icon(
-              Platform.isIOS ? CupertinoIcons.trash : Icons.delete_outline,
-              size: 20,
-            ),
-            color: AppColors.error,
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            padding: EdgeInsets.zero,
           ),
         ],
       ),
@@ -477,6 +514,10 @@ class _TimelineSettingsState extends State<TimelineSettings> {
     );
   }
 
+  // ============================================================
+  // Entry Actions
+  // ============================================================
+
   void _addEntry() {
     _showEntryDialog(null, -1);
   }
@@ -497,16 +538,142 @@ class _TimelineSettingsState extends State<TimelineSettings> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isEditing = entry != null;
 
-    String date = entry?['date'] ?? '';
+    DateTime? selectedDate;
+    // Versuche bestehendes Datum zu parsen
+    if (entry?['date'] != null && entry!['date'].toString().isNotEmpty) {
+      try {
+        final parts = entry['date'].toString().split('.');
+        if (parts.length == 3) {
+          selectedDate = DateTime(
+            int.parse(parts[2]),
+            int.parse(parts[1]),
+            int.parse(parts[0]),
+          );
+        }
+      } catch (_) {}
+    }
+
     String label = entry?['label'] ?? '';
     String imageUrl = entry?['imageUrl'] ?? '';
     String text = entry?['text'] ?? '';
 
-    final dateController = TextEditingController(text: date);
     final labelController = TextEditingController(text: label);
     final textController = TextEditingController(text: text);
 
     bool isUploadingImage = false;
+
+    String _formatDate(DateTime d) {
+      return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
+    }
+
+    void _showDatePicker(StateSetter setDialogState) {
+      if (Platform.isIOS) {
+        DateTime tempDate = selectedDate ?? DateTime.now();
+        showCupertinoModalPopup(
+          context: context,
+          builder: (ctx) => Container(
+            height: 300,
+            decoration: BoxDecoration(
+              color:
+                  isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        child: Text(
+                          'Abbrechen',
+                          style: TextStyle(
+                            color: AppColors.grey,
+                            fontSize: 17,
+                            fontFamily: '.SF Pro Text',
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        child: Text(
+                          'Fertig',
+                          style: TextStyle(
+                            color:
+                                isDark ? AppColors.accent : AppColors.primary,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: '.SF Pro Text',
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                        onPressed: () {
+                          setDialogState(() {
+                            selectedDate = tempDate;
+                          });
+                          Navigator.pop(ctx);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.date,
+                    initialDateTime: selectedDate ?? DateTime.now(),
+                    minimumDate: DateTime(1900),
+                    maximumDate: DateTime.now(),
+                    dateOrder: DatePickerDateOrder.dmy,
+                    onDateTimeChanged: (dateTime) {
+                      tempDate = dateTime;
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      } else {
+        showDatePicker(
+          context: context,
+          initialDate: selectedDate ?? DateTime.now(),
+          firstDate: DateTime(1900),
+          lastDate: DateTime.now(),
+          locale: const Locale('de', 'DE'),
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: isDark
+                    ? ColorScheme.dark(
+                        primary: AppColors.accent,
+                        onPrimary: AppColors.primary,
+                        surface: AppColors.backgroundDarkElevated,
+                      )
+                    : ColorScheme.light(
+                        primary: AppColors.primary,
+                        onPrimary: AppColors.textLight,
+                        surface: AppColors.surface,
+                      ),
+              ),
+              child: child!,
+            );
+          },
+        ).then((picked) {
+          if (picked != null) {
+            setDialogState(() {
+              selectedDate = picked;
+            });
+          }
+        });
+      }
+    }
 
     showModalBottomSheet(
       context: context,
@@ -515,6 +682,8 @@ class _TimelineSettingsState extends State<TimelineSettings> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            final hasDate = selectedDate != null;
+
             return Container(
               height: MediaQuery.of(context).size.height * 0.85,
               decoration: BoxDecoration(
@@ -558,41 +727,36 @@ class _TimelineSettingsState extends State<TimelineSettings> {
                         ),
                         const Spacer(),
                         TextButton(
-                          onPressed: () {
-                            if (dateController.text.trim().isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Bitte Datum eingeben'),
-                                  backgroundColor: AppColors.error,
-                                ),
-                              );
-                              return;
-                            }
+                          onPressed: hasDate
+                              ? () {
+                                  final newEntry = {
+                                    'id': entry?['id'] ?? const Uuid().v4(),
+                                    'date': _formatDate(selectedDate!),
+                                    'label': labelController.text.trim(),
+                                    'imageUrl': imageUrl,
+                                    'text': textController.text.trim(),
+                                  };
 
-                            final newEntry = {
-                              'id': entry?['id'] ?? const Uuid().v4(),
-                              'date': dateController.text.trim(),
-                              'label': labelController.text.trim(),
-                              'imageUrl': imageUrl,
-                              'text': textController.text.trim(),
-                            };
-
-                            setState(() {
-                              if (isEditing) {
-                                _entries[index] = newEntry;
-                              } else {
-                                _entries.add(newEntry);
-                              }
-                            });
-                            _notifyChange();
-                            Navigator.pop(context);
-                          },
+                                  setState(() {
+                                    if (isEditing) {
+                                      _entries[index] = newEntry;
+                                    } else {
+                                      _entries.add(newEntry);
+                                    }
+                                  });
+                                  _notifyChange();
+                                  Navigator.pop(context);
+                                }
+                              : null,
                           child: Text(
                             'Speichern',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color:
-                                  isDark ? AppColors.accent : AppColors.primary,
+                              color: hasDate
+                                  ? (isDark
+                                      ? AppColors.accent
+                                      : AppColors.primary)
+                                  : AppColors.grey.withOpacity(0.5),
                             ),
                           ),
                         ),
@@ -604,7 +768,7 @@ class _TimelineSettingsState extends State<TimelineSettings> {
                     child: ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
-                        // Date
+                        // Date Picker
                         Text(
                           'Datum *',
                           style: TextStyle(
@@ -616,17 +780,62 @@ class _TimelineSettingsState extends State<TimelineSettings> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        TextField(
-                          controller: dateController,
-                          decoration: InputDecoration(
-                            hintText: 'z.B. 1985, März 1990, 15.06.2000',
-                            filled: true,
-                            fillColor: isDark
-                                ? AppColors.backgroundDark
-                                : AppColors.background,
-                            border: OutlineInputBorder(
+                        GestureDetector(
+                          onTap: () => _showDatePicker(setDialogState),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.backgroundDark
+                                  : AppColors.background,
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
+                              border: Border.all(
+                                color: hasDate
+                                    ? (isDark
+                                        ? AppColors.accent
+                                        : AppColors.primary)
+                                    : (isDark
+                                        ? AppColors.borderDark
+                                        : AppColors.greyLight),
+                                width: hasDate ? 1.5 : 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Platform.isIOS
+                                      ? CupertinoIcons.calendar
+                                      : Icons.calendar_today_rounded,
+                                  size: 20,
+                                  color: hasDate
+                                      ? (isDark
+                                          ? AppColors.accent
+                                          : AppColors.primary)
+                                      : AppColors.grey,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    hasDate
+                                        ? _formatDate(selectedDate!)
+                                        : 'Datum auswählen...',
+                                    style: TextStyle(
+                                      fontSize: 17,
+                                      color: hasDate
+                                          ? (isDark
+                                              ? AppColors.textLight
+                                              : AppColors.textPrimary)
+                                          : AppColors.grey,
+                                    ),
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 20,
+                                  color: AppColors.grey,
+                                ),
+                              ],
                             ),
                           ),
                         ),

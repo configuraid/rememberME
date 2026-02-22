@@ -62,6 +62,9 @@ class _HeaderSettingsState extends State<HeaderSettings> {
   String get _color => _getString('color', '#000000');
 
   void _updateValue(String key, dynamic value) {
+    setState(() {
+      widget.content[key] = value;
+    });
     widget.onValueChanged('$key:${value.toString()}');
   }
 
@@ -78,65 +81,81 @@ class _HeaderSettingsState extends State<HeaderSettings> {
     final fontSize = fontSizes[_level] ?? 28.0;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Live Preview
-        LivePreviewContainer(
-          child: Text(
-            _text.isEmpty ? 'Überschrift Vorschau' : _text,
-            style: TextStyle(
-              fontSize: fontSize,
-              fontWeight: FontWeight.bold,
-              color: _text.isEmpty ? AppColors.grey : _hexToColor(_color),
-              height: 1.3,
+        // ===== STICKY: Live Preview oben fixiert =====
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+          child: LivePreviewContainer(
+            child: Text(
+              _text.isEmpty ? 'Überschrift Vorschau' : _text,
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.bold,
+                color: _text.isEmpty ? AppColors.grey : _hexToColor(_color),
+                height: 1.3,
+              ),
+              textAlign: _align == 'center'
+                  ? TextAlign.center
+                  : _align == 'right'
+                      ? TextAlign.right
+                      : TextAlign.left,
             ),
-            textAlign: _align == 'center'
-                ? TextAlign.center
-                : _align == 'right'
-                    ? TextAlign.right
-                    : TextAlign.left,
           ),
         ),
-        const SizedBox(height: 20),
 
-        // Text Field
-        ConfigTextField(
-          label: AppStrings.headerPlaceholder,
-          controller: _textController,
-          hint: 'Überschrift eingeben',
-          maxLines: 2,
-          onChanged: (value) => _updateValue('text', value),
-        ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
 
-        // Size Dropdown
-        ConfigDropdown<int>(
-          label: AppStrings.size,
-          value: _level,
-          items: {
-            1: AppStrings.sizeH1,
-            2: AppStrings.sizeH2,
-            3: AppStrings.sizeH3,
-          },
-          onChanged: (value) {
-            if (value != null) _updateValue('level', value);
-          },
-        ),
-        const SizedBox(height: 20),
+        // ===== SCROLLBAR: Einstellungen scrollen darunter =====
+        Expanded(
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Text Field
+                ConfigTextField(
+                  label: AppStrings.headerPlaceholder,
+                  controller: _textController,
+                  hint: 'Überschrift eingeben',
+                  maxLines: 2,
+                  onChanged: (value) => _updateValue('text', value),
+                ),
+                const SizedBox(height: 20),
 
-        // Alignment
-        AlignmentPicker(
-          currentAlignment: _align,
-          onChanged: (value) => _updateValue('align', value),
-        ),
-        const SizedBox(height: 20),
+                // Size Dropdown
+                ConfigDropdown<int>(
+                  label: AppStrings.size,
+                  value: _level,
+                  items: {
+                    1: AppStrings.sizeH1,
+                    2: AppStrings.sizeH2,
+                    3: AppStrings.sizeH3,
+                  },
+                  onChanged: (value) {
+                    if (value != null) _updateValue('level', value);
+                  },
+                ),
+                const SizedBox(height: 20),
 
-        // Color Picker
-        ColorPickerCard(
-          label: 'Textfarbe',
-          currentColor: _color,
-          onColorChanged: (color) => _updateValue('color', color),
-          showColorPickerDialog: showColorPickerDialog,
+                // Alignment
+                AlignmentPicker(
+                  currentAlignment: _align,
+                  onChanged: (value) => _updateValue('align', value),
+                ),
+                const SizedBox(height: 20),
+
+                // Color Picker
+                ColorPickerCard(
+                  label: 'Textfarbe',
+                  currentColor: _color,
+                  onColorChanged: (color) => _updateValue('color', color),
+                  showColorPickerDialog: showColorPickerDialog,
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
         ),
       ],
     );

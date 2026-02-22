@@ -58,32 +58,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ========== FIX: Komplett überarbeiteter Toggle ==========
   Future<void> _toggleBiometricLogin(bool value) async {
     if (value) {
-      // === AKTIVIEREN ===
-
-      // 1. Biometrie-Authentifizierung durchführen
       final authenticated = await _biometricService.authenticate(
         reason: 'Bestätige deine Identität',
       );
       if (!authenticated) return;
 
-      // 2. Prüfe ob Credentials im Keychain vorhanden sind
       final hasCredentials = await _biometricService.hasStoredCredentials();
 
       if (!hasCredentials) {
-        // Keine Credentials → User muss sich erst manuell einloggen
         if (mounted) _showReLoginForBiometricDialog();
         return;
       }
 
-      // 3. Credentials vorhanden → einfach enabled-Flag setzen
       await _biometricService.enableBiometricLogin();
       debugPrint(
           '✅ Biometric Login re-aktiviert (Credentials waren vorhanden)');
     } else {
-      // === DEAKTIVIEREN ===
       await _biometricService.disableBiometricLogin();
     }
 
@@ -153,16 +145,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   String _getInitials(String? name) {
-    if (name == null || name.trim().isEmpty) {
-      return 'U';
-    }
-
+    if (name == null || name.trim().isEmpty) return 'U';
     final trimmedName = name.trim();
     final parts = trimmedName.split(RegExp(r'\s+'));
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
-
     return trimmedName[0].toUpperCase();
   }
 
@@ -236,11 +224,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _handleAccountDeleted(BuildContext context) {
-    // Biometric Credentials auch löschen bei Account-Löschung
     _biometricService.clearCredentials();
-
     context.read<AuthBloc>().add(const AuthLogoutRequested());
-
     Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
       AppRoutes.login,
       (route) => false,
@@ -255,7 +240,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _handleAccountDeleted(context);
           return;
         }
-
         if (state.hasError && state.errorMessage != null) {
           _showErrorMessage(context, state.errorMessage!);
         }
@@ -264,7 +248,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return BlocBuilder<AuthBloc, AuthState>(
           builder: (context, authState) {
             final user = authState.user;
-
             if (Platform.isIOS) {
               return _buildIOSView(context, user, profileState);
             }
@@ -275,35 +258,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ===== iOS VIEW =====
+  // ============================================================
+  // iOS VIEW
+  // ============================================================
   Widget _buildIOSView(
       BuildContext context, UserModel? user, ProfileState profileState) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return CupertinoPageScaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : const Color(0xFFF2F2F7),
       navigationBar: CupertinoNavigationBar(
         middle: Text(
           AppStrings.profile,
           style: TextStyle(
-            fontSize: 20,
+            fontSize: 17,
             fontWeight: FontWeight.w600,
             color: isDark ? AppColors.textLight : AppColors.textPrimary,
             fontFamily: '.SF Pro Text',
-          ),
-        ),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () => Navigator.push(
-            context,
-            CupertinoPageRoute(
-              builder: (context) => const EditProfileScreen(),
-            ),
-          ),
-          child: Icon(
-            CupertinoIcons.pencil,
-            color: isDark ? AppColors.accent : AppColors.primary,
-            size: 32,
           ),
         ),
         backgroundColor: isDark
@@ -319,9 +291,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SliverToBoxAdapter(
               child: Column(
                 children: [
-                  _buildIOSProfileHeader(user, profileState, isDark),
-                  const SizedBox(height: 16),
-                  _buildIOSMenuSection(context, user, isDark),
+                  _buildProfileHeader(user, profileState, isDark),
+                  const SizedBox(height: 24),
+                  _buildMenuSections(context, user, isDark),
                   const SizedBox(height: 80),
                 ],
               ),
@@ -332,13 +304,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ===== ANDROID VIEW =====
+  // ============================================================
+  // Android VIEW
+  // ============================================================
   Widget _buildAndroidView(
       BuildContext context, UserModel? user, ProfileState profileState) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : const Color(0xFFF5F5F5),
       appBar: AppBar(
         title: Text(
           AppStrings.profile,
@@ -356,29 +331,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             : AppColors.surface.withOpacity(0.94),
         foregroundColor: isDark ? AppColors.textLight : AppColors.textPrimary,
         surfaceTintColor: Colors.transparent,
-        actions: [
-          IconButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const EditProfileScreen(),
-              ),
-            ),
-            icon: Icon(
-              Icons.edit_rounded,
-              color: isDark ? AppColors.accent : AppColors.primary,
-            ),
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: () async => _loadProfile(),
         color: isDark ? AppColors.accent : AppColors.primary,
         child: ListView(
           children: [
-            _buildAndroidProfileHeader(user, profileState, isDark),
-            const SizedBox(height: 16),
-            _buildAndroidMenuSection(context, user, isDark),
+            _buildProfileHeader(user, profileState, isDark),
+            const SizedBox(height: 24),
+            _buildMenuSections(context, user, isDark),
             const SizedBox(height: 80),
           ],
         ),
@@ -386,84 +347,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ===== ANDROID HEADER =====
-  Widget _buildAndroidProfileHeader(
+  // ============================================================
+  // Profilbild + Name (WhatsApp-Style)
+  // ============================================================
+  Widget _buildProfileHeader(
       UserModel? user, ProfileState profileState, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.backgroundDark : AppColors.background,
-      ),
+    final displayName =
+        profileState.displayName ?? user?.displayName ?? AppStrings.unknown;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 32),
       child: Column(
         children: [
-          Stack(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.accent,
-                    width: 3,
-                  ),
-                ),
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundColor: AppColors.accent.withOpacity(0.4),
-                  backgroundImage: profileState.profileImageUrl != null
-                      ? NetworkImage(profileState.profileImageUrl!)
-                      : null,
-                  child: profileState.profileImageUrl == null
-                      ? Text(
-                          _getInitials(user?.displayName),
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.accent,
-                          ),
-                        )
-                      : null,
-                ),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.backgroundDark
-                          : AppColors.background,
-                      width: 2,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.camera_alt_rounded,
-                    size: 16,
-                    color: isDark ? AppColors.primary : AppColors.background,
-                  ),
-                ),
-              ),
-            ],
+          // Avatar – groß, ohne Border
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              Platform.isIOS
+                  ? CupertinoPageRoute(
+                      builder: (_) => const EditProfileScreen())
+                  : MaterialPageRoute(
+                      builder: (_) => const EditProfileScreen()),
+            ),
+            child: CircleAvatar(
+              radius: 56,
+              backgroundColor: isDark
+                  ? AppColors.accent.withOpacity(0.3)
+                  : AppColors.primary.withOpacity(0.15),
+              backgroundImage: profileState.profileImageUrl != null
+                  ? NetworkImage(profileState.profileImageUrl!)
+                  : null,
+              child: profileState.profileImageUrl == null
+                  ? Text(
+                      _getInitials(user?.displayName),
+                      style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? AppColors.accent : AppColors.primary,
+                        fontFamily: Platform.isIOS ? '.SF Pro Display' : null,
+                        decoration: TextDecoration.none,
+                      ),
+                    )
+                  : null,
+            ),
           ),
           const SizedBox(height: 16),
+
+          // Name
           Text(
-            profileState.displayName ?? user?.displayName ?? AppStrings.unknown,
+            displayName,
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: isDark ? AppColors.textLight : AppColors.textPrimary,
+              fontFamily: Platform.isIOS ? '.SF Pro Display' : null,
+              decoration: TextDecoration.none,
               letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            profileState.email ?? user?.email ?? '',
-            style: TextStyle(
-              fontSize: 15,
-              color: AppColors.grey,
             ),
           ),
         ],
@@ -471,181 +410,118 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ===== iOS HEADER =====
-  Widget _buildIOSProfileHeader(
-      UserModel? user, ProfileState profileState, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.backgroundDark : AppColors.background,
-      ),
-      child: Column(
-        children: [
-          Stack(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.accent,
-                    width: 3,
-                  ),
-                ),
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundColor: AppColors.accent.withOpacity(0.4),
-                  backgroundImage: profileState.profileImageUrl != null
-                      ? NetworkImage(profileState.profileImageUrl!)
-                      : null,
-                  child: profileState.profileImageUrl == null
-                      ? Text(
-                          _getInitials(user?.displayName),
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.accent,
-                            fontFamily: '.SF Pro Display',
-                            decoration: TextDecoration.none,
-                          ),
-                        )
-                      : null,
-                ),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.backgroundDark
-                          : AppColors.background,
-                      width: 2,
-                    ),
-                  ),
-                  child: Icon(
-                    CupertinoIcons.camera_fill,
-                    size: 16,
-                    color: isDark ? AppColors.primary : AppColors.background,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            profileState.displayName ?? user?.displayName ?? AppStrings.unknown,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: isDark ? AppColors.textLight : AppColors.textPrimary,
-              fontFamily: '.SF Pro Display',
-              decoration: TextDecoration.none,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            profileState.email ?? user?.email ?? '',
-            style: TextStyle(
-              fontSize: 15,
-              color: AppColors.grey,
-              fontFamily: '.SF Pro Text',
-              decoration: TextDecoration.none,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ===== iOS MENU SECTION =====
-  Widget _buildIOSMenuSection(
+  // ============================================================
+  // Alle Menu Sections (WhatsApp-Style)
+  // ============================================================
+  Widget _buildMenuSections(
       BuildContext context, UserModel? user, bool isDark) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildIOSMenuHeader(AppStrings.accountSection, isDark),
-        _buildIOSMenuCard(
-          context: context,
+        // Einstellungen
+        _buildSectionHeader('Einstellungen', isDark),
+        _buildCard(
           isDark: isDark,
           children: [
-            _buildIOSMenuItem(
-              icon: CupertinoIcons.person,
+            _buildMenuItem(
+              icon: Platform.isIOS
+                  ? CupertinoIcons.person
+                  : Icons.person_outline_rounded,
               title: AppStrings.editProfile,
               isDark: isDark,
               onTap: () => Navigator.push(
                 context,
-                CupertinoPageRoute(
-                  builder: (context) => const EditProfileScreen(),
-                ),
+                Platform.isIOS
+                    ? CupertinoPageRoute(
+                        builder: (_) => const EditProfileScreen())
+                    : MaterialPageRoute(
+                        builder: (_) => const EditProfileScreen()),
               ),
+            ),
+            _buildDivider(isDark),
+            if (_biometricSupported) ...[
+              _buildBiometricToggle(isDark),
+              _buildDivider(isDark),
+            ],
+            _buildMenuItem(
+              icon: Platform.isIOS
+                  ? CupertinoIcons.bell
+                  : Icons.notifications_none_rounded,
+              title: 'Benachrichtigungen',
+              isDark: isDark,
+              onTap: () {},
             ),
           ],
         ),
-        if (_biometricSupported) ...[
-          _buildIOSMenuHeader('Sicherheit', isDark),
-          _buildIOSMenuCard(
-            context: context,
-            isDark: isDark,
-            children: [
-              _buildIOSBiometricToggle(isDark),
-            ],
-          ),
-        ],
-        _buildIOSMenuHeader(AppStrings.support, isDark),
-        _buildIOSMenuCard(
-          context: context,
+
+        const SizedBox(height: 24),
+
+        // Hilfe & Info
+        _buildSectionHeader('Hilfe & Info', isDark),
+        _buildCard(
           isDark: isDark,
           children: [
-            _buildIOSMenuItem(
-              icon: CupertinoIcons.question_circle,
+            _buildMenuItem(
+              icon: Platform.isIOS
+                  ? CupertinoIcons.question_circle
+                  : Icons.help_outline_rounded,
               title: AppStrings.helpAndFaq,
               isDark: isDark,
               onTap: () {},
             ),
-            _buildIOSDivider(isDark),
-            _buildIOSMenuItem(
-              icon: CupertinoIcons.info_circle,
+            _buildDivider(isDark),
+            _buildMenuItem(
+              icon: Platform.isIOS
+                  ? CupertinoIcons.info_circle
+                  : Icons.info_outline_rounded,
               title: AppStrings.about,
               isDark: isDark,
               onTap: () => Navigator.push(
                 context,
-                CupertinoPageRoute(
-                  builder: (context) => const AboutScreen(),
-                ),
+                Platform.isIOS
+                    ? CupertinoPageRoute(builder: (_) => const AboutScreen())
+                    : MaterialPageRoute(builder: (_) => const AboutScreen()),
               ),
             ),
-            _buildIOSDivider(isDark),
-            _buildIOSMenuItem(
-              icon: CupertinoIcons.chat_bubble_text,
+            _buildDivider(isDark),
+            _buildMenuItem(
+              icon: Platform.isIOS
+                  ? CupertinoIcons.chat_bubble_text
+                  : Icons.feedback_outlined,
               title: AppStrings.sendFeedback,
               isDark: isDark,
               onTap: () {},
             ),
           ],
         ),
-        _buildIOSMenuHeader(AppStrings.dangerZone, isDark),
-        _buildIOSMenuCard(
-          context: context,
+
+        const SizedBox(height: 24),
+
+        // Konto
+        _buildSectionHeader('Konto', isDark),
+        _buildCard(
           isDark: isDark,
           children: [
-            _buildIOSMenuItem(
-              icon: CupertinoIcons.square_arrow_right,
+            _buildMenuItem(
+              icon: Platform.isIOS
+                  ? CupertinoIcons.square_arrow_right
+                  : Icons.logout_rounded,
               title: AppStrings.logout,
               isDark: isDark,
               isDestructive: true,
-              onTap: () => _showLogoutDialog(context, isDark),
+              onTap: () => _showLogoutDialog(
+                  context, Theme.of(context).brightness == Brightness.dark),
             ),
-            _buildIOSDivider(isDark),
-            _buildIOSMenuItem(
-              icon: CupertinoIcons.trash,
+            _buildDivider(isDark),
+            _buildMenuItem(
+              icon: Platform.isIOS
+                  ? CupertinoIcons.trash
+                  : Icons.delete_outline_rounded,
               title: AppStrings.deleteAccount,
               isDark: isDark,
               isDestructive: true,
-              onTap: () => _showDeleteAccountDialog(context, isDark),
+              onTap: () => _showDeleteAccountDialog(
+                  context, Theme.of(context).brightness == Brightness.dark),
             ),
           ],
         ),
@@ -653,133 +529,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildIOSBiometricToggle(bool isDark) {
+  // ============================================================
+  // Section Header
+  // ============================================================
+  Widget _buildSectionHeader(String title, bool isDark) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.toastBackgroundDark
-                  : AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              CupertinoIcons.person_crop_circle,
-              color: isDark ? AppColors.accent : AppColors.primary,
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              '$_biometricName Login',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w400,
-                color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                fontFamily: '.SF Pro Text',
-                decoration: TextDecoration.none,
-              ),
-            ),
-          ),
-          CupertinoSwitch(
-            value: _biometricEnabled,
-            activeTrackColor: isDark ? AppColors.accent : AppColors.primary,
-            onChanged: _toggleBiometricLogin,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildIOSMenuHeader(String title, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          title.toUpperCase(),
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: AppColors.grey,
-            letterSpacing: 0.5,
-            fontFamily: '.SF Pro Text',
-            decoration: TextDecoration.none,
-          ),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: AppColors.grey,
+          fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
+          decoration: TextDecoration.none,
         ),
       ),
     );
   }
 
-  Widget _buildIOSMenuItem({
-    required IconData icon,
-    required String title,
-    required bool isDark,
-    required VoidCallback onTap,
-    bool isDestructive = false,
-  }) {
-    final iconColor = isDestructive
-        ? AppColors.error
-        : (isDark ? AppColors.accent : AppColors.primary);
-    final textColor = isDestructive
-        ? AppColors.error
-        : (isDark ? AppColors.textLight : AppColors.textPrimary);
-
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: isDestructive
-                    ? AppColors.error.withOpacity(isDark ? 0.2 : 0.1)
-                    : (isDark
-                        ? AppColors.toastBackgroundDark
-                        : AppColors.primary.withOpacity(0.1)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: 18,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w400,
-                  color: textColor,
-                  fontFamily: '.SF Pro Text',
-                  decoration: TextDecoration.none,
-                ),
-              ),
-            ),
-            Icon(
-              CupertinoIcons.chevron_right,
-              size: 16,
-              color: AppColors.grey,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIOSMenuCard({
-    required BuildContext context,
+  // ============================================================
+  // Card Container
+  // ============================================================
+  Widget _buildCard({
     required bool isDark,
     required List<Widget> children,
   }) {
@@ -788,269 +560,84 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-          width: 1,
-        ),
       ),
       child: Column(children: children),
     );
   }
 
-  Widget _buildIOSDivider(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 56),
-      child: Divider(
-        height: 1,
-        color: isDark ? AppColors.borderDark : AppColors.divider,
-      ),
-    );
-  }
-
-  // ===== ANDROID MENU SECTION =====
-  Widget _buildAndroidMenuSection(
-      BuildContext context, UserModel? user, bool isDark) {
-    return Column(
-      children: [
-        _buildAndroidMenuHeader(AppStrings.accountSection, isDark),
-        _buildAndroidMenuCard(
-          context: context,
-          isDark: isDark,
-          children: [
-            _buildAndroidMenuItem(
-              context: context,
-              icon: Icons.person_rounded,
-              title: AppStrings.editProfile,
-              isDark: isDark,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const EditProfileScreen(),
-                ),
-              ),
-            ),
-          ],
-        ),
-        if (_biometricSupported) ...[
-          _buildAndroidMenuHeader('Sicherheit', isDark),
-          _buildAndroidMenuCard(
-            context: context,
-            isDark: isDark,
-            children: [
-              _buildAndroidBiometricToggle(isDark),
-            ],
-          ),
-        ],
-        _buildAndroidMenuHeader(AppStrings.support, isDark),
-        _buildAndroidMenuCard(
-          context: context,
-          isDark: isDark,
-          children: [
-            _buildAndroidMenuItem(
-              context: context,
-              icon: Icons.help_outline_rounded,
-              title: AppStrings.helpAndFaq,
-              isDark: isDark,
-              onTap: () {},
-            ),
-            _buildAndroidDivider(isDark),
-            _buildAndroidMenuItem(
-              context: context,
-              icon: Icons.info_outline_rounded,
-              title: AppStrings.about,
-              isDark: isDark,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AboutScreen(),
-                ),
-              ),
-            ),
-            _buildAndroidDivider(isDark),
-            _buildAndroidMenuItem(
-              context: context,
-              icon: Icons.feedback_outlined,
-              title: AppStrings.sendFeedback,
-              isDark: isDark,
-              onTap: () {},
-            ),
-          ],
-        ),
-        _buildAndroidMenuHeader(AppStrings.dangerZone, isDark),
-        _buildAndroidMenuCard(
-          context: context,
-          isDark: isDark,
-          children: [
-            _buildAndroidMenuItem(
-              context: context,
-              icon: Icons.logout_rounded,
-              title: AppStrings.logout,
-              isDark: isDark,
-              isDestructive: true,
-              onTap: () => _showLogoutDialog(context, isDark),
-            ),
-            _buildAndroidDivider(isDark),
-            _buildAndroidMenuItem(
-              context: context,
-              icon: Icons.delete_forever_rounded,
-              title: AppStrings.deleteAccount,
-              isDark: isDark,
-              isDestructive: true,
-              onTap: () => _showDeleteAccountDialog(context, isDark),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAndroidBiometricToggle(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.toastBackgroundDark
-                  : AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.fingerprint_rounded,
-              color: isDark ? AppColors.accent : AppColors.primary,
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              '$_biometricName Login',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w400,
-                color: isDark ? AppColors.textLight : AppColors.textPrimary,
-              ),
-            ),
-          ),
-          Switch.adaptive(
-            value: _biometricEnabled,
-            activeColor: isDark ? AppColors.accent : AppColors.primary,
-            onChanged: _toggleBiometricLogin,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAndroidMenuHeader(String title, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          title.toUpperCase(),
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: AppColors.grey,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAndroidMenuCard({
-    required BuildContext context,
-    required bool isDark,
-    required List<Widget> children,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.backgroundDarkElevated : AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.greyLighter,
-          width: 1,
-        ),
-      ),
-      child: Column(children: children),
-    );
-  }
-
-  Widget _buildAndroidDivider(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 56),
-      child: Divider(
-        height: 1,
-        color: isDark ? AppColors.borderDark : AppColors.divider,
-      ),
-    );
-  }
-
-  Widget _buildAndroidMenuItem({
-    required BuildContext context,
+  // ============================================================
+  // Menu Item (WhatsApp-Style: Icon direkt, kein farbiger BG)
+  // ============================================================
+  Widget _buildMenuItem({
     required IconData icon,
     required String title,
     required bool isDark,
     required VoidCallback onTap,
     bool isDestructive = false,
   }) {
-    final iconColor = isDestructive
-        ? AppColors.error
-        : (isDark ? AppColors.accent : AppColors.primary);
-
-    final textColor = isDestructive
+    final color = isDestructive
         ? AppColors.error
         : (isDark ? AppColors.textLight : AppColors.textPrimary);
+    final iconColor = isDestructive ? AppColors.error : AppColors.grey;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        splashColor: iconColor.withOpacity(0.1),
-        highlightColor: iconColor.withOpacity(0.05),
+    if (Platform.isIOS) {
+      return CupertinoButton(
+        padding: EdgeInsets.zero,
+        onPressed: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           child: Row(
             children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: isDestructive
-                      ? AppColors.error.withOpacity(isDark ? 0.2 : 0.1)
-                      : (isDark
-                          ? AppColors.toastBackgroundDark
-                          : AppColors.primary.withOpacity(0.1)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 12),
+              Icon(icon, size: 22, color: iconColor),
+              const SizedBox(width: 16),
               Expanded(
                 child: Text(
                   title,
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w400,
-                    color: textColor,
+                    color: color,
+                    fontFamily: '.SF Pro Text',
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+              ),
+              Icon(
+                CupertinoIcons.chevron_right,
+                size: 15,
+                color: AppColors.grey.withOpacity(0.5),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          child: Row(
+            children: [
+              Icon(icon, size: 22, color: iconColor),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w400,
+                    color: color,
                   ),
                 ),
               ),
               Icon(
                 Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: AppColors.grey,
+                size: 15,
+                color: AppColors.grey.withOpacity(0.5),
               ),
             ],
           ),
@@ -1059,7 +646,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ===== LOGOUT DIALOG =====
+  // ============================================================
+  // Biometric Toggle (flach)
+  // ============================================================
+  Widget _buildBiometricToggle(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+      child: Row(
+        children: [
+          Icon(
+            Platform.isIOS
+                ? CupertinoIcons.lock_shield
+                : Icons.fingerprint_rounded,
+            size: 22,
+            color: AppColors.grey,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              '$_biometricName Login',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w400,
+                color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                fontFamily: Platform.isIOS ? '.SF Pro Text' : null,
+                decoration: TextDecoration.none,
+              ),
+            ),
+          ),
+          if (Platform.isIOS)
+            CupertinoSwitch(
+              value: _biometricEnabled,
+              activeTrackColor: isDark ? AppColors.accent : AppColors.primary,
+              onChanged: _toggleBiometricLogin,
+            )
+          else
+            Switch.adaptive(
+              value: _biometricEnabled,
+              activeColor: isDark ? AppColors.accent : AppColors.primary,
+              onChanged: _toggleBiometricLogin,
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // Divider (eingerückt ab Icon-Ende)
+  // ============================================================
+  Widget _buildDivider(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 54),
+      child: Divider(
+        height: 1,
+        color: isDark ? AppColors.borderDark : AppColors.divider,
+      ),
+    );
+  }
+
+  // ============================================================
+  // Dialoge (unverändert)
+  // ============================================================
   void _showLogoutDialog(BuildContext context, bool isDark) {
     if (Platform.isIOS) {
       showCupertinoDialog(
@@ -1097,7 +744,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             CupertinoDialogAction(
               isDestructiveAction: true,
               onPressed: () {
-                // ⚠️ KEIN clearCredentials() beim Logout!
                 context.read<AuthBloc>().add(const AuthLogoutRequested());
                 Navigator.of(ctx).pop();
                 Navigator.of(context, rootNavigator: true)
@@ -1166,7 +812,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             FilledButton(
               onPressed: () {
-                // ⚠️ KEIN clearCredentials() beim Logout!
                 context.read<AuthBloc>().add(const AuthLogoutRequested());
                 Navigator.of(ctx).pop();
                 Navigator.of(context, rootNavigator: true)
@@ -1194,7 +839,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ===== DELETE ACCOUNT DIALOG =====
   void _showDeleteAccountDialog(BuildContext context, bool isDark) {
     if (Platform.isIOS) {
       DeleteAccountConfirmationFlow.show(

@@ -62,6 +62,9 @@ class _TextSettingsState extends State<TextSettings> {
   String get _color => _getString('color', '#333333');
 
   void _updateValue(String key, dynamic value) {
+    setState(() {
+      widget.content[key] = value;
+    });
     widget.onValueChanged('$key:${value.toString()}');
   }
 
@@ -76,63 +79,79 @@ class _TextSettingsState extends State<TextSettings> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Live Preview
-        LivePreviewContainer(
-          child: Text(
-            _text.isEmpty
-                ? 'Text Vorschau - Bewege den Regler um die Schriftgröße zu ändern'
-                : _text,
-            style: TextStyle(
-              fontSize: _fontSize,
-              color: _text.isEmpty ? AppColors.grey : _hexToColor(_color),
-              height: 1.5,
+        // ===== STICKY: Live Preview oben fixiert =====
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+          child: LivePreviewContainer(
+            child: Text(
+              _text.isEmpty
+                  ? 'Text Vorschau - Bewege den Regler um die Schriftgröße zu ändern'
+                  : _text,
+              style: TextStyle(
+                fontSize: _fontSize,
+                color: _text.isEmpty ? AppColors.grey : _hexToColor(_color),
+                height: 1.5,
+              ),
+              textAlign: _align == 'center'
+                  ? TextAlign.center
+                  : _align == 'right'
+                      ? TextAlign.right
+                      : TextAlign.left,
+              maxLines: 5,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: _align == 'center'
-                ? TextAlign.center
-                : _align == 'right'
-                    ? TextAlign.right
-                    : TextAlign.left,
-            maxLines: 5,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
-        const SizedBox(height: 20),
 
-        // Text Field
-        ConfigTextField(
-          label: AppStrings.text,
-          controller: _textController,
-          hint: 'Text eingeben...',
-          maxLines: 10,
-          onChanged: (value) => _updateValue('text', value),
-        ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
 
-        // Font Size Slider
-        ConfigSlider(
-          label: AppStrings.fontSize,
-          value: _fontSize,
-          min: 12,
-          max: 24,
-          onChanged: (value) => _updateValue('fontSize', value),
-        ),
-        const SizedBox(height: 20),
+        // ===== SCROLLBAR: Einstellungen scrollen darunter =====
+        Expanded(
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Text Field
+                ConfigTextField(
+                  label: AppStrings.text,
+                  controller: _textController,
+                  hint: 'Text eingeben...',
+                  maxLines: 10,
+                  onChanged: (value) => _updateValue('text', value),
+                ),
+                const SizedBox(height: 20),
 
-        // Alignment
-        AlignmentPicker(
-          currentAlignment: _align,
-          onChanged: (value) => _updateValue('align', value),
-        ),
-        const SizedBox(height: 20),
+                // Font Size Slider
+                ConfigSlider(
+                  label: AppStrings.fontSize,
+                  value: _fontSize,
+                  min: 12,
+                  max: 24,
+                  onChanged: (value) => _updateValue('fontSize', value),
+                ),
+                const SizedBox(height: 20),
 
-        // Color Picker
-        ColorPickerCard(
-          label: 'Textfarbe',
-          currentColor: _color,
-          onColorChanged: (color) => _updateValue('color', color),
-          showColorPickerDialog: showColorPickerDialog,
+                // Alignment
+                AlignmentPicker(
+                  currentAlignment: _align,
+                  onChanged: (value) => _updateValue('align', value),
+                ),
+                const SizedBox(height: 20),
+
+                // Color Picker
+                ColorPickerCard(
+                  label: 'Textfarbe',
+                  currentColor: _color,
+                  onColorChanged: (color) => _updateValue('color', color),
+                  showColorPickerDialog: showColorPickerDialog,
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
         ),
       ],
     );
