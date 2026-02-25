@@ -158,7 +158,6 @@ mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
                 'OK',
                 style: TextStyle(
                   fontSize: 17,
-                  color: AppColors.interactive,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -182,7 +181,7 @@ mixin WebPreviewMixin<T extends StatefulWidget> on State<T> {
               ),
             ],
           ),
-          backgroundColor: AppColors.warning,
+          backgroundColor: AppColors.accentLight,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -234,7 +233,6 @@ Future<void> showWebPreviewStandalone({
                 'OK',
                 style: TextStyle(
                   fontSize: 17,
-                  color: AppColors.interactive,
                   fontFamily: '.SF Pro Text',
                 ),
               ),
@@ -249,7 +247,7 @@ Future<void> showWebPreviewStandalone({
             'Füge zuerst Inhaltsblöcke hinzu.',
             style: TextStyle(color: AppColors.textLight),
           ),
-          backgroundColor: AppColors.warning,
+          backgroundColor: AppColors.accentLight,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),

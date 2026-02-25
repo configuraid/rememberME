@@ -123,7 +123,6 @@ mixin VideoPlayerMixin<T extends StatefulWidget> on State<T> {
     required String blockId,
   }) async {
     if (isVideoUploading) return null;
-
     try {
       final XFile? video = await videoImagePicker.pickVideo(
         source: ImageSource.gallery,

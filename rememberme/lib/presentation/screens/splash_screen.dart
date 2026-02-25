@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rememberme/core/utils/deep_link_handler.dart';
+import 'package:rememberme/data/services/native_onboarding_service.dart';
 import 'dart:io';
 
 import '../../../business_logic/auth/auth_bloc.dart';
@@ -71,6 +72,10 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _handleNavigation(BuildContext context, AuthState state) async {
     // Wait for animation
     await Future.delayed(const Duration(milliseconds: 800));
+
+    if (!mounted) return;
+
+    await NativeOnboardingService.showOnboardingIfNeeded();
 
     if (!mounted) return;
 

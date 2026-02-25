@@ -18,7 +18,6 @@ mixin UploadMixin<T extends StatefulWidget> on State<T> {
     required String blockId,
   }) async {
     if (isUploading) return null;
-
     try {
       final XFile? image = await imagePicker.pickImage(
         source: ImageSource.gallery,

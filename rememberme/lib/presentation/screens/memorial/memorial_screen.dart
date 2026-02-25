@@ -471,7 +471,7 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.textDarkSecondary : AppColors.grey,
+              color: isDark ? AppColors.textSecondary : AppColors.grey,
             ),
           ),
           const SizedBox(width: 6),
@@ -801,7 +801,7 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: isDark
-                            ? AppColors.textDarkSecondary
+                            ? AppColors.textSecondary
                             : AppColors.textPrimary)),
               ],
             ),
@@ -838,9 +838,8 @@ class _MemorialDetailScreenState extends State<MemorialDetailScreen> {
                         fontSize: 15,
                         height: 1.5,
                         fontStyle: FontStyle.italic,
-                        color: isDark
-                            ? AppColors.textDarkSecondary
-                            : AppColors.grey),
+                        color:
+                            isDark ? AppColors.textSecondary : AppColors.grey),
                     textAlign: TextAlign.center,
                   ),
                 ],

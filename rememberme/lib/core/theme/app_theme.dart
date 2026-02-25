@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import '../constants/app_colors.dart';
 import 'text_styles.dart';
 
@@ -13,8 +12,6 @@ class AppTheme {
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         primaryContainer: Color(0xFF5A7491),
-        secondary: AppColors.secondary,
-        secondaryContainer: AppColors.secondaryLight,
         surface: AppColors.surface,
         surfaceContainerHighest: Color(0xFFF5F5F5),
         error: AppColors.error,
@@ -328,9 +325,6 @@ class AppTheme {
       colorScheme: const ColorScheme.dark(
         primary: AppColors.accent,
         primaryContainer: AppColors.accentLight,
-        secondary: AppColors.secondaryDark,
-        secondaryContainer: AppColors.secondary,
-        surface: AppColors.surfaceDark,
         surfaceContainerHighest: Color(0xFF2A2A2A),
         error: AppColors.error,
         errorContainer: Color(0xFF93000A),
@@ -351,7 +345,6 @@ class AppTheme {
       ),
 
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.surfaceDark,
         foregroundColor: AppColors.textLight,
         elevation: 0,
         centerTitle: true,
@@ -370,7 +363,6 @@ class AppTheme {
       ),
 
       cardTheme: CardThemeData(
-        color: AppColors.surfaceDark,
         elevation: 1,
         shadowColor: Colors.black.withOpacity(0.3),
         surfaceTintColor: AppColors.accent,
@@ -457,7 +449,6 @@ class AppTheme {
       // ✅ Dark Mode - KEINE BORDER!
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceDark,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: InputBorder.none,
@@ -490,7 +481,6 @@ class AppTheme {
       ),
 
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.surfaceDark,
         selectedItemColor: AppColors.accent,
         unselectedItemColor: AppColors.textSecondary,
         type: BottomNavigationBarType.fixed,
@@ -506,7 +496,6 @@ class AppTheme {
       ),
 
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: AppColors.surfaceDark,
         indicatorColor: AppColors.accent.withOpacity(0.2),
         elevation: 3,
         height: 80,
@@ -540,7 +529,6 @@ class AppTheme {
       ),
 
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.surfaceDark,
         selectedColor: AppColors.accent.withOpacity(0.2),
         disabledColor: const Color(0xFF36343B),
         labelStyle: const TextStyle(
@@ -561,7 +549,6 @@ class AppTheme {
       ),
 
       dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.surfaceDark,
         surfaceTintColor: AppColors.accent,
         elevation: 6,
         shadowColor: Colors.black54,
@@ -611,7 +598,6 @@ class AppTheme {
       ),
 
       bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: AppColors.surfaceDark,
         surfaceTintColor: AppColors.accent,
         elevation: 3,
         shape: RoundedRectangleBorder(
@@ -657,114 +643,5 @@ class AppTheme {
             TextStyles.labelSmall.copyWith(color: AppColors.textSecondary),
       ),
     );
-  }
-
-  static CupertinoThemeData get cupertinoTheme {
-    return const CupertinoThemeData(
-      primaryColor: AppColors.primary,
-      barBackgroundColor: AppColors.surface,
-      scaffoldBackgroundColor: AppColors.background,
-      textTheme: CupertinoTextThemeData(
-        primaryColor: AppColors.textPrimary,
-        textStyle: TextStyle(
-          fontSize: 16,
-          color: AppColors.textPrimary,
-        ),
-        actionTextStyle: TextStyle(
-          fontSize: 16,
-          color: AppColors.primary,
-          fontWeight: FontWeight.w600,
-        ),
-        navTitleTextStyle: TextStyle(
-          fontSize: 17,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
-        ),
-        navLargeTitleTextStyle: TextStyle(
-          fontSize: 34,
-          fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
-        ),
-        tabLabelTextStyle: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w500,
-          color: AppColors.textSecondary,
-        ),
-      ),
-    );
-  }
-
-  static BoxDecoration get gradientContainerLight {
-    return const BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: AppColors.primaryGradient,
-      ),
-    );
-  }
-
-  static BoxDecoration get accentGradientContainerLight {
-    return const BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: AppColors.accentGradient,
-      ),
-    );
-  }
-
-  static BoxDecoration get gradientContainerDark {
-    return const BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: AppColors.accentGradient,
-      ),
-    );
-  }
-
-  static BoxShadow get cardShadowLight {
-    return BoxShadow(
-      color: AppColors.shadow,
-      blurRadius: 8,
-      offset: const Offset(0, 2),
-    );
-  }
-
-  static BoxShadow get elevatedShadowLight {
-    return BoxShadow(
-      color: AppColors.shadow,
-      blurRadius: 16,
-      offset: const Offset(0, 4),
-    );
-  }
-
-  static BoxShadow get cardShadowDark {
-    return BoxShadow(
-      color: Colors.black.withOpacity(0.3),
-      blurRadius: 8,
-      offset: const Offset(0, 2),
-    );
-  }
-
-  static BoxShadow get elevatedShadowDark {
-    return BoxShadow(
-      color: Colors.black.withOpacity(0.5),
-      blurRadius: 16,
-      offset: const Offset(0, 4),
-    );
-  }
-
-  static BoxDecoration gradientContainer(bool isDark) {
-    return isDark ? gradientContainerDark : gradientContainerLight;
-  }
-
-  static BoxShadow cardShadow(bool isDark) {
-    return isDark ? cardShadowDark : cardShadowLight;
-  }
-
-  static BoxShadow elevatedShadow(bool isDark) {
-    return isDark ? elevatedShadowDark : elevatedShadowLight;
   }
 }

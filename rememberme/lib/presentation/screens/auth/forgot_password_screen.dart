@@ -672,11 +672,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: isDark
-                ? AppColors.warning.withOpacity(0.1)
-                : AppColors.warning.withOpacity(0.08),
+                ? AppColors.accentLight.withOpacity(0.1)
+                : AppColors.accentLight.withOpacity(0.08),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: AppColors.warning.withOpacity(0.3),
+              color: AppColors.accentLight.withOpacity(0.3),
             ),
           ),
           child: Row(
@@ -684,7 +684,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               Icon(
                 isIOS ? CupertinoIcons.info_circle : Icons.info_outline_rounded,
                 size: 20,
-                color: AppColors.warning,
+                color: AppColors.accentLight,
               ),
               const SizedBox(width: 12),
               Expanded(

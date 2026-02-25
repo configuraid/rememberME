@@ -19,7 +19,6 @@ import '../../../business_logic/memorial/memorial_state.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_routes.dart';
-import '../../../core/utils/qr_claiming_handler.dart';
 import '../../../data/repositories/qr_code_repository.dart';
 
 /// Shop URL für QR-Code Kauf
@@ -366,10 +365,6 @@ class _MemorialCreateScreenState extends State<MemorialCreateScreen>
       _showError('Shop konnte nicht geöffnet werden.');
     }
   }
-
-  // ============================================================
-  // Image Picker
-  // ============================================================
 
   Future<void> _pickImage(ImageSource source) async {
     try {

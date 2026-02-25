@@ -451,7 +451,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                   width: 8,
                   height: 8,
                   decoration: const BoxDecoration(
-                    color: AppColors.warning,
+                    color: AppColors.accentLight,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -812,10 +812,10 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.warning.withOpacity(0.2),
+                      color: AppColors.accentLight.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.warning.withOpacity(0.5),
+                        color: AppColors.accentLight.withOpacity(0.5),
                         width: 1,
                       ),
                     ),
@@ -824,7 +824,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                       children: const [
                         Icon(
                           Icons.circle,
-                          color: AppColors.warning,
+                          color: AppColors.accentLight,
                           size: 8,
                         ),
                         SizedBox(width: 6),
@@ -833,7 +833,7 @@ class _IntuitivePageBuilderScreenState extends State<IntuitivePageBuilderScreen>
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.warning,
+                            color: AppColors.accentLight,
                           ),
                         ),
                       ],

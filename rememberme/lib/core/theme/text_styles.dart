@@ -135,29 +135,4 @@ class TextStyles {
     letterSpacing: 0.5,
     decoration: TextDecoration.none,
   );
-
-  // Custom Styles
-  static const TextStyle button = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
-    letterSpacing: 0.1,
-    decoration: TextDecoration.none,
-  );
-
-  static const TextStyle caption = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textSecondary,
-    height: 1.33,
-    decoration: TextDecoration.none,
-  );
-
-  static const TextStyle overline = TextStyle(
-    fontSize: 10,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textSecondary,
-    height: 1.6,
-    letterSpacing: 1.5,
-    decoration: TextDecoration.none,
-  );
 }

@@ -1,7 +1,7 @@
 name: rememberme
 description: "A new Flutter project."
 publish_to: 'none'
-version: 1.0.14
+version: 1.0.16
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -48,6 +48,7 @@ dependencies:
   local_auth: ^2.3.0
   flutter_secure_storage: ^9.2.4
   flutter_slidable: ^4.0.3
+  permission_handler: ^12.0.1
 
     # Video Player
   video_player: ^2.10.1

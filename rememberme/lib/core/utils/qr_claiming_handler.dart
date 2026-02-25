@@ -174,7 +174,7 @@ class QrClaimingHandler {
           content: Text(
             'Bitte melde dich an oder erstelle einen Account, um die Gedenkseite einzurichten.',
             style: TextStyle(
-              color: isDark ? AppColors.textDarkSecondary : AppColors.grey,
+              color: isDark ? AppColors.textSecondary : AppColors.grey,
               height: 1.4,
             ),
           ),

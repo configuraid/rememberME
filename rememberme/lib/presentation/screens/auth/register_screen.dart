@@ -135,6 +135,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
   }
 
+  Future<void> _enableBiometricLogin() async {
+    // Biometrie einmal durchführen um Berechtigung zu bestätigen
+    final authenticated = await _biometricService.authenticate(
+      reason: 'Bestätige deine Identität für die Einrichtung',
+    );
+
+    if (authenticated) {
+      await _biometricService.saveCredentials(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+      debugPrint('✅ Biometric Login eingerichtet');
+    }
+  }
+
   void _showError(String message) {
     if (Platform.isIOS) {
       showCupertinoDialog(
@@ -314,21 +329,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  Future<void> _enableBiometricLogin() async {
-    // Biometrie einmal durchführen um Berechtigung zu bestätigen
-    final authenticated = await _biometricService.authenticate(
-      reason: 'Bestätige deine Identität für die Einrichtung',
-    );
-
-    if (authenticated) {
-      await _biometricService.saveCredentials(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
-      debugPrint('✅ Biometric Login eingerichtet');
-    }
-  }
-
   void _navigateToHome(AuthState state) {
     if (!mounted) return;
 
@@ -352,9 +352,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         if (state.isAuthenticated && state.user != null) {
           HapticFeedback.heavyImpact();
-
-          // ========== GEÄNDERT: Biometric Setup anbieten ==========
-          // Statt direkt zu navigieren, erst Biometric anbieten
           _offerBiometricSetup(state);
         } else if (state.hasError) {
           _showError(state.errorMessage ?? 'Registrierung fehlgeschlagen');
@@ -547,7 +544,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   // ========================================
-  // FIELD BUILDERS (unchanged from original)
+  // FIELD BUILDERS
   // ========================================
 
   Widget _buildNameField(bool isDark, bool isIOS) {

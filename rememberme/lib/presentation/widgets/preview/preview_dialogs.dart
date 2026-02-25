@@ -197,7 +197,7 @@ class PreviewErrorDialog extends StatelessWidget {
         children: [
           const Icon(
             CupertinoIcons.exclamationmark_triangle_fill,
-            color: AppColors.warning,
+            color: AppColors.accentLight,
             size: 20,
           ),
           const SizedBox(width: 8),
@@ -271,7 +271,7 @@ class PreviewErrorDialog extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isDark
-                ? AppColors.warning.withOpacity(0.3)
+                ? AppColors.accentLight.withOpacity(0.3)
                 : AppColors.greyLighter,
             width: 1,
           ),
@@ -292,13 +292,13 @@ class PreviewErrorDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(isDark ? 0.2 : 0.1),
+                color: AppColors.accentLight.withOpacity(isDark ? 0.2 : 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.warning_rounded,
                 size: 48,
-                color: AppColors.warning,
+                color: AppColors.accentLight,
               ),
             ),
             const SizedBox(height: 24),
